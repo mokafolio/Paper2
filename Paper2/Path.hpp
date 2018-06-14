@@ -466,6 +466,8 @@ namespace paper
 
         Segment createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const Vec2f & _handleOut);
 
+        void transformChanged(bool _bCalledFromParent) final;
+
         void intersectionsImpl(const Path * _other, IntersectionArray & _outIntersections) const;
 
 

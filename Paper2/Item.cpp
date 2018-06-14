@@ -528,7 +528,7 @@ namespace paper
 
     void Item::setStroke(const String & _svgName)
     {
-
+        PROPERTY_SETTER(stroke, crunch::svgColor<ColorRGBA>(_svgName));
     }
 
     void Item::setStroke(const LinearGradientPtr & _grad)
@@ -568,7 +568,7 @@ namespace paper
 
     void Item::setFill(const stick::String & _svgName)
     {
-
+        PROPERTY_SETTER(fill, crunch::svgColor<ColorRGBA>(_svgName));
     }
 
     void Item::setFill(const LinearGradientPtr & _grad)
@@ -668,8 +668,8 @@ namespace paper
     }
 
     Maybe<Rect> Item::mergeWithChildrenBounds(
-        const Maybe<Rect> & _bounds, 
-        const Mat32f * _transform, 
+        const Maybe<Rect> & _bounds,
+        const Mat32f * _transform,
         BoundsType _type,
         bool _bSkipFirstChild) const
     {
@@ -681,7 +681,7 @@ namespace paper
             Maybe<Rect> tmp;
             if (_transform)
             {
-                //if a custom transform was passed along, we need to compute the absolute 
+                //if a custom transform was passed along, we need to compute the absolute
                 //transform for the child and pass it along.
                 tmpMat = *_transform * (*it)->transform();
                 tmp = (*it)->computeBounds(&tmpMat, _type);
@@ -704,7 +704,7 @@ namespace paper
     {
         m_absoluteTransform.reset();
         for (Item * child : m_children)
-            markAbsoluteTransformDirty();
+            child->markAbsoluteTransformDirty();
     }
 
     void Item::markBoundsDirty(bool _bNotifyParent)

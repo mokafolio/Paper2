@@ -85,10 +85,17 @@ int main(int _argc, const char * _args[])
 
         path->setStroke(ColorRGBA(1, 1, 1, 1));
         path->setFill(grad);
-        path->translateTransform(100, 0);
-        path->setStrokeWidth(5.0);
-        path->setScaleStroke(false);
-        path->addChild(doc.createCircle(Vec2f(150, 100), 20));
+        // path->translateTransform(100, 0);
+        path->setStrokeWidth(1.0);
+        // path->setScaleStroke(false);
+        path->addChild(doc.createCircle(Vec2f(120, 100), 20));
+
+        Path * p2 = doc.createCircle(Vec2f(100, 100), 20);
+        p2->addChild(doc.createCircle(Vec2f(110, 97), 12));
+        path->addChild(p2);
+
+        // if (path->contains(Vec2f(160, 100)))
+        //     printf("ITS CONTAINED BABY!!!\n");
 
         // Path * slice = path->slice(path->length() * 0.1, path->length() * 0.7895);
         // // slice->translate(0, 100);
@@ -103,18 +110,29 @@ int main(int _argc, const char * _args[])
         // grp->addChild(path);
         // grp->translateTransform(-100, 0);
 
-        Symbol * sym = doc.createSymbol(path);
+        // Symbol * sym = doc.createSymbol(path);
 
-        // STICK_ASSERT(grp->absoluteTransform() == sym->absoluteTransform());
-        sym->translateTransform(Vec2f(100, 0));
-        sym->scaleTransform(0.5);
-        // sym->rotateTransform(crunch::Constants<Float>::halfPi() * 0.5);
+        // // STICK_ASSERT(grp->absoluteTransform() == sym->absoluteTransform());
+        // sym->translateTransform(Vec2f(100, 0));
+        // sym->scaleTransform(0.5);
+        // // sym->rotateTransform(crunch::Constants<Float>::halfPi() * 0.5);
 
-        // Symbol * sym2 = doc.createSymbol(sym);
-        // sym2->translateTransform(Vec2f(0, 200));
+        // // Symbol * sym2 = doc.createSymbol(sym);
+        // // sym2->translateTransform(Vec2f(0, 200));
 
-        Path * bounds = doc.createRectangle(sym->bounds().min(), sym->bounds().max());
-        bounds->setFill(ColorRGBA(1, 1, 1, 0.2));
+        // Path * bounds = doc.createRectangle(sym->bounds().min(), sym->bounds().max());
+        // bounds->setFill(ColorRGBA(1, 1, 1, 0.2));
+
+        // Path * clone = path->clone();
+        // clone->translate(85, 0);
+
+        auto isecs = path->intersections();
+        printf("ISEC COUNT %lu\n", isecs.count());
+        for(auto & isec : isecs)
+        {
+            Path * p = doc.createCircle(isec.position, 2);
+            p->setFill("red");
+        }
 
         // Path * center = doc.createCircle(sym->position(), 2.0);
         // center->setFill(ColorRGBA(1, 0, 0, 1));
@@ -171,6 +189,15 @@ int main(int _argc, const char * _args[])
             glfwGetWindowSize(window, &width, &height);
             renderer.setProjection(Mat4f::ortho(0, width, height, 0, -1, 1));
             // renderer.setTransform(Mat3f::identity());
+
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+
+            if(path->contains(Vec2f(xpos, ypos)))
+                path->setFill(grad);
+            else
+                path->setFill(ColorRGBA(1,1,0,1));
+
 
             auto err = renderer.draw();
             if (err)

@@ -131,11 +131,11 @@ namespace paper
                 // If this is a compound path, get the child mono curves and append them
                 for (Item * c : _path->children())
                 {
-                    const MonoCurveLoopArray & cc = BooleanOperations::monoCurves(static_cast<Path*>(c));
+                    const MonoCurveLoopArray & cc = BooleanOperations::monoCurves(static_cast<Path *>(c));
                     _path->m_monoCurves.insert(_path->m_monoCurves.end(), cc.begin(), cc.end());
 
                     // we don't want to cache the curves twice, so we remove em from da kid
-                    static_cast<Path*>(c)->m_monoCurves.clear();
+                    static_cast<Path *>(c)->m_monoCurves.clear();
                 }
             }
 

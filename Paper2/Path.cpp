@@ -1238,12 +1238,10 @@ namespace paper
             return false;
         }
 
-        // helper to recursively intersect paths and its children (compound path)
-        static inline void recursivelyIntersect(const Path * _self, const Path * _other, IntersectionArray & _intersections)
+        static inline void intersectPaths(const Path * _self, const Path * _other, IntersectionArray & _intersections)
         {
             bool bSelf = _self == _other;
-            // const auto & curves = _self->curveData();
-            // auto * otherCurves = !bSelf ? &_other.curveData() : &curves;
+
             for (Size i = 0; i < _self->curveCount(); ++i)
             {
                 ConstCurve a = _self->curve(i);
@@ -1273,12 +1271,8 @@ namespace paper
 
                         if (bAdd)
                         {
-                            // make sure we don't add an intersection twice. This can happen if the intersection
+                            // @TODO: make sure we don't add an intersection twice. This can happen if the intersection
                             // is located between two adjacent curves of the path.
-                            // @TODO: do some sorted insertion similar to what paper.js does to avoid having
-                            // to iterate over the whole array of found intersections. I am pretty sure that
-                            // just keeping it simple and iterating over a block of memory will perform better in
-                            // native code in most scenarios.
                             CurveLocation cl = a.curveLocationAtParameter(intersections.values[z].parameterOne);
                             for (auto & isec : _intersections)
                             {
@@ -1290,16 +1284,29 @@ namespace paper
 
                             }
                             if (bAdd)
+                            {
                                 _intersections.append({cl, intersections.values[z].position});
+                            }
                         }
                     }
                 }
             }
+        }
+
+        // helper to recursively intersect paths and its children (compound path)
+        static inline void recursivelyIntersect(const Path * _self, const Path * _other, IntersectionArray & _intersections)
+        {
+            intersectPaths(_self, _other, _intersections);
 
             for (Item * c : _other->children())
-            {
                 recursivelyIntersect(_self, static_cast<Path *>(c), _intersections);
-            }
+        }
+
+        static inline void flattenPathChildren(const Path * _path, stick::DynamicArray<const Path*> & _outPaths)
+        {
+            _outPaths.append(_path);
+            for(Item * c : _path->children())
+                flattenPathChildren(static_cast<Path*>(c), _outPaths);
         }
     }
 
@@ -1322,10 +1329,23 @@ namespace paper
     void Path::intersectionsImpl(const Path * _other, IntersectionArray & _outIntersections) const
     {
         // @TODO: Take transformation matrix into account!!
-        detail::recursivelyIntersect(this, _other, _outIntersections);
+        if (this != _other)
+        {
+            detail::recursivelyIntersect(this, _other, _outIntersections);
 
-        for (Item * c : children())
-            static_cast<Path *>(c)->intersectionsImpl(_other, _outIntersections);
+            for (Size i = 0; i < m_children.count(); ++i)
+                detail::recursivelyIntersect(static_cast<Path *>(m_children[i]), _other, _outIntersections);
+        }
+        else
+        {
+            //for self intersection we create a flat list of all nested paths to avoid double comparisons
+            stick::DynamicArray<const Path*> paths(m_children.allocator());
+            paths.reserve(16);
+            detail::flattenPathChildren(this, paths);
+            for(Size i = 0; i < paths.count(); ++i)
+                for(Size j = i + 1; j < paths.count(); ++j)
+                    detail::intersectPaths(paths[i], paths[j], _outIntersections);
+        }
     }
 
     void Path::markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDirty)
@@ -1334,6 +1354,13 @@ namespace paper
         markBoundsDirty(_bMarkParentsBoundsDirty);
         if (_bMarkLengthDirty)
             m_length.reset();
+        m_monoCurves.clear();
+    }
+
+    void Path::transformChanged(bool _bCalledFromParent)
+    {
+        Item::transformChanged(_bCalledFromParent);
+        m_monoCurves.clear();
     }
 
     bool Path::canAddChild(Item * _e) const
@@ -1356,7 +1383,6 @@ namespace paper
             tmp = Mat32f::scaling(hsw);
         else
         {
-            printf("INVERSE\n");
             tmp = crunch::inverse(_transform);
             tmp.scale(hsw);
         }
@@ -1404,7 +1430,6 @@ namespace paper
 
     Maybe<Rect> Path::computeFillBounds(const Mat32f * _transform, Float _padding) const
     {
-        printf("A\n");
         if (!m_segmentData.count())
             return Maybe<Rect>();
 
@@ -1414,12 +1439,9 @@ namespace paper
             return Rect(p, p);
         }
 
-        printf("B\n");
-
         Rect ret;
         if (!_transform && !isTransformed())
         {
-            printf("NO TRANS\n");
             for (Size i = 0; i < m_curveData.count(); ++i)
             {
                 ConstCurve c = curve(i);
@@ -1459,13 +1481,12 @@ namespace paper
                 lastHandle = *_transform * seg.handleOutAbsolute();
                 lastPosition = currentPosition;
             }
-            printf("FOCK?\n");
+
             if (isClosed())
             {
                 Bezier bez(lastPosition, lastHandle, *_transform * ConstSegment(this, 0).handleInAbsolute(), firstPosition);
                 ret = crunch::merge(ret, bez.bounds(_padding));
             }
-            printf("C\n");
         }
         return ret;
     }
@@ -1475,7 +1496,6 @@ namespace paper
         if (!hasStroke())
             return computeFillBounds(_transform, 0);
 
-        printf("A\n");
         StrokeJoin join = strokeJoin();
         StrokeCap cap = strokeCap();
         Float sw = strokeWidth();
@@ -1484,13 +1504,11 @@ namespace paper
         bool bIsScalingStroke = scaleStroke();
         //@TODO: only do the stroke transform / padding work if there is a matrix
         _transform = _transform ? _transform : isTransformed() ? &absoluteTransform() : nullptr;
-        Mat32f smat = strokeTransform(*_transform, sw, bIsScalingStroke);
-        Vec2f sp = strokePadding(strokeRad, bIsScalingStroke ? *_transform : Mat32f::identity());
+        Mat32f smat = strokeTransform(_transform ? *_transform : absoluteTransform(), sw, bIsScalingStroke);
+        Vec2f sp = strokePadding(strokeRad, bIsScalingStroke ? _transform ? *_transform : absoluteTransform() : Mat32f::identity());
 
         //@TODO: use proper 2D padding for non uniformly transformed strokes?
         auto result = computeFillBounds(_transform, std::max(sp.x, sp.y));
-
-        printf("B\n");
 
         //if there is no bounds, we are done
         if (!result)
@@ -1508,8 +1526,6 @@ namespace paper
                              ismat * (m_segmentData[i].position + m_segmentData[i].handleOut)
                             };
         }
-
-        printf("C\n");
 
         for (Size i = 1; i < m_segmentData.count(); ++i)
         {
@@ -1563,7 +1579,6 @@ namespace paper
 
     Maybe<Rect> Path::computeBounds(const Mat32f * _transform, BoundsType _type) const
     {
-        printf("COMPUTE BOUNDS\n");
         Maybe<Rect> ret;
         if (_type == BoundsType::Fill)
             ret = computeFillBounds(_transform, 0);
@@ -1572,7 +1587,6 @@ namespace paper
         else if (_type == BoundsType::Handle)
             ret = computeHandleBounds(_transform);
 
-        printf("DEAD\n");
         return mergeWithChildrenBounds(ret, _transform, _type);
     }
 

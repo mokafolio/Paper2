@@ -244,7 +244,7 @@ namespace paper
 
         void removeHelper(bool _bRemoveFromParent);
 
-        void transformChanged(bool _bCalledFromParent);
+        virtual void transformChanged(bool _bCalledFromParent);
 
 
         void removeFromParent();

@@ -83,36 +83,32 @@ int main(int _argc, const char * _args[])
 
         Path * path = doc.createCircle(Vec2f(100, 100), 50);
 
-        // path->addChild(doc.createCircleg(Vec2f(150, 100), 20));
-        // path->translateTransform(100, 100);
         path->setStroke(ColorRGBA(1, 1, 1, 1));
-        // path->setStrokeWidth(10);
-        // path->scaleTransform(0.5);
-        // path->rotateTransform(0.425);
-        path->translateTransform(100, 0);
-
-        Group * grp = doc.createGroup();
-        // grp->addChild(doc.createRectangle(Vec2f(150,50), Vec2f(250, 100)));
-        // grp->setClipped(true);
-        grp->addChild(path);
-        grp->translateTransform(-100, 0);
-
-        // path->skewTransform(Vec2f(1, 0.0));
-        // path->setScaleStroke(false);
-
-        // Path * path = doc.createPath();
-        // path->addPoint(Vec2f(100, 100));
-        // path->addPoint(Vec2f(100, 200));
-        // path->addPoint(Vec2f(300, 200));
-        // path->setFill(ColorRGBA(1.0, 0.0, 0.0, 1.0));
         path->setFill(grad);
+        path->translateTransform(100, 0);
+        path->setStrokeWidth(5.0);
+        path->setScaleStroke(false);
+        path->addChild(doc.createCircle(Vec2f(150, 100), 20));
 
-        Symbol * sym = doc.createSymbol(grp);
+        // Path * slice = path->slice(path->length() * 0.1, path->length() * 0.7895);
+        // // slice->translate(0, 100);
+        // slice->setFill(ColorRGBA(1, 0, 0, 1));
+
+        // Path * clone = path->clone();
+        // clone->translate(0, 100);
+
+        // Group * grp = doc.createGroup();
+        // // grp->addChild(doc.createRectangle(Vec2f(150,50), Vec2f(250, 100)));
+        // // grp->setClipped(true);
+        // grp->addChild(path);
+        // grp->translateTransform(-100, 0);
+
+        Symbol * sym = doc.createSymbol(path);
 
         // STICK_ASSERT(grp->absoluteTransform() == sym->absoluteTransform());
         sym->translateTransform(Vec2f(100, 0));
         sym->scaleTransform(0.5);
-        sym->rotateTransform(crunch::Constants<Float>::halfPi() * 0.5);
+        // sym->rotateTransform(crunch::Constants<Float>::halfPi() * 0.5);
 
         // Symbol * sym2 = doc.createSymbol(sym);
         // sym2->translateTransform(Vec2f(0, 200));

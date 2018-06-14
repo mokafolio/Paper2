@@ -3,6 +3,7 @@
 
 #include <Paper2/Item.hpp>
 #include <Paper2/Private/ContainerView.hpp>
+#include <Paper2/Private/BooleanOperations.hpp>
 
 namespace paper
 {
@@ -201,8 +202,6 @@ namespace paper
         Size m_index;
     };
 
-    class STICK_API Intersection;
-
     struct STICK_API SegmentData
     {
         Vec2f handleIn;
@@ -228,7 +227,6 @@ namespace paper
     using CurveView = detail::ContainerView<false, CurveDataArray, Curve>;
     using ConstCurve = CurveT<const Path>;
     using ConstCurveView = detail::ContainerView<true, CurveDataArray, ConstCurve>;
-    using IntersectionArray = stick::DynamicArray<Intersection>;
 
     class STICK_API CurveLocation
     {
@@ -277,6 +275,14 @@ namespace paper
         Float m_offset;
     };
 
+    struct STICK_API Intersection
+    {
+        CurveLocation location;
+        Vec2f position;
+    };
+
+    using IntersectionArray = stick::DynamicArray<Intersection>;
+
     class STICK_API Path : public Item
     {
         template<class T>
@@ -284,6 +290,7 @@ namespace paper
         template<class T>
         friend class CurveT;
         friend class RenderInterface;
+        friend class detail::BooleanOperations;
 
     public:
 
@@ -330,6 +337,8 @@ namespace paper
         void addSegment(const Vec2f & _point, const Vec2f & _handleIn, const Vec2f & _handleOut);
 
         void addSegments(const SegmentData * _segments, Size _count);
+
+        void swapSegments(SegmentDataArray & _segments, bool _bClose);
 
         Segment insertSegment(Size _index, const SegmentData & _seg);
 
@@ -442,7 +451,7 @@ namespace paper
 
         IntersectionArray intersections() const;
 
-        IntersectionArray intersections(const Path & _other) const;
+        IntersectionArray intersections(const Path * _other) const;
 
 
         // called from Renderer
@@ -457,7 +466,7 @@ namespace paper
 
         Segment createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const Vec2f & _handleOut);
 
-        IntersectionArray intersectionsImpl(const Path & _other) const;
+        void intersectionsImpl(const Path * _other, IntersectionArray & _outIntersections) const;
 
 
         void rebuildCurves();
@@ -485,6 +494,9 @@ namespace paper
         SegmentDataArray m_segmentData;
         mutable CurveDataArray m_curveData;
         bool m_bIsClosed;
+
+        //for hit testing
+        mutable detail::MonoCurveLoopArray m_monoCurves;
 
         //rendering related
         mutable stick::Maybe<Float> m_length;

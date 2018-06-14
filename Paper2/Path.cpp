@@ -373,23 +373,19 @@ namespace paper
             Segment first(this, 0);
             Segment last(this, m_segmentData.count() - 1);
 
-            printf("CLOSE %lu\n", m_curveData.count());
-            printf("POS %s %s\n", toString(first.position()).cString(), toString(last.position()).cString());
             if (crunch::isClose(first.position(), last.position(), detail::PaperConstants::tolerance()))
             {
-                printf("REMOVE LAST\n");
                 first.setHandleIn(last.handleIn());
                 m_segmentData.removeLast();
+                m_curveData.last() = CurveData{};
             }
             else
             {
-                printf("ADD CLSING CURVE\n");
                 m_curveData.append(CurveData{});
             }
 
             m_bIsClosed = true;
             markGeometryDirty(true);
-            markBoundsDirty(true);
         }
     }
 
@@ -575,9 +571,16 @@ namespace paper
         return Segment(this, _index);
     }
 
+    void Path::swapSegments(SegmentDataArray & _segments, bool _bClose)
+    {
+        m_bIsClosed = _bClose;
+        m_segmentData.swap(_segments);
+        m_curveData.resize(m_segmentData.count() - 1 + _bClose);
+        markGeometryDirty(true);
+    }
+
     void Path::insertSegments(Size _index, const SegmentData * _segments, Size _count)
     {
-        printf("INSERT SEGS %lu\n", m_curveData.count());
         //append case
         if (_index >= m_segmentData.count())
         {
@@ -793,67 +796,81 @@ namespace paper
     //@TODO: BIG FAT TODO
     Path * Path::splitAt(Float _offset)
     {
-
+        STICK_ASSERT(false);
+        return nullptr;
     }
 
     Path * Path::splitAt(CurveLocation _loc)
     {
-
+        STICK_ASSERT(false);
+        return nullptr;
     }
 
     Path * Path::slice(Float _from, Float _to) const
     {
-        // return slice(curveLocationAt(_from), curveLocationAt(_to));
+        return slice(curveLocationAt(_from), curveLocationAt(_to));
     }
 
     Path * Path::slice(CurveLocation _from, CurveLocation _to) const
     {
-        // STICK_ASSERT(_from.isValid());
-        // STICK_ASSERT(_to.isValid());
-        // STICK_ASSERT(_from.curve().path() == _to.curve().path());
+        STICK_ASSERT(_from.isValid());
+        STICK_ASSERT(_to.isValid());
+        STICK_ASSERT(_from.curve().path() == _to.curve().path());
 
-        // //@TODO: is this cloning good enough?
-        // Path ret = clone();
-        // ret.set<comps::ClosedFlag>(false);
-        // ret.removeSegments();
+        if (_from == _to)
+            return nullptr;
 
-        // //add the first segment based on the start curve location
-        // const SegmentArray & segs = this->segmentArray();
-        // auto bez = _from.curve().bezier().slice(_from.parameter(), 1);
-        // auto bez2 = _to.curve().bezier().slice(0, _to.parameter());
-        // ret.addSegment(bez.positionOne(), Vec2f(0.0), bez.handleOne() - bez.positionOne());
+        //@TODO: is this cloning good enough?
+        Path * ret = clone();
+        ret->m_segmentData.clear();
+        ret->m_curveData.clear();
+        ret->m_bIsClosed = false;
 
-        // //add all the segments inbetween
-        // for (Size i = _from.curve().segmentTwo().m_index; i <= _to.curve().segmentOne().m_index; ++i)
-        // {
-        //     auto & seg = segs[i];
-        //     Vec2f handleIn = seg->handleIn();
-        //     Vec2f handleOut = seg->handleOut();
+        //add the first segment based on the start curve location
+        Bezier bez, bez2;
+        if (_from.curve().m_index != _to.curve().m_index)
+        {
+            bez = _from.curve().bezier().slice(_from.parameter(), 1);
+            bez2 = _to.curve().bezier().slice(0, _to.parameter());
+        }
+        else
+            bez = bez2 = _from.curve().bezier().slice(_from.parameter(), _to.parameter());
 
-        //     if (i == _from.curve().segmentTwo().m_index && i == _to.curve().segmentOne().m_index)
-        //     {
-        //         handleIn = bez.handleTwo() - bez.positionTwo();
-        //         handleOut = bez2.handleOne() - bez2.positionOne();
-        //     }
-        //     else if (i == _from.curve().segmentTwo().m_index)
-        //     {
-        //         handleIn = bez.handleTwo() - bez.positionTwo();
-        //     }
-        //     else if (i == _to.curve().segmentOne().m_index)
-        //     {
-        //         handleOut = bez2.handleOne() - bez2.positionOne();
-        //     }
+        SegmentDataArray tmp(m_segmentData.allocator());
+        tmp.reserve(_to.curve().segmentOne().m_index - _from.curve().segmentTwo().m_index + 1);
+        tmp.append({Vec2f(0.0), bez.positionOne(), bez.handleOne() - bez.positionOne()});
 
-        //     ret.addSegment(seg->position(),
-        //                    handleIn,
-        //                    handleOut);
-        // }
+        // add all the segments inbetween
+        for (Size i = _from.curve().segmentTwo().m_index; i <= _to.curve().segmentOne().m_index; ++i)
+        {
+            Segment seg = segment(i);
+            Vec2f handleIn = seg.handleIn();
+            Vec2f handleOut = seg.handleOut();
 
-        // //add the last segment based on the end curve location
-        // ret.addSegment(bez2.positionTwo(), bez2.handleTwo() - bez2.positionTwo(), Vec2f(0.0f));
+            if (i == _from.curve().segmentTwo().m_index && i == _to.curve().segmentOne().m_index)
+            {
+                handleIn = bez.handleTwo() - bez.positionTwo();
+                handleOut = bez2.handleOne() - bez2.positionOne();
+            }
+            else if (i == _from.curve().segmentTwo().m_index)
+            {
+                handleIn = bez.handleTwo() - bez.positionTwo();
+            }
+            else if (i == _to.curve().segmentOne().m_index)
+            {
+                handleOut = bez2.handleOne() - bez2.positionOne();
+            }
 
-        // ret.insertAbove(*this);
-        // return ret;
+            tmp.append({handleIn, seg.position(), handleOut});
+        }
+
+        //add the last segment based on the end curve location
+        tmp.append({bez2.handleTwo() - bez2.positionTwo(), bez2.positionTwo(), Vec2f(0.0f)});
+
+        ret->swapSegments(tmp, false);
+
+        ret->insertAbove(this);
+        return ret;
     }
 
     CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDistance) const
@@ -1148,13 +1165,17 @@ namespace paper
 
     bool Path::contains(const Vec2f & _point) const
     {
-        // if (!handleBounds().contains(_point))
-        //     return false;
+        if (!handleBounds().contains(_point))
+            return false;
 
-        // if (windingRule() == WindingRule::EvenOdd)
-        //     return detail::winding(_point, detail::monoCurves(*const_cast<Path *>(this)), false) & 1;
-        // else
-        //     return detail::winding(_point, detail::monoCurves(*const_cast<Path *>(this)), false) > 0;
+        if (windingRule() == WindingRule::EvenOdd)
+            return detail::BooleanOperations::winding(
+                       _point,
+                       detail::BooleanOperations::monoCurves(this), false) & 1;
+        else
+            return detail::BooleanOperations::winding(
+                       _point,
+                       detail::BooleanOperations::monoCurves(this), false) > 0;
     }
 
     Path * Path::clone() const
@@ -1210,112 +1231,101 @@ namespace paper
 
     namespace detail
     {
-        // inline bool isAdjacentCurve(Size _a, Size _b, Size _curveCount, bool _bIsClosed)
-        // {
-        //     if (_b == _a + 1 || (_bIsClosed && _a == 0 && _b == _curveCount - 1))
-        //         return true;
-        //     return false;
-        // }
+        static inline bool isAdjacentCurve(Size _a, Size _b, Size _curveCount, bool _bIsClosed)
+        {
+            if (_b == _a + 1 || (_bIsClosed && _a == 0 && _b == _curveCount - 1))
+                return true;
+            return false;
+        }
 
-        // // helper to recursively intersect paths and its children (compound path)
-        // inline void recursivelyIntersect(const Path & _self, const Path & _other, IntersectionArray & _intersections)
-        // {
-        //     bool bSelf = _self == _other;
-        //     const auto & curves = _self.curveArray();
-        //     auto * otherCurves = !bSelf ? &_other.curveArray() : &curves;
-        //     for (Size i = 0; i < curves.count(); ++i)
-        //     {
-        //         const auto & a = curves[i];
-        //         for (Size j = bSelf ? i + 1 : 0; j < otherCurves->count(); ++j)
-        //         {
-        //             const auto & b = (*otherCurves)[j];
-        //             auto intersections = a->bezier().intersections(b->bezier());
-        //             for (Int32 z = 0; z < intersections.count; ++z)
-        //             {
-        //                 bool bAdd = true;
-        //                 //for self intersection we only add the intersection if its not where
-        //                 //adjacent curves connect.
-        //                 if (bSelf)
-        //                 {
-        //                     printf("DAA I %lu J %lu\n", i, j);
-        //                     if (isAdjacentCurve(i, j, curves.count(), _self.isClosed()))
-        //                     {
-        //                         printf("ITS ADJACENT\n");
-        //                         if ((crunch::isClose(intersections.values[z].parameterOne, 1.0f, detail::PaperConstants::curveTimeEpsilon()) &&
-        //                                 crunch::isClose(intersections.values[z].parameterTwo, 0.0f, detail::PaperConstants::curveTimeEpsilon())) ||
-        //                                 //this case can only happen for closed paths where the first curve meets the last one
-        //                                 (_self.isClosed() && crunch::isClose(intersections.values[z].parameterOne, 0.0f, detail::PaperConstants::curveTimeEpsilon()) &&
-        //                                  crunch::isClose(intersections.values[z].parameterTwo, 1.0f, detail::PaperConstants::curveTimeEpsilon())))
-        //                         {
-        //                             printf("DONT FUCKING ADD\n");
-        //                             bAdd = false;
-        //                         }
-        //                     }
-        //                 }
+        // helper to recursively intersect paths and its children (compound path)
+        static inline void recursivelyIntersect(const Path * _self, const Path * _other, IntersectionArray & _intersections)
+        {
+            bool bSelf = _self == _other;
+            // const auto & curves = _self->curveData();
+            // auto * otherCurves = !bSelf ? &_other.curveData() : &curves;
+            for (Size i = 0; i < _self->curveCount(); ++i)
+            {
+                ConstCurve a = _self->curve(i);
+                for (Size j = bSelf ? i + 1 : 0; j < _other->curveCount(); ++j)
+                {
+                    ConstCurve b = _other->curve(j);
+                    auto intersections = a.bezier().intersections(b.bezier());
+                    for (Int32 z = 0; z < intersections.count; ++z)
+                    {
+                        bool bAdd = true;
+                        //for self intersection we only add the intersection if its not where
+                        //adjacent curves connect.
+                        if (bSelf)
+                        {
+                            if (isAdjacentCurve(i, j, _self->curveCount(), _self->isClosed()))
+                            {
+                                if ((crunch::isClose(intersections.values[z].parameterOne, 1.0f, detail::PaperConstants::curveTimeEpsilon()) &&
+                                        crunch::isClose(intersections.values[z].parameterTwo, 0.0f, detail::PaperConstants::curveTimeEpsilon())) ||
+                                        //this case can only happen for closed paths where the first curve meets the last one
+                                        (_self->isClosed() && crunch::isClose(intersections.values[z].parameterOne, 0.0f, detail::PaperConstants::curveTimeEpsilon()) &&
+                                         crunch::isClose(intersections.values[z].parameterTwo, 1.0f, detail::PaperConstants::curveTimeEpsilon())))
+                                {
+                                    bAdd = false;
+                                }
+                            }
+                        }
 
-        //                 if (bAdd)
-        //                 {
-        //                     // make sure we don't add an intersection twice. This can happen if the intersection
-        //                     // is located between two adjacent curves of the path.
-        //                     // @TODO: do some sorted insertion similar to what paper.js does to avoid having
-        //                     // to iterate over the whole array of found intersections. I am pretty sure that
-        //                     // just keeping it simple and iterating over a block of memory will perform better in
-        //                     // native code in most scenarios.
-        //                     auto cl = a->curveLocationAtParameter(intersections.values[z].parameterOne);
-        //                     for (auto & isec : _intersections)
-        //                     {
-        //                         printf("COMPARING WITH OLD ONE %f %f\n", cl.offset(), isec.location.offset());
-        //                         if (cl.isSynonymous(isec.location))
-        //                         {
-        //                             printf("ITS SYNNONYMOUS BIITCH\n");
-        //                             bAdd = false;
-        //                             break;
-        //                         }
+                        if (bAdd)
+                        {
+                            // make sure we don't add an intersection twice. This can happen if the intersection
+                            // is located between two adjacent curves of the path.
+                            // @TODO: do some sorted insertion similar to what paper.js does to avoid having
+                            // to iterate over the whole array of found intersections. I am pretty sure that
+                            // just keeping it simple and iterating over a block of memory will perform better in
+                            // native code in most scenarios.
+                            CurveLocation cl = a.curveLocationAtParameter(intersections.values[z].parameterOne);
+                            for (auto & isec : _intersections)
+                            {
+                                if (cl.isSynonymous(isec.location))
+                                {
+                                    bAdd = false;
+                                    break;
+                                }
 
-        //                     }
-        //                     if (bAdd)
-        //                         _intersections.append({cl,
-        //                                                intersections.values[z].position
-        //                                               });
-        //                 }
-        //             }
-        //         }
-        //     }
+                            }
+                            if (bAdd)
+                                _intersections.append({cl, intersections.values[z].position});
+                        }
+                    }
+                }
+            }
 
-        //     const auto & children = _other.children();
-        //     for (auto & c : children)
-        //     {
-        //         recursivelyIntersect(_self, brick::reinterpretEntity<Path>(c), _intersections);
-        //     }
-        // }
+            for (Item * c : _other->children())
+            {
+                recursivelyIntersect(_self, static_cast<Path *>(c), _intersections);
+            }
+        }
     }
 
     IntersectionArray Path::intersections() const
     {
-        // return intersectionsImpl(*this);
+        IntersectionArray ret(m_segmentData.allocator());
+        intersectionsImpl(this, ret);
+        return ret;
     }
 
-    IntersectionArray Path::intersections(const Path & _other) const
+    IntersectionArray Path::intersections(const Path * _other) const
     {
-        // if (!bounds().overlaps(_other.bounds()))
-        //     return IntersectionArray();
-        // return intersectionsImpl(_other);
+        if (!bounds().overlaps(_other->bounds()))
+            return IntersectionArray();
+        IntersectionArray ret(m_segmentData.allocator());
+        intersectionsImpl(_other, ret);
+        return ret;
     }
 
-    IntersectionArray Path::intersectionsImpl(const Path & _other) const
+    void Path::intersectionsImpl(const Path * _other, IntersectionArray & _outIntersections) const
     {
-        //@TODO: Take transformation matrix into account!!
-        //@TODO: In terms of memory allocation and stuff this code is fucking gross :(
-        // IntersectionArray isecs;
-        // detail::recursivelyIntersect(*this, _other, isecs);
+        // @TODO: Take transformation matrix into account!!
+        detail::recursivelyIntersect(this, _other, _outIntersections);
 
-        // for (auto & c : children())
-        // {
-        //     auto tmp = brick::reinterpretEntity<Path>(c).intersectionsImpl(_other);
-        //     isecs.insert(isecs.end(), tmp.begin(), tmp.end());
-        // }
-
-        // return isecs;
+        for (Item * c : children())
+            static_cast<Path *>(c)->intersectionsImpl(_other, _outIntersections);
     }
 
     void Path::markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDirty)

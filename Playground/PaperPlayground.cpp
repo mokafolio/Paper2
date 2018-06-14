@@ -94,10 +94,13 @@ int main(int _argc, const char * _args[])
         p2->addChild(doc.createCircle(Vec2f(110, 97), 12));
         path->addChild(p2);
 
+        path->flattenRegular(15.0, true);
+        path->smooth(Smoothing::Asymmetric, true);
+
 
         Path * p3 = path->clone();
         p3->translate(300, 0);
-        p3->flatten(1.0);
+        // p3->flattenRegular(15.0, true);
 
         // if (path->contains(Vec2f(160, 100)))
         //     printf("ITS CONTAINED BABY!!!\n");

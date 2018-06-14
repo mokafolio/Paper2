@@ -327,7 +327,7 @@ namespace paper
         void closePath();
 
         //TODO: Add the different smoothing versions / algorithms from more recent paper.js versions
-        void smooth(Smoothing _type = Smoothing::Asymmetric);
+        void smooth(Smoothing _type = Smoothing::Asymmetric, bool _bSmoothChildren = false);
 
         void smooth(Int64 _from, Int64 _to, Smoothing _type = Smoothing::Asymmetric);
 
@@ -388,7 +388,7 @@ namespace paper
         //are subdivided only very little while curvy areas are subdivided a lot)
         void flatten(Float _angleTolerance = 0.25, bool _bFlattenChildren = false, Float _minDistance = 0.0, Size _maxRecursion = 32);
 
-        void flattenRegular(Float _maxDistance);
+        void flattenRegular(Float _maxDistance, bool _bFlattenChildren = false);
 
         struct OffsetAndSampleCount
         {

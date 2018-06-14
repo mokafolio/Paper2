@@ -390,9 +390,14 @@ namespace paper
         }
     }
 
-    void Path::smooth(Smoothing _type)
+    void Path::smooth(Smoothing _type, bool _bSmoothChildren)
     {
         smooth(0, m_segmentData.count() - 1, _type);
+        if(_bSmoothChildren)
+        {
+            for(Item * c : m_children)
+                static_cast<Path*>(c)->smooth(_type, true);
+        }
     }
 
     static Size smoothIndex(Int64 _idx, Int64 _length, bool _bClosed)
@@ -673,50 +678,42 @@ namespace paper
 
 
         SegmentDataArray segs(newSegmentPositions.count(), m_segmentData.allocator());
-        for(Size i = 0; i < newSegmentPositions.count(); ++i)
+        for (Size i = 0; i < newSegmentPositions.count(); ++i)
             segs[i] = SegmentData{Vec2f(0), newSegmentPositions[i], Vec2f(0)};
 
         swapSegments(segs, isClosed());
 
-        if(_bFlattenChildren)
+        if (_bFlattenChildren)
         {
-            for(Item * c : m_children)
-                static_cast<Path*>(c)->flatten(_angleTolerance, true, _minDistance, _maxRecursion);
+            for (Item * c : m_children)
+                static_cast<Path *>(c)->flatten(_angleTolerance, true, _minDistance, _maxRecursion);
         }
     }
 
-    void Path::flattenRegular(Float _maxDistance)
+    void Path::flattenRegular(Float _maxDistance, bool _bFlattenChildren)
     {
-        // stick::DynamicArray<Vec2f> tmp(m_segmentData.allocator());
-        // Float currentOffset = 0;
-        // Float len = length();
+        SegmentDataArray segs(m_segmentData.allocator());
+        segs.reserve(m_segmentData.count() * 2);
+        auto stepAndSampleCount = regularOffsetAndSampleCount(_maxDistance);
+        Float step = stepAndSampleCount.offset;
+        Float currentOffset = 0;
+        Float len = length();
+        for (Int32 i = 0; i < stepAndSampleCount.sampleCount; ++i)
+        {
+            segs.append({Vec2f(0), positionAt(std::min(currentOffset, len)), Vec2f(0)});
+            // Float delta = len - currentOffset;
+            // if (delta < step)
+            //     step = delta * 0.5;
+            currentOffset += step;
+        }
 
-        // auto stepAndSampleCount = regularOffsetAndSampleCount(_maxDistance);
-        // Float step = stepAndSampleCount.offset;
-        // for (Int32 i = 0; i < stepAndSampleCount.sampleCount; ++i)
-        // {
-        //     tmp.append(positionAt(std::min(currentOffset, len)));
-        //     Float delta = len - currentOffset;
-        //     if (delta < step)
-        //     {
-        //         step = delta * 0.5;
-        //     }
-        //     currentOffset += step;
-        // }
+        swapSegments(segs, isClosed());
 
-        // m_segmentData.clear();
-        // for (const Vec2f & p : tmp)
-        //     m_segmentData.append(Segment(this, p, Vec2f(0), Vec2f(0), m_segmentData.count()));
-
-        // //make sure to possibly remove duplicate closing segments again
-        // if (m_bIsClosed)
-        // {
-        //     m_bIsClosed = false;
-        //     closePath();
-        // }
-
-        // rebuildCurves();
-        // markGeometryDirty(true);
+        if (_bFlattenChildren)
+        {
+            for (Item * c : m_children)
+                static_cast<Path *>(c)->flattenRegular(_maxDistance, true);
+        }
     }
 
     Path::OffsetAndSampleCount Path::regularOffsetAndSampleCount(Float _maxDistance)

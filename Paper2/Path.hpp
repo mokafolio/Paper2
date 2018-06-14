@@ -386,7 +386,7 @@ namespace paper
         //which the segments try to keep at least, and spaces the segments non linearly
         //to match the original path as closesly as possible (i.e. linear parts of the path,
         //are subdivided only very little while curvy areas are subdivided a lot)
-        void flatten(Float _angleTolerance = 0.25, Float _minDistance = 0.0, Size _maxRecursion = 32);
+        void flatten(Float _angleTolerance = 0.25, bool _bFlattenChildren = false, Float _minDistance = 0.0, Size _maxRecursion = 32);
 
         void flattenRegular(Float _maxDistance);
 

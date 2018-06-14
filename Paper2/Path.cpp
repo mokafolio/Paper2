@@ -1,6 +1,7 @@
 #include <Paper2/Path.hpp>
 #include <Paper2/Document.hpp>
 #include <Paper2/Private/JoinAndCap.hpp>
+#include <Paper2/Private/PathFlattener.hpp>
 
 #include <Crunch/StringConversion.hpp>
 #include <Crunch/MatrixFunc.hpp>
@@ -573,10 +574,8 @@ namespace paper
 
     void Path::swapSegments(SegmentDataArray & _segments, bool _bClose)
     {
-        m_bIsClosed = _bClose;
         m_segmentData.swap(_segments);
-        m_curveData.resize(m_segmentData.count() - 1 + _bClose);
-        markGeometryDirty(true);
+        rebuildCurves();
     }
 
     void Path::insertSegments(Size _index, const SegmentData * _segments, Size _count)
@@ -666,30 +665,24 @@ namespace paper
             reverse();
     }
 
-    void Path::flatten(Float _angleTolerance, Float _minDistance, Size _maxRecursion)
+    void Path::flatten(Float _angleTolerance, bool _bFlattenChildren, Float _minDistance, Size _maxRecursion)
     {
-        // detail::PathFlattener::PositionArray newSegmentPositions;
-        // newSegmentPositions.reserve(1024);
-        // detail::PathFlattener::flatten(*this, newSegmentPositions, nullptr, _angleTolerance, _minDistance, _maxRecursion);
-        // auto & segs = segmentArray();
-        // segs.clear();
+        detail::PathFlattener::PositionArray newSegmentPositions(m_segmentData.allocator());
+        newSegmentPositions.reserve(1024);
+        detail::PathFlattener::flatten(this, newSegmentPositions, nullptr, _angleTolerance, _minDistance, _maxRecursion);
 
-        // for (const auto & pos : newSegmentPositions)
-        // {
-        //     segs.append(makeUnique<Segment>(document().allocator(), *this, pos, Vec2f(0.0f), Vec2f(0.0f), segs.count()));
-        // }
 
-        // //make sure to possibly remove duplicate closing segments again
-        // bool bClosed = isClosed();
-        // if (bClosed)
-        // {
-        //     set<comps::ClosedFlag>(false);
-        //     closePath();
-        // }
+        SegmentDataArray segs(newSegmentPositions.count(), m_segmentData.allocator());
+        for(Size i = 0; i < newSegmentPositions.count(); ++i)
+            segs[i] = SegmentData{Vec2f(0), newSegmentPositions[i], Vec2f(0)};
 
-        // rebuildCurves();
-        // markBoundsDirty(true);
-        // markGeometryDirty(true);
+        swapSegments(segs, isClosed());
+
+        if(_bFlattenChildren)
+        {
+            for(Item * c : m_children)
+                static_cast<Path*>(c)->flatten(_angleTolerance, true, _minDistance, _maxRecursion);
+        }
     }
 
     void Path::flattenRegular(Float _maxDistance)
@@ -1028,13 +1021,12 @@ namespace paper
     void Path::rebuildCurves()
     {
         m_curveData.clear();
-        for (Size i = 0; i < m_segmentData.count() - 1; ++i)
+        m_curveData.resize(m_segmentData.count() - 1, CurveData{});
+        if (isClosed())
         {
-            m_curveData.append(CurveData{});
+            m_bIsClosed = false;
+            closePath();
         }
-
-        if (isClosed() && m_segmentData.count() > 1)
-            m_curveData.append(CurveData{});
     }
 
     namespace detail
@@ -1302,11 +1294,11 @@ namespace paper
                 recursivelyIntersect(_self, static_cast<Path *>(c), _intersections);
         }
 
-        static inline void flattenPathChildren(const Path * _path, stick::DynamicArray<const Path*> & _outPaths)
+        static inline void flattenPathChildren(const Path * _path, stick::DynamicArray<const Path *> & _outPaths)
         {
             _outPaths.append(_path);
-            for(Item * c : _path->children())
-                flattenPathChildren(static_cast<Path*>(c), _outPaths);
+            for (Item * c : _path->children())
+                flattenPathChildren(static_cast<Path *>(c), _outPaths);
         }
     }
 
@@ -1339,11 +1331,11 @@ namespace paper
         else
         {
             //for self intersection we create a flat list of all nested paths to avoid double comparisons
-            stick::DynamicArray<const Path*> paths(m_children.allocator());
+            stick::DynamicArray<const Path *> paths(m_children.allocator());
             paths.reserve(16);
             detail::flattenPathChildren(this, paths);
-            for(Size i = 0; i < paths.count(); ++i)
-                for(Size j = i + 1; j < paths.count(); ++j)
+            for (Size i = 0; i < paths.count(); ++i)
+                for (Size j = i + 1; j < paths.count(); ++j)
                     detail::intersectPaths(paths[i], paths[j], _outIntersections);
         }
     }

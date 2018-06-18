@@ -21,6 +21,7 @@ Paper2/Group.hpp
 Paper2/Item.hpp
 Paper2/Paint.hpp
 Paper2/Path.hpp
+Paper2/RenderData.hpp
 Paper2/RenderInterface.hpp
 Paper2/Symbol.hpp
 Paper2/Private/BooleanOperations.hpp

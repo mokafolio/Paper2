@@ -16,9 +16,9 @@ namespace paper
     class STICK_API Document : public Item
     {
         friend class Item;
-        
+
     public:
-        
+
 
         Document(stick::Allocator & _alloc = stick::defaultAllocator());
 
@@ -45,13 +45,13 @@ namespace paper
 
         const Vec2f & size() const;
 
-
-        Document * clone() const final;
-
         stick::Allocator & allocator() const;
 
 
     private:
+
+        // documents can't be cloned for now
+        Document * clone() const final;
 
         bool canAddChild(Item * _e) const final;
 

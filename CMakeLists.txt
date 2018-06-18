@@ -26,6 +26,7 @@ Paper2/Symbol.hpp
 Paper2/Private/BooleanOperations.hpp
 Paper2/Private/ContainerView.hpp
 Paper2/Private/JoinAndCap.hpp
+Paper2/Private/PathFitter.hpp
 Paper2/Private/PathFlattener.hpp
 Paper2/Tarp/TarpRenderer.hpp
 )
@@ -41,6 +42,7 @@ Paper2/Symbol.cpp
 Paper2/Libs/GL/gl3w.c
 Paper2/Private/BooleanOperations.cpp
 Paper2/Private/JoinAndCap.cpp
+Paper2/Private/PathFitter.cpp
 Paper2/Private/PathFlattener.cpp
 Paper2/Tarp/TarpRenderer.cpp
 )

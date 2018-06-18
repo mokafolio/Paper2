@@ -1,6 +1,6 @@
-#include <Paper2/Path.hpp>
 #include <Paper2/Document.hpp>
 #include <Paper2/Private/JoinAndCap.hpp>
+#include <Paper2/Private/PathFitter.hpp>
 #include <Paper2/Private/PathFlattener.hpp>
 
 #include <Crunch/StringConversion.hpp>
@@ -557,8 +557,8 @@ namespace paper
 
     void Path::simplify(Float _tolerance)
     {
-        // detail::PathFitter fitter(*this, _tolerance, true);
-        // fitter.fit();
+        detail::PathFitter fitter(this, _tolerance, true);
+        fitter.fit();
     }
 
     void Path::addSegment(const Vec2f & _point, const Vec2f & _handleIn, const Vec2f & _handleOut)

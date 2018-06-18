@@ -100,6 +100,20 @@ int main(int _argc, const char * _args[])
 
         Path * p3 = path->clone();
         p3->translate(300, 0);
+
+        Path * p4 = doc.createPath();
+        p4->addPoint(Vec2f(100, 100));
+        p4->addPoint(Vec2f(200, 110));
+        p4->addPoint(Vec2f(130, 160));
+        p4->addPoint(Vec2f(140, 190));
+        p4->closePath();
+        p4->setStroke("red");
+
+        Path * p5 = p4->clone();
+        p5->simplify();
+
+        
+
         // p3->flattenRegular(15.0, true);
 
         // if (path->contains(Vec2f(160, 100)))

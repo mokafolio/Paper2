@@ -125,7 +125,8 @@ namespace paper
 
     Document * Document::clone() const
     {
-
+        STICK_ASSERT(false);
+        return nullptr;
     }
 
     bool Document::canAddChild(Item * _e) const

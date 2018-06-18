@@ -30,12 +30,10 @@ namespace paper
                 TarpRenderData(tpPath _path = tpPathInvalidHandle()) :
                     path(_path)
                 {
-                    printf("MAKE TARP DATA\n");
                 }
 
                 ~TarpRenderData()
                 {
-                    printf("DESTROY TARP DATA %lu\n", path.pointer);
                     tpPathDestroy(path);
                 }
 
@@ -53,12 +51,10 @@ namespace paper
                 TarpGradientData(tpGradient _grad = tpGradientInvalidHandle()) :
                     gradient(_grad)
                 {
-                    printf("MAKE TARP GRAD\n");
                 }
 
                 ~TarpGradientData()
                 {
-                    printf("DESTROY TARP GRAD %lu\n", gradient.pointer);
                     tpGradientDestroy(gradient);
                 }
 

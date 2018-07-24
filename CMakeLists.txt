@@ -7,7 +7,7 @@ option(AddTests "AddTests" ON)
 
 find_package(OpenGL REQUIRED)
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} /usr/local/include ${CMAKE_CURRENT_SOURCE_DIR}/Paper2/Libs)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} /usr/local/include /usr/local/include/pugixml-1.9 ${CMAKE_CURRENT_SOURCE_DIR}/Paper2/Libs)
 
 link_directories(/usr/local/lib ${CMAKE_INSTALL_PREFIX}/lib)
 
@@ -29,6 +29,8 @@ Paper2/Private/ContainerView.hpp
 Paper2/Private/JoinAndCap.hpp
 Paper2/Private/PathFitter.hpp
 Paper2/Private/PathFlattener.hpp
+Paper2/Private/Shape.hpp
+Paper2/SVG/SVGExport.hpp
 Paper2/Tarp/TarpRenderer.hpp
 )
 
@@ -45,6 +47,8 @@ Paper2/Private/BooleanOperations.cpp
 Paper2/Private/JoinAndCap.cpp
 Paper2/Private/PathFitter.cpp
 Paper2/Private/PathFlattener.cpp
+Paper2/Private/Shape.cpp
+Paper2/SVG/SVGExport.cpp
 Paper2/Tarp/TarpRenderer.cpp
 )
 

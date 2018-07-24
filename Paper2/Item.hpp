@@ -3,6 +3,7 @@
 
 #include <Paper2/Constants.hpp>
 #include <Paper2/Paint.hpp>
+#include <Stick/Result.hpp>
 
 namespace paper
 {
@@ -50,6 +51,8 @@ namespace paper
         void removeChildren();
 
         void reverseChildren();
+        
+        Item * findChild(const String & _name) const;
 
 
         const ItemPtrArray & children() const;
@@ -216,6 +219,22 @@ namespace paper
 
         bool hasFill() const;
 
+        bool hasScaleStroke() const;
+
+        bool hasMiterLimit() const;
+
+        bool hasWindingRule() const;
+
+        bool hasDashOffset() const;
+
+        bool hasDashArray() const;
+
+        bool hasStrokeWidth() const;
+
+        bool hasStrokeCap() const;
+
+        bool hasStrokeJoin() const;
+
         virtual Item * clone() const = 0;
 
         const Document * document() const;
@@ -230,6 +249,8 @@ namespace paper
 
         void setRenderData(RenderDataUniquePtr _ptr);
 
+
+        stick::TextResult exportSVG() const;
 
     protected:
 

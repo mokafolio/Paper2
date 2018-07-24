@@ -48,6 +48,9 @@ namespace paper
         stick::Allocator & allocator() const;
 
 
+        Error saveSVG(const stick::String & _uri) const;
+
+
     private:
 
         // documents can't be cloned for now

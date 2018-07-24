@@ -134,6 +134,11 @@ namespace paper
                 return m_container->count();
             }
 
+            ValueType operator [](Size _idx) const
+            {
+                return *Iter{m_begin + _idx};
+            }
+
         private:
 
             PathType * m_path;

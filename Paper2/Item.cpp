@@ -1,5 +1,6 @@
 #include <Paper2/Document.hpp>
 #include <Paper2/Symbol.hpp>
+#include <Paper2/SVG/SVGExport.hpp>
 #include <Crunch/MatrixFunc.hpp>
 
 #define PROPERTY_GETTER(name, def) \
@@ -68,6 +69,16 @@ namespace paper
             return true;
         }
         return false;
+    }
+
+    Item * Item::findChild(const String & _name) const
+    {
+        for (Item * child : m_children)
+        {
+            if (child->name() == _name)
+                return child;
+        }
+        return nullptr;
     }
 
     bool Item::insertAbove(const Item * _e)
@@ -461,11 +472,14 @@ namespace paper
 
     const Rect & Item::strokeBounds() const
     {
+        printf("A\n");
         if (!m_strokeBounds)
         {
+            printf("B\n");
             auto mb = computeBounds(nullptr, BoundsType::Stroke);
             m_strokeBounds = mb ? *mb : noBounds();
         }
+        printf("C\n");
         return *m_strokeBounds;
     }
 
@@ -504,41 +518,53 @@ namespace paper
     void Item::setStrokeJoin(StrokeJoin _join)
     {
         PROPERTY_SETTER(strokeJoin, _join);
+        markStrokeBoundsDirty(true);
     }
 
     void Item::setStrokeCap(StrokeCap _cap)
     {
         PROPERTY_SETTER(strokeCap, _cap);
+        markStrokeBoundsDirty(true);
     }
 
     void Item::setMiterLimit(Float _limit)
     {
         PROPERTY_SETTER(miterLimit, _limit);
+        markStrokeBoundsDirty(true);
     }
 
     void Item::setStrokeWidth(Float _width)
     {
         PROPERTY_SETTER(strokeWidth, _width);
+        markStrokeBoundsDirty(true);
     }
 
     void Item::setStroke(const ColorRGBA & _color)
     {
+        bool bps = hasStroke();
         PROPERTY_SETTER(stroke, _color);
+        if (!bps) markStrokeBoundsDirty(true);
     }
 
     void Item::setStroke(const String & _svgName)
     {
+        bool bps = hasStroke();
         PROPERTY_SETTER(stroke, crunch::svgColor<ColorRGBA>(_svgName));
+        if (!bps) markStrokeBoundsDirty(true);
     }
 
     void Item::setStroke(const LinearGradientPtr & _grad)
     {
+        bool bps = hasStroke();
         PROPERTY_SETTER(stroke, _grad);
+        if (!bps) markStrokeBoundsDirty(true);
     }
 
     void Item::setStroke(const RadialGradientPtr & _grad)
     {
+        bool bps = hasStroke();
         PROPERTY_SETTER(stroke, _grad);
+        if (!bps) markStrokeBoundsDirty(true);
     }
 
     void Item::setDashArray(const DashArray & _arr)
@@ -554,11 +580,13 @@ namespace paper
     void Item::setScaleStroke(bool _b)
     {
         PROPERTY_SETTER(scaleStroke, _b);
+        markStrokeBoundsDirty(true);
     }
 
     void Item::removeStroke()
     {
         PROPERTY_SETTER(stroke, NoPaint());
+        markStrokeBoundsDirty(true);
     }
 
     void Item::setFill(const ColorRGBA & _color)
@@ -652,6 +680,46 @@ namespace paper
         return !fill().is<NoPaint>();
     }
 
+    bool Item::hasScaleStroke() const
+    {
+        return (bool)m_scaleStroke;
+    }
+
+    bool Item::hasMiterLimit() const
+    {
+        return (bool)m_miterLimit;
+    }
+
+    bool Item::hasWindingRule() const
+    {
+        return (bool)m_windingRule;
+    }
+
+    bool Item::hasDashOffset() const
+    {
+        return (bool)m_dashOffset;
+    }
+
+    bool Item::hasDashArray() const
+    {
+        return (bool)m_dashArray;
+    }
+
+    bool Item::hasStrokeWidth() const
+    {
+        return (bool)m_strokeWidth;
+    }
+
+    bool Item::hasStrokeCap() const
+    {
+        return (bool)m_strokeCap;
+    }
+
+    bool Item::hasStrokeJoin() const
+    {
+        return (bool)m_strokeJoin;
+    }
+
     Document * Item::document()
     {
         return m_document;
@@ -711,8 +779,6 @@ namespace paper
     {
         markStrokeBoundsDirty(false);
         markFillBoundsDirty(false);
-        if (_bNotifyParent && m_parent)
-            m_parent->markBoundsDirty(true);
     }
 
     void Item::markStrokeBoundsDirty(bool _bNotifyParent)
@@ -725,6 +791,7 @@ namespace paper
     void Item::markFillBoundsDirty(bool _bNotifyParent)
     {
         m_fillBounds.reset();
+        m_handleBounds.reset();
         if (_bNotifyParent && m_parent)
             m_parent->markFillBoundsDirty(true);
     }
@@ -785,5 +852,13 @@ namespace paper
     void Item::setRenderData(RenderDataUniquePtr _ptr)
     {
         m_renderData = std::move(_ptr);
+    }
+
+    TextResult Item::exportSVG() const
+    {
+        String ret(m_document->allocator());
+        Error err = svg::exportItem(this, ret, true);
+        if(err) return err;
+        return ret;
     }
 }

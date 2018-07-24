@@ -144,4 +144,9 @@ namespace paper
         if (it != m_itemStorage.end())
             m_itemStorage.remove(it);
     }
+
+    Error Document::saveSVG(const String & _uri) const
+    {
+
+    }
 }

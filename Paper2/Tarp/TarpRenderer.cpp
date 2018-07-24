@@ -88,7 +88,7 @@ namespace paper
 
         TarpRenderer::TarpRenderer()
         {
-
+            
         }
 
         TarpRenderer::~TarpRenderer()

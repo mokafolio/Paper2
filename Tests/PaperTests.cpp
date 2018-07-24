@@ -279,6 +279,9 @@ const Suite spec[] =
         EXPECT(p2->segmentData()[1].position == Vec2f(200.0f, 30.0f));
         p2->setName("p2");
 
+        EXPECT(p->strokeBounds() == p2->strokeBounds());
+        EXPECT(p->bounds() == p2->bounds());
+
         Group * grp2 = grp->clone();
         EXPECT(grp2->name() == "grp");
         EXPECT(grp2->children().count() == 2);
@@ -289,6 +292,9 @@ const Suite spec[] =
         EXPECT(doc.children().count() == 2);
         EXPECT(doc.children()[0] == grp);
         EXPECT(doc.children()[1] == grp2);
+
+        EXPECT(grp2->strokeBounds() == grp->strokeBounds());
+        EXPECT(grp2->bounds() == grp->bounds());
     },
     // SUITE("SVG Export Tests")
     // {

@@ -42,7 +42,9 @@ namespace paper
         m_bVisible(true),
         m_fill(NoPaint()),
         m_stroke(NoPaint()),
-        m_name(_alloc)
+        m_name(_alloc),
+        m_fillPaintTransformDirty(false),
+        m_strokePaintTransformDirty(false)
     {
         if (_name)
             m_name.append(_name);
@@ -515,6 +517,20 @@ namespace paper
         return false;
     }
 
+    const Mat32f & Item::fillPaintTransform() const
+    {
+        static Mat32f s_proxy = Mat32f::identity();
+        if (m_fillPaintTransform) return *m_fillPaintTransform;
+        return s_proxy;
+    }
+
+    const Mat32f & Item::strokePaintTransform() const
+    {
+        static Mat32f s_proxy = Mat32f::identity();
+        if (m_strokePaintTransform) return *m_strokePaintTransform;
+        return s_proxy;
+    }
+
     void Item::setStrokeJoin(StrokeJoin _join)
     {
         PROPERTY_SETTER(strokeJoin, _join);
@@ -612,6 +628,30 @@ namespace paper
     void Item::removeFill()
     {
         PROPERTY_SETTER(fill, NoPaint());
+    }
+
+    void Item::setfillPaintTransform(const Mat32f & _transform)
+    {
+        m_fillPaintTransform = _transform;
+        m_fillPaintTransformDirty = true;
+    }
+
+    void Item::setstrokePaintTransform(const Mat32f & _transform)
+    {
+        m_strokePaintTransform = _transform;
+        m_strokePaintTransformDirty = true;
+    }
+
+    void Item::removefillPaintTransform()
+    {
+        m_fillPaintTransform.reset();
+        m_fillPaintTransformDirty = true;
+    }
+
+    void Item::removestrokePaintTransform()
+    {
+        m_strokePaintTransform.reset();
+        m_strokePaintTransformDirty = true;
     }
 
     void Item::setWindingRule(WindingRule _rule)
@@ -720,6 +760,16 @@ namespace paper
         return (bool)m_strokeJoin;
     }
 
+    bool Item::hasfillPaintTransform() const
+    {
+        return (bool)m_fillPaintTransform;
+    }
+
+    bool Item::hasStrokePaintTransform() const
+    {
+        return (bool)m_strokePaintTransform;
+    }
+
     Document * Item::document()
     {
         return m_document;
@@ -820,6 +870,12 @@ namespace paper
         _item->m_bVisible = m_bVisible;
         _item->m_transform = m_transform;
         _item->m_absoluteTransform = m_absoluteTransform;
+        _item->m_decomposedTransform = m_decomposedTransform;
+        _item->m_absoluteDecomposedTransform = m_absoluteDecomposedTransform;
+        _item->m_fillPaintTransform = m_fillPaintTransform;
+        _item->m_strokePaintTransform = m_strokePaintTransform;
+        _item->m_fillPaintTransformDirty = m_fillPaintTransformDirty;
+        _item->m_strokePaintTransformDirty = m_strokePaintTransformDirty;
         _item->m_pivot = m_pivot;
         _item->m_fill = m_fill;
         _item->m_stroke = m_stroke;
@@ -856,9 +912,20 @@ namespace paper
 
     TextResult Item::exportSVG() const
     {
-        String ret(m_document->allocator());
-        Error err = svg::exportItem(this, ret, true);
-        if(err) return err;
+        return svg::exportItem(this, m_document->allocator(), true);
+    }
+
+    bool Item::cleanDirtyfillPaintTransform()
+    {
+        bool ret = m_fillPaintTransformDirty;
+        m_fillPaintTransformDirty = false;
+        return ret;
+    }
+
+    bool Item::cleanDirtystrokePaintTransform()
+    {
+        bool ret = m_strokePaintTransformDirty;
+        m_strokePaintTransformDirty = false;
         return ret;
     }
 }

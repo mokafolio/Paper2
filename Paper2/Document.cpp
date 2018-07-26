@@ -25,19 +25,15 @@ namespace paper
     Path * Document::createEllipse(const Vec2f & _center, const Vec2f & _size, const char * _name)
     {
         static Float s_kappa = detail::PaperConstants::kappa();
-        // static Vec2f s_unitSegments[12] = { Vec2f(1, 0), Vec2f(0, -s_kappa), Vec2f(0, s_kappa),
-        //                                     Vec2f(0, 1), Vec2f(s_kappa, 0), Vec2f(-s_kappa, 0),
-        //                                     Vec2f(-1, 0), Vec2f(0, s_kappa), Vec2f(0, -s_kappa),
-        //                                     Vec2f(0, -1), Vec2f(-s_kappa, 0), Vec2f(s_kappa, 0)
-        //                                   };
 
-        //Original paper values, don't conform with SVG though :(
+        //NOTE: Last time I checked original paper.js build a circle differently.
+        //we are building it this way to be identical with SVG.
         static SegmentData s_unitSegments[4] =
         {
-            {Vec2f(0, s_kappa), Vec2f(-1, 0), Vec2f(0, -s_kappa)},
-            {Vec2f(-s_kappa, 0), Vec2f(0, -1), Vec2f(s_kappa, 0)},
             {Vec2f(0, -s_kappa), Vec2f(1, 0), Vec2f(0, s_kappa)},
-            {Vec2f(s_kappa, 0), Vec2f(0, 1), Vec2f(-s_kappa, 0)}
+            {Vec2f(s_kappa, 0), Vec2f(0, 1), Vec2f(-s_kappa, 0)},
+            {Vec2f(0, s_kappa), Vec2f(-1, 0), Vec2f(0, -s_kappa)},
+            {Vec2f(-s_kappa, 0), Vec2f(0, -1), Vec2f(s_kappa, 0)}
         };
 
         Path * ret = createPath(_name);

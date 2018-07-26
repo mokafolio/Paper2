@@ -157,6 +157,10 @@ namespace paper
         // checks if there is any transform in the document hierarchy that affects this item
         bool isTransformed() const;
 
+        const Mat32f & fillPaintTransform() const;
+
+        const Mat32f & strokePaintTransform() const;
+
 
         void setStrokeJoin(StrokeJoin _join);
 
@@ -191,6 +195,14 @@ namespace paper
         void setFill(const RadialGradientPtr & _grad);
 
         void removeFill();
+
+        void setfillPaintTransform(const Mat32f & _transform);
+
+        void setstrokePaintTransform(const Mat32f & _transform);
+
+        void removefillPaintTransform();
+
+        void removestrokePaintTransform();
 
 
         void setWindingRule(WindingRule _rule);
@@ -235,6 +247,10 @@ namespace paper
 
         bool hasStrokeJoin() const;
 
+        bool hasfillPaintTransform() const;
+
+        bool hasStrokePaintTransform() const;
+
         virtual Item * clone() const = 0;
 
         const Document * document() const;
@@ -243,14 +259,18 @@ namespace paper
 
         ItemType itemType() const;
 
+        stick::TextResult exportSVG() const;
+
 
         //mainly for internal/rendering use
         RenderData * renderData();
 
         void setRenderData(RenderDataUniquePtr _ptr);
 
+        bool cleanDirtyfillPaintTransform();
 
-        stick::TextResult exportSVG() const;
+        bool cleanDirtystrokePaintTransform();
+
 
     protected:
 
@@ -329,6 +349,10 @@ namespace paper
         mutable stick::Maybe<Decomposed> m_absoluteDecomposedTransform;
         stick::Maybe<Vec2f> m_pivot;
         stick::DynamicArray<Symbol *> m_symbols;
+        stick::Maybe<Mat32f> m_fillPaintTransform;
+        stick::Maybe<Mat32f> m_strokePaintTransform;
+        mutable bool m_fillPaintTransformDirty;
+        mutable bool m_strokePaintTransformDirty;
 
         // style
         stick::Maybe<Paint> m_fill;

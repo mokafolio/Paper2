@@ -2,6 +2,7 @@
 #define PAPER_SVG_SVGEXPORT_HPP
 
 #include <Paper2/BasicTypes.hpp>
+#include <Stick/Result.hpp>
 
 namespace paper
 {
@@ -9,7 +10,7 @@ namespace paper
 
     namespace svg
     {
-        STICK_LOCAL Error exportItem(const Item * _item, String & _outString, bool _bMatchShapes);
+        STICK_LOCAL stick::TextResult exportItem(const Item * _item, stick::Allocator & _alloc, bool _bMatchShapes);
     }
 }
 

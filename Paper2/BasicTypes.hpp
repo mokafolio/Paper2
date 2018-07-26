@@ -6,6 +6,7 @@
 #include <Stick/Error.hpp>
 #include <Crunch/Vector2.hpp>
 #include <Crunch/Line.hpp>
+#include <Crunch/LineSegment.hpp>
 #include <Crunch/Matrix32.hpp>
 #include <Crunch/Matrix4.hpp>
 #include <Crunch/Rectangle.hpp>
@@ -28,6 +29,7 @@ namespace paper
     using Rect = crunch::Rectangle<Float>;
     using Bezier = crunch::BezierCubic<Vec2f>;
     using Line = crunch::Line<Vec2f>;
+    using LineSegment = crunch::LineSegment<Vec2f>;
     using ColorRGB = crunch::ColorRGB;
     using ColorRGBA = crunch::ColorRGBA;
     using ColorHSB = crunch::ColorHSB;

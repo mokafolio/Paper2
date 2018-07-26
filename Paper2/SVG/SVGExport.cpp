@@ -24,16 +24,33 @@ namespace paper
 
         struct ExportSession
         {
+            Allocator  * allocator;
             pugi::xml_node rootNode;
             pugi::xml_node defsNode;
             UsedGradientArray gradients;
             Size clipID;
         };
 
+        struct StringWriter: pugi::xml_writer
+        {
+            StringWriter(Allocator & _alloc) :
+                result(_alloc)
+            {
+
+            }
+
+            void write(const void * data, size_t size) final
+            {
+                result.append(static_cast<const char *>(data), size);
+            }
+
+            String result;
+        };
+
         static pugi::xml_node ensureDefsNode(ExportSession & _session)
         {
             if (!_session.defsNode)
-                _session.defsNode = _session.rootNode.append_child("defs");
+                _session.defsNode = _session.rootNode.prepend_child("defs");
             return _session.defsNode;
         }
 
@@ -55,6 +72,7 @@ namespace paper
             {
                 auto & tm = _item->transform();
                 _node.append_attribute("transform") = String::formatted("matrix(%f, %f, %f, %f, %f, %f)",
+                                                      tm.element(0, 0),
                                                       tm.element(0, 1),
                                                       tm.element(1, 0),
                                                       tm.element(1, 1),
@@ -65,6 +83,7 @@ namespace paper
 
         static void addCurveToPathData(ConstCurve _curve, String & _currentData, bool _bApplyTransform)
         {
+            printf("ADDING CURVE\n");
             if (_curve.isLinear())
             {
                 Vec2f stp = _curve.segmentTwo().position();
@@ -80,7 +99,7 @@ namespace paper
 
                 //relative line to
                 Vec2f tmp = stp - sop;
-                _currentData.append(AppendVariadicFlag(), " l", tmp.x, ",", tmp.y);
+                _currentData.appendFormatted(" l%.4f,%.4f", tmp.x, tmp.y);
             }
             else
             {
@@ -103,28 +122,40 @@ namespace paper
                 Vec2f a = ho - sop;
                 Vec2f b = ht - sop;
                 Vec2f c = stp - sop;
-                _currentData.append(AppendVariadicFlag(), " c", a.x, ",", a.y, " ", b.x, ",", b.y, " ", c.x, ",", c.y);
+                _currentData.appendFormatted(" c%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", a.x, a.y, b.x, b.y, c.x, c.y);
             }
         }
 
         static void addPathToPathData(const Path * _path, String & _currentData, bool _bIsCompoundPath)
         {
-            auto curves = _path->curves();
+            ConstCurveView curves = _path->curves();
+            printf("A %lu\n", curves.count());
+            for (ConstCurve c : curves)
+                printf("CURVE BRO %f %f\n", c.segmentOne().position().x, c.segmentOne().position().y);
+
+            for (Size i = 0; i < curves.count(); ++i)
+                printf("CURVE BRO2 %f %f\n", curves[i].segmentOne().position().x, curves[i].segmentOne().position().y);
+
             if (curves.count())
             {
+                printf("B\n");
                 //absolute move to
                 Vec2f to = curves[0].segmentOne().position();
+                printf("B2\n");
                 bool bApplyTransform = false;
                 //for compound paths we need to transform the segment vertices directly
                 if (_path->hasTransform() && _bIsCompoundPath)
                 {
+                    printf("C\n");
                     bApplyTransform = true;
                     to = _path->transform() * to;
                 }
-                _currentData.append(AppendVariadicFlag(), "M", to.x, ",", to.y);
+                _currentData.appendFormatted("M%.4f,%.4f", to.x, to.y);
 
                 for (ConstCurve c : curves)
                     addCurveToPathData(c, _currentData, bApplyTransform);
+
+                printf("D\n");
             }
         }
 
@@ -139,9 +170,11 @@ namespace paper
             }
         }
 
-        template<class Getter>
+        template<class Getter, class Getter2, class Getter3>
         static void addPaintToStyle(
             Getter _getter,
+            Getter2 _hasPaintTransformGetter,
+            Getter3 _paintTransformGetter,
             const char * _attributeName,
             const Item * _item,
             pugi::xml_node _node,
@@ -162,11 +195,22 @@ namespace paper
                                             static_cast<const BaseGradient *>((_item->*_getter)().template get<LinearGradientPtr>().get()) :
                                             static_cast<const BaseGradient *>((_item->*_getter)().template get<RadialGradientPtr>().get());
 
-                auto it = stick::findIf(_session.gradients.begin(), _session.gradients.end(), [grad](const UsedGradient & _grad)
+                // auto it = stick::findIf(_session.gradients.begin(), _session.gradients.end(), [grad](const UsedGradient & _grad)
+                // {
+                //     return _grad.gradient == grad;
+                // });
+
+                Size matches = 0;
+                UsedGradient * match = nullptr;
+                for (auto & g : _session.gradients)
                 {
-                    return _grad.gradient == grad;
-                });
-                if (it == _session.gradients.end())
+                    if (g.gradient == grad)
+                    {
+                        match = &g;
+                        ++matches;
+                    }
+                }
+                if (matches == 0 || matches > 1 || (_item->*_hasPaintTransformGetter)())
                 {
                     auto defsNode = ensureDefsNode(_session);
 
@@ -176,31 +220,44 @@ namespace paper
                     else
                         gradNode = defsNode.append_child("radialGradient");
 
-                    UsedGradient ug = {grad, String::formatted("grad%lu", _session.gradients.count())};
+                    bool bTransform = (_item->*_hasPaintTransformGetter)();
+                    Vec2f origin = bTransform ? (_item->*_paintTransformGetter)() * grad->origin() : grad->origin();
+                    Vec2f dest = bTransform ? (_item->*_paintTransformGetter)() * grad->destination() : grad->destination();
+
+                    gradNode.append_attribute("x1") = origin.x;
+                    gradNode.append_attribute("y1") = origin.y;
+                    gradNode.append_attribute("x2") = dest.x;
+                    gradNode.append_attribute("y2") = dest.y;
+                    gradNode.append_attribute("gradientUnits") = "userSpaceOnUse";
+
+                    UsedGradient ug = {grad, String::formatted("grad-%lu", _session.gradients.count())};
                     gradNode.append_attribute("id") = ug.id.cString();
 
                     for (const auto & stop : grad->stops())
                     {
                         pugi::xml_node sn = gradNode.append_child("stop");
                         sn.append_attribute("offset") = String::formatted("%i%", (int)(stop.offset * 100.0f)).cString();
-                        sn.append_attribute("color") = colorToHexCSSString(stop.color).cString();
+                        sn.append_attribute("stop-color") = colorToHexCSSString(stop.color).cString();
                         if (stop.color.a != 1)
                             sn.append_attribute("stop-opacity") = stop.color.a;
                     }
 
-                    _node.append_attribute(_attributeName) = ug.id.cString();
+                    _node.append_attribute(_attributeName) = String::concat("url(#", ug.id, ")").cString();
+
                     _session.gradients.append(ug);
                 }
-                else
+                else if (matches == 1)
                 {
-                    _node.append_attribute(_attributeName) = (*it).id.cString();
+                    STICK_ASSERT(match);
+                    _node.append_attribute(_attributeName) = String::concat("url(#", match->id.cString(), ")").cString();
                 }
             }
         }
 
         static void addStyle(const Item * _item,
                              pugi::xml_node _node,
-                             ExportSession & _session)
+                             ExportSession & _session,
+                             bool _bIsClipPath = false)
         {
             //We dont export the name for now: items with the same name will break valid SVG as the name has to be unique in that case.
             //Additionally valid svg names can't be arbitrary strings. I don't think there is a good way of dealing with this
@@ -209,6 +266,18 @@ namespace paper
             {
                 _node.addChild("id", _item.name(), ValueHint::XMLAttribute);
             }*/
+
+            if (_bIsClipPath || _item->hasFill() || _item->children().count())
+            {
+                if (_item->windingRule() == WindingRule::NonZero)
+                    _node.append_attribute("fill-rule") = "nonzero";
+                else
+                    _node.append_attribute("fill-rule") = "evenodd";
+            }
+
+            if (_bIsClipPath)
+                return;
+
             if (!_item->isVisible())
                 _node.append_attribute("visibility") = "hidden";
 
@@ -216,75 +285,73 @@ namespace paper
             if (!_item->hasFill())
                 _node.append_attribute("fill") = "none";
             else
-                addPaintToStyle(&Item::fill, "fill", _item, _node, _session);
-
-            if (_item->windingRule() == WindingRule::NonZero)
-                _node.append_attribute("fill-rule") = "nonzero";
-            else
-                _node.append_attribute("fill-rule") = "evenodd";
+                addPaintToStyle(&Item::fill, &Item::hasfillPaintTransform, &Item::fillPaintTransform, "fill", _item, _node, _session);
 
             //stroke related things
             if (!_item->hasStroke())
                 _node.append_attribute("stroke") = "none";
             else
-                addPaintToStyle(&Item::stroke, "stroke", _item, _node, _session);
+                addPaintToStyle(&Item::stroke, &Item::hasStrokePaintTransform, &Item::strokePaintTransform, "stroke", _item, _node, _session);
 
-            if (_item->hasStrokeWidth())
-                _node.append_attribute("stroke-width") = _item->strokeWidth();
-
-            if (_item->hasStrokeCap())
+            if (_item->hasStroke() || _item->children().count())
             {
-                switch (_item->strokeCap())
+                if (_item->hasStrokeWidth())
+                    _node.append_attribute("stroke-width") = _item->strokeWidth();
+
+                if (_item->hasStrokeCap())
                 {
-                    case StrokeCap::Butt:
-                        _node.append_attribute("stroke-linecap") = "butt";
-                        break;
-                    case StrokeCap::Square:
-                        _node.append_attribute("stroke-linecap") = "square";
-                        break;
-                    case StrokeCap::Round:
-                        _node.append_attribute("stroke-linecap") = "round";
-                        break;
+                    switch (_item->strokeCap())
+                    {
+                        case StrokeCap::Butt:
+                            _node.append_attribute("stroke-linecap") = "butt";
+                            break;
+                        case StrokeCap::Square:
+                            _node.append_attribute("stroke-linecap") = "square";
+                            break;
+                        case StrokeCap::Round:
+                            _node.append_attribute("stroke-linecap") = "round";
+                            break;
+                    }
                 }
-            }
-            if (_item->hasStrokeJoin())
-            {
-                switch (_item->strokeJoin())
+                if (_item->hasStrokeJoin())
                 {
-                    case StrokeJoin::Bevel:
-                        _node.append_attribute("stroke-linejoin") = "bevel";
-                        break;
-                    case StrokeJoin::Miter:
-                        _node.append_attribute("stroke-linejoin") = "miter";
-                        break;
-                    case StrokeJoin::Round:
-                        _node.append_attribute("stroke-linejoin") = "round";
-                        break;
+                    switch (_item->strokeJoin())
+                    {
+                        case StrokeJoin::Bevel:
+                            _node.append_attribute("stroke-linejoin") = "bevel";
+                            break;
+                        case StrokeJoin::Miter:
+                            _node.append_attribute("stroke-linejoin") = "miter";
+                            break;
+                        case StrokeJoin::Round:
+                            _node.append_attribute("stroke-linejoin") = "round";
+                            break;
+                    }
                 }
-            }
 
-            if (_item->hasMiterLimit())
-                _node.append_attribute("stroke-miterlimit") = _item->miterLimit();
+                if (_item->hasMiterLimit())
+                    _node.append_attribute("stroke-miterlimit") = _item->miterLimit();
 
-            if (_item->hasDashArray() && _item->dashArray().count())
-            {
-                String dashString;
-                auto it = _item->dashArray().begin();
-                for (; it != _item->dashArray().end(); ++it)
+                if (_item->hasDashArray() && _item->dashArray().count())
                 {
-                    if (it != _item->dashArray().begin())
-                        dashString.append(AppendVariadicFlag(), ", ", toString(*it));
-                    else
-                        dashString.append(toString(*it));
+                    String dashString;
+                    auto it = _item->dashArray().begin();
+                    for (; it != _item->dashArray().end(); ++it)
+                    {
+                        if (it != _item->dashArray().begin())
+                            dashString.appendFormatted(", %f", *it);
+                        else
+                            dashString.appendFormatted("%f", *it);
+                    }
+                    _node.append_attribute("stroke-dasharray") = dashString.cString();
                 }
-                _node.append_attribute("stroke-dasharray") = dashString.cString();
+
+                if (_item->hasDashOffset())
+                    _node.append_attribute("stroke-dashoffset") = _item->dashOffset();
+
+                if (_item->hasScaleStroke() && !_item->scaleStroke())
+                    _node.append_attribute("vector-effect") = "non-scaling-stroke";
             }
-
-            if (_item->hasDashOffset())
-                _node.append_attribute("stroke-dashoffset") = _item->dashOffset();
-
-            if (_item->hasScaleStroke() && !_item->scaleStroke())
-                _node.append_attribute("vector-effect") = "non-scaling-stroke";
         }
 
         static pugi::xml_node addItemToXml(const Item * _item,
@@ -302,7 +369,7 @@ namespace paper
             svg.append_attribute("xmlns:xlink") = "http://www.w3.org/1999/xlink";
             svg.append_attribute("width") = _doc->width();
             svg.append_attribute("height") = _doc->height();
-            _session.defsNode = svg.append_child("defs");
+            // _session.defsNode = svg.append_child("defs");
             _session.rootNode = svg;
             Size clipID = 0;
 
@@ -330,9 +397,9 @@ namespace paper
                     {
                         auto & segData = _path->segmentData()[i];
                         if (i != _path->segmentCount() - 1)
-                            points.append(AppendVariadicFlag(), segData.position.x, ",", segData.position.y, " ");
+                            points.appendFormatted("%f,%f ", segData.position.x, segData.position.y);
                         else
-                            points.append(AppendVariadicFlag(), segData.position.x, ",", segData.position.y);
+                            points.appendFormatted("%f,%f", segData.position.x, segData.position.y);
                     }
 
                     pugi::xml_node node = _parent.append_child(_path->isClosed() ? "polygon" : "polyline");
@@ -378,11 +445,13 @@ namespace paper
             {
                 if (_bMatchShapes)
                 {
+                    printf("MATCHIN SHAPES\n");
                     //this does shape matching
                     detail::Shape shape(_path);
                     detail::ShapeType shapeType = shape.shapeType();
                     if (shapeType == detail::ShapeType::Circle)
                     {
+                        printf("CIRCLE\n");
                         ret = _node.append_child("circle");
                         ret.append_attribute("cx") = shape.circle().position.x;
                         ret.append_attribute("cy") = shape.circle().position.y;
@@ -399,6 +468,7 @@ namespace paper
                     else if (shapeType == detail::ShapeType::Rectangle)
                     {
                         ret = _node.append_child("rect");
+                        printf("RECT POS %f %f\n", shape.rectangle().position.x, shape.rectangle().position.y);
                         ret.append_attribute("x") = shape.rectangle().position.x - shape.rectangle().size.x * 0.5f;
                         ret.append_attribute("y") = shape.rectangle().position.y - shape.rectangle().size.y * 0.5f;
                         ret.append_attribute("width") = shape.rectangle().size.x;
@@ -444,21 +514,11 @@ namespace paper
                 pugi::xml_node clip = defsNode.append_child("clipPath");
                 clip.append_attribute("id") = idString.cString();
                 pugi::xml_node cp = addPath(static_cast<const Path *>(*it), clip, _bMatchShapes, true);
-                addStyle(*it, cp, _session); //only for winding rule
+                addStyle(*it, cp, _session, true); //only for winding rule
 
                 grp.append_attribute("clip-path") = String::concat("url(#", idString, ")").cString();
                 ++it;
                 ++_session.clipID;
-
-                // Shrub clipMaskNode;
-                // clipMaskNode.setName("clipPath");
-                // String idstr = String::concat("clip-", toString((UInt64)m_clipMaskID));
-                // clipMaskNode.set("id", idstr, ValueHint::XMLAttribute);
-                // exportItem(*it, clipMaskNode, true);
-                // addToDefsNode(clipMaskNode);
-                // groupNode.set("clip-path", String::concat("url(#", idstr, ")"), ValueHint::XMLAttribute);
-                // m_clipMaskID++;
-                // it++;
             }
             for (; it != _group->children().end(); ++it)
                 addItemToXml(*it, grp, _session, _bMatchShapes);
@@ -497,17 +557,19 @@ namespace paper
                     break;
             }
 
-            if (node)
+            if (node && _item->itemType() != ItemType::Document)
                 addStyle(_item, node, _session);
             return node;
         }
 
-        Error exportItem(const Item * _item, String & _outString, bool _bMatchShapes)
+        TextResult exportItem(const Item * _item, Allocator & _alloc, bool _bMatchShapes)
         {
             pugi::xml_document xml;
-            ExportSession session{xml, pugi::xml_node(nullptr), UsedGradientArray(_outString.allocator()), 0};
+            StringWriter writer(_alloc);
+            ExportSession session{&_alloc, xml, pugi::xml_node(nullptr), UsedGradientArray(_alloc), 0};
             addItemToXml(_item, xml, session, _bMatchShapes);
-            return Error();
+            xml.print(writer);
+            return writer.result;
         }
     }
 }

@@ -969,8 +969,8 @@ namespace paper
     {
         if (crunch::isOrthogonal(handleOne(), handleTwo(), detail::PaperConstants::tolerance()))
         {
-            Line aLine(positionOne(), handleOneAbsolute());
-            Line bLine(positionTwo(), handleTwoAbsolute());
+            Line aLine = Line::fromPoints(positionOne(), handleOneAbsolute());
+            Line bLine = Line::fromPoints(positionTwo(), handleTwoAbsolute());
 
             auto result = crunch::intersect(aLine, bLine);
             if (result)
@@ -983,7 +983,9 @@ namespace paper
                                     0.0f, epsilon) &&
                         crunch::isClose(crunch::length(handleTwo()) / crunch::length(corner - positionTwo()) - kappa,
                                         0.0f, epsilon))
+                {
                     return true;
+                }
             }
         }
         return false;

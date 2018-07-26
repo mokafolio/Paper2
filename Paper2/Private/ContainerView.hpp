@@ -136,7 +136,8 @@ namespace paper
 
             ValueType operator [](Size _idx) const
             {
-                return *Iter{m_begin + _idx};
+                STICK_ASSERT(m_path && m_container);
+                return *(Iter{m_begin + _idx, this});
             }
 
         private:

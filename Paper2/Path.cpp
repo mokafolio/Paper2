@@ -1364,7 +1364,7 @@ namespace paper
             static_cast<Path *>(_e)->setClockwise(!isClockwise());
     }
 
-    static Mat32f strokeTransform(const Mat32f & _transform, Float _strokeWidth, bool _bIsScalingStroke)
+    static Mat32f strokeTransformHelper(const Mat32f & _transform, Float _strokeWidth, bool _bIsScalingStroke)
     {
         Float hsw = _strokeWidth * 0.5;
         Mat32f tmp;
@@ -1493,7 +1493,7 @@ namespace paper
         bool bIsScalingStroke = scaleStroke();
         //@TODO: only do the stroke transform / padding work if there is a matrix
         _transform = _transform ? _transform : isTransformed() ? &absoluteTransform() : nullptr;
-        Mat32f smat = strokeTransform(_transform ? *_transform : absoluteTransform(), sw, bIsScalingStroke);
+        Mat32f smat = strokeTransformHelper(_transform ? *_transform : absoluteTransform(), sw, bIsScalingStroke);
         Vec2f sp = strokePadding(strokeRad, bIsScalingStroke ? _transform ? *_transform : absoluteTransform() : Mat32f::identity());
 
         //@TODO: use proper 2D padding for non uniformly transformed strokes?

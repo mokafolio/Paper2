@@ -17,12 +17,14 @@ namespace paper
         {
             ConstCurveView curves = _path->curves();
             ConstSegmentView segments = _path->segments();
+            printf("CC %lu\n", curves.count());
             if (curves.count() == 4 &&
                     curves[0].isArc() &&
                     curves[1].isArc() &&
                     curves[2].isArc() &&
                     curves[3].isArc())
             {
+                printf("WE GOT DEM ARCS\n");
                 if (crunch::isClose(crunch::length(segments[0].position() - segments[2].position()) -
                                     crunch::length(segments[1].position() - segments[3].position()), (Float)0, PaperConstants::epsilon()))
                 {
@@ -58,17 +60,21 @@ namespace paper
             {
                 m_type = ShapeType::Rectangle;
                 // m_data.circle.position = _path.localBounds().center();
-                m_data.rectangle.position = Vec2f(segments[0].position().x + (segments[1].position().x - segments[0].position().x) * 0.5,
-                                                  segments[1].position().y + (segments[2].position().y - segments[1].position().y) * 0.5);
+                Float w = segments[0].position().x - segments[3].position().x;
+                Float h = segments[2].position().y - segments[3].position().y;
 
-                Float w = crunch::distance(segments[0].position(),
-                                           segments[1].position());
-                Float h = crunch::distance(segments[1].position(),
-                                           segments[2].position());
-                if (!crunch::isClose(segments[0].position().y, segments[1].position().y))
-                {
-                    std::swap(w, h);
-                }
+                printf("FUCKING W %f H %f\n", w, h);
+                m_data.rectangle.position = Vec2f(segments[3].position().x + w * 0.5,
+                                                  segments[3].position().y + h * 0.5);
+
+                // Float w = crunch::distance(segments[3].position(),
+                //                            segments[1].position());
+                // Float h = crunch::distance(segments[3].position(),
+                //                            segments[2].position());
+                // if (!crunch::isClose(segments[0].position().y, segments[1].position().y))
+                // {
+                //     std::swap(w, h);
+                // }
                 m_data.rectangle.size = Vec2f(w, h);
                 m_data.rectangle.cornerRadius = Vec2f(0);
             }

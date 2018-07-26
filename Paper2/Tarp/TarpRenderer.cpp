@@ -88,7 +88,7 @@ namespace paper
 
         TarpRenderer::TarpRenderer()
         {
-            
+
         }
 
         TarpRenderer::~TarpRenderer()
@@ -229,6 +229,16 @@ namespace paper
                 for (Size i = tpPathContourCount(_tarpPath) - 1; i >= contourIndex; --i)
                     tpPathRemoveContour(_tarpPath, i);
             }
+
+            //potentially update the stroke/fill transforms
+            if (_path->hasfillPaintTransform() && _path->cleanDirtyfillPaintTransform())
+            {
+                printf("SETTING FILL TRANSFORM\n");
+                tpPathSetFillPaintTransform(_tarpPath, (tpTransform *)&_path->fillPaintTransform());
+            }
+
+            if (_path->hasStrokePaintTransform() && _path->cleanDirtystrokePaintTransform())
+                tpPathSetStrokePaintTransform(_tarpPath, (tpTransform *)&_path->strokePaintTransform());
         }
 
         static detail::TarpGradientData & updateTarpGradient(BaseGradient & _grad)

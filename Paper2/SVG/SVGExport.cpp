@@ -14,6 +14,9 @@ namespace paper
     {
         using namespace stick;
 
+        //@TODO: Make sure all string allocations use the session allocator.
+        //@TODO: Add some sort of style stack that also takes svg defaults into account to avoid setting redundant style information on svg nodes
+
         struct UsedGradient
         {
             const BaseGradient * gradient;
@@ -83,7 +86,6 @@ namespace paper
 
         static void addCurveToPathData(ConstCurve _curve, String & _currentData, bool _bApplyTransform)
         {
-            printf("ADDING CURVE\n");
             if (_curve.isLinear())
             {
                 Vec2f stp = _curve.segmentTwo().position();
@@ -129,24 +131,14 @@ namespace paper
         static void addPathToPathData(const Path * _path, String & _currentData, bool _bIsCompoundPath)
         {
             ConstCurveView curves = _path->curves();
-            printf("A %lu\n", curves.count());
-            for (ConstCurve c : curves)
-                printf("CURVE BRO %f %f\n", c.segmentOne().position().x, c.segmentOne().position().y);
-
-            for (Size i = 0; i < curves.count(); ++i)
-                printf("CURVE BRO2 %f %f\n", curves[i].segmentOne().position().x, curves[i].segmentOne().position().y);
-
             if (curves.count())
             {
-                printf("B\n");
                 //absolute move to
                 Vec2f to = curves[0].segmentOne().position();
-                printf("B2\n");
                 bool bApplyTransform = false;
                 //for compound paths we need to transform the segment vertices directly
                 if (_path->hasTransform() && _bIsCompoundPath)
                 {
-                    printf("C\n");
                     bApplyTransform = true;
                     to = _path->transform() * to;
                 }
@@ -154,8 +146,6 @@ namespace paper
 
                 for (ConstCurve c : curves)
                     addCurveToPathData(c, _currentData, bApplyTransform);
-
-                printf("D\n");
             }
         }
 
@@ -215,19 +205,42 @@ namespace paper
                     auto defsNode = ensureDefsNode(_session);
 
                     pugi::xml_node gradNode(nullptr);
-                    if ((_item->*_getter)().template is<LinearGradientPtr>())
-                        gradNode = defsNode.append_child("linearGradient");
-                    else
-                        gradNode = defsNode.append_child("radialGradient");
 
                     bool bTransform = (_item->*_hasPaintTransformGetter)();
                     Vec2f origin = bTransform ? (_item->*_paintTransformGetter)() * grad->origin() : grad->origin();
                     Vec2f dest = bTransform ? (_item->*_paintTransformGetter)() * grad->destination() : grad->destination();
 
-                    gradNode.append_attribute("x1") = origin.x;
-                    gradNode.append_attribute("y1") = origin.y;
-                    gradNode.append_attribute("x2") = dest.x;
-                    gradNode.append_attribute("y2") = dest.y;
+                    if ((_item->*_getter)().template is<LinearGradientPtr>())
+                    {
+                        gradNode = defsNode.append_child("linearGradient");
+                        gradNode.append_attribute("x1") = origin.x;
+                        gradNode.append_attribute("y1") = origin.y;
+                        gradNode.append_attribute("x2") = dest.x;
+                        gradNode.append_attribute("y2") = dest.y;
+                    }
+                    else
+                    {
+                        const RadialGradient * rgrad = static_cast<const RadialGradient *>(grad);
+                        Float32 rad = crunch::distance(origin, dest);
+                        gradNode = defsNode.append_child("radialGradient");
+                        gradNode.append_attribute("cx") = origin.x;
+                        gradNode.append_attribute("cy") = origin.y;
+                        gradNode.append_attribute("r") = rad;
+                        if (const auto & mfo = rgrad->focalPointOffset())
+                        {
+                            gradNode.append_attribute("fx") = origin.x + (*mfo).x;
+                            gradNode.append_attribute("fy") = origin.y + (*mfo).y;
+                        }
+
+                        //@TODO: SVG radial gradients are somewhat limited. In order to properly support elliptical
+                        //gradients when the ratio is no 1.0, we need to most likely create a gradient transform :/
+
+                        // if (const auto & mr = rgrad->ratio())
+                        // {
+                        //     gradNode.append_attribute("fr") = rad * (*mr); 
+                        // }
+                    }
+
                     gradNode.append_attribute("gradientUnits") = "userSpaceOnUse";
 
                     UsedGradient ug = {grad, String::formatted("grad-%lu", _session.gradients.count())};
@@ -236,7 +249,7 @@ namespace paper
                     for (const auto & stop : grad->stops())
                     {
                         pugi::xml_node sn = gradNode.append_child("stop");
-                        sn.append_attribute("offset") = String::formatted("%i%", (int)(stop.offset * 100.0f)).cString();
+                        sn.append_attribute("offset") = String::formatted("%i%%", (int)(stop.offset * 100.0f)).cString();
                         sn.append_attribute("stop-color") = colorToHexCSSString(stop.color).cString();
                         if (stop.color.a != 1)
                             sn.append_attribute("stop-opacity") = stop.color.a;
@@ -445,13 +458,11 @@ namespace paper
             {
                 if (_bMatchShapes)
                 {
-                    printf("MATCHIN SHAPES\n");
                     //this does shape matching
                     detail::Shape shape(_path);
                     detail::ShapeType shapeType = shape.shapeType();
                     if (shapeType == detail::ShapeType::Circle)
                     {
-                        printf("CIRCLE\n");
                         ret = _node.append_child("circle");
                         ret.append_attribute("cx") = shape.circle().position.x;
                         ret.append_attribute("cy") = shape.circle().position.y;
@@ -468,7 +479,6 @@ namespace paper
                     else if (shapeType == detail::ShapeType::Rectangle)
                     {
                         ret = _node.append_child("rect");
-                        printf("RECT POS %f %f\n", shape.rectangle().position.x, shape.rectangle().position.y);
                         ret.append_attribute("x") = shape.rectangle().position.x - shape.rectangle().size.x * 0.5f;
                         ret.append_attribute("y") = shape.rectangle().position.y - shape.rectangle().size.y * 0.5f;
                         ret.append_attribute("width") = shape.rectangle().size.x;

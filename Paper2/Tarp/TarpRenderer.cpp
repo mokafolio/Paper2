@@ -232,10 +232,7 @@ namespace paper
 
             //potentially update the stroke/fill transforms
             if (_path->hasfillPaintTransform() && _path->cleanDirtyfillPaintTransform())
-            {
-                printf("SETTING FILL TRANSFORM\n");
                 tpPathSetFillPaintTransform(_tarpPath, (tpTransform *)&_path->fillPaintTransform());
-            }
 
             if (_path->hasStrokePaintTransform() && _path->cleanDirtystrokePaintTransform())
                 tpPathSetStrokePaintTransform(_tarpPath, (tpTransform *)&_path->strokePaintTransform());

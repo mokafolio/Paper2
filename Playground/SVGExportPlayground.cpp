@@ -43,6 +43,7 @@ int main(int _argc, const char * _args[])
         // create the document.
         Document doc;
         doc.setSize(800, 600);
+        doc.translateTransform(400, 0);
 
         // create the opengl renderer for the document
         tarp::TarpRenderer renderer;
@@ -93,7 +94,7 @@ int main(int _argc, const char * _args[])
 
 
         crunch::Randomizer rnd;
-        for(int i = 0; i < 20; i++)
+        for (int i = 0; i < 20; i++)
         {
             Path * p = doc.createPath();
             Vec2f a = Vec2f(rnd.randomf(50, 300), rnd.randomf(90, 170));
@@ -105,6 +106,28 @@ int main(int _argc, const char * _args[])
         }
 
 
+        auto grad2 = createRadialGradient(Vec2f(200, 200), Vec2f(300, 200));
+        grad2->addStop(ColorRGBA(0.5, 0.3, 1.0, 1.0), 0.0);
+        grad2->addStop(ColorRGBA(0.5, 1.0, 0.3, 1.0), 0.35);
+        grad2->addStop(ColorRGBA(0.25, 0.0, 0.6, 1.0), 1.0);
+        grad2->setFocalPointOffset(Vec2f(30, -60));
+        // grad2->setRatio(1.0);
+
+        Path * anotherCircle = doc.createCircle(Vec2f(200, 200), 100);
+        anotherCircle->setFill(grad2);
+
+
+        Path * rpath = doc.createPath();
+        for(int i = 0; i < 10; ++i)
+        {
+            rpath->addPoint(Vec2f(rnd.randomf(50, 300), rnd.randomf(90, 170)));
+        }
+        rpath->closePath();
+        rpath->smooth();
+        rpath->setFill("purple");
+
+        Path * ellipse = doc.createEllipse(Vec2f(100, 100), Vec2f(100, 20));
+        ellipse->setFill("blue");
 
         // Path * cmask = mask->clone();
         // cmask->insertAbove(grp2);

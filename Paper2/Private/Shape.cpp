@@ -17,39 +17,25 @@ namespace paper
         {
             ConstCurveView curves = _path->curves();
             ConstSegmentView segments = _path->segments();
-            printf("CC %lu\n", curves.count());
             if (curves.count() == 4 &&
                     curves[0].isArc() &&
                     curves[1].isArc() &&
                     curves[2].isArc() &&
                     curves[3].isArc())
             {
-                printf("WE GOT DEM ARCS\n");
                 if (crunch::isClose(crunch::length(segments[0].position() - segments[2].position()) -
                                     crunch::length(segments[1].position() - segments[3].position()), (Float)0, PaperConstants::epsilon()))
                 {
                     m_type = ShapeType::Circle;
-                    // m_data.circle.position = _path.localBounds().center();
                     m_data.circle.position = segments[2].position() + (segments[0].position() - segments[2].position()) * 0.5;
                     m_data.circle.radius = crunch::distance(segments[0].position(), segments[2].position()) * 0.5;
                 }
                 else
                 {
-                    if (crunch::isClose(crunch::distance(segments[0].position(), segments[2].position()), (Float)0, PaperConstants::epsilon()))
-                    {
-                        m_type = ShapeType::Circle;
-                        // m_data.circle.position = _path.localBounds().center();
-                        m_data.circle.position = segments[2].position() + (segments[0].position() - segments[2].position()) * 0.5;
-                        m_data.circle.radius = crunch::distance(segments[0].position(), segments[2].position()) * 0.5;
-                    }
-                    else
-                    {
-                        m_type = ShapeType::Ellipse;
-                        // m_data.circle.position = _path.localBounds().center();
-                        m_data.circle.position = segments[2].position() + (segments[0].position() - segments[2].position()) * 0.5;
-                        m_data.ellipse.size = Vec2f(crunch::distance(segments[0].position(), segments[2].position()),
-                                                    crunch::distance(segments[1].position(), segments[3].position()));
-                    }
+                    m_type = ShapeType::Ellipse;
+                    m_data.circle.position = segments[2].position() + (segments[0].position() - segments[2].position()) * 0.5;
+                    m_data.ellipse.size = Vec2f(crunch::distance(segments[0].position(), segments[2].position()),
+                                                crunch::distance(segments[1].position(), segments[3].position()));
                 }
             }
             else if (_path->isPolygon() &&
@@ -63,18 +49,9 @@ namespace paper
                 Float w = segments[0].position().x - segments[3].position().x;
                 Float h = segments[2].position().y - segments[3].position().y;
 
-                printf("FUCKING W %f H %f\n", w, h);
                 m_data.rectangle.position = Vec2f(segments[3].position().x + w * 0.5,
                                                   segments[3].position().y + h * 0.5);
 
-                // Float w = crunch::distance(segments[3].position(),
-                //                            segments[1].position());
-                // Float h = crunch::distance(segments[3].position(),
-                //                            segments[2].position());
-                // if (!crunch::isClose(segments[0].position().y, segments[1].position().y))
-                // {
-                //     std::swap(w, h);
-                // }
                 m_data.rectangle.size = Vec2f(w, h);
                 m_data.rectangle.cornerRadius = Vec2f(0);
             }
@@ -90,7 +67,6 @@ namespace paper
                 //rounded rect
                 m_type = ShapeType::Rectangle;
 
-                // m_data.rectangle.position = _path.localBounds().center();
                 m_data.rectangle.position = _path->bounds().center();
                 m_data.rectangle.size = Vec2f(crunch::distance(segments[7].position(),
                                               segments[2].position()),

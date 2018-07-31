@@ -1,3 +1,5 @@
 add_executable (PaperTests PaperTests.cpp)
+set_target_properties(PaperTests PROPERTIES COMPILE_FLAGS "-fsanitize=address")
+set_target_properties(PaperTests PROPERTIES LINK_FLAGS "-fsanitize=address")
 target_link_libraries(PaperTests Paper2 ${PAPERDEPS})
 add_custom_target(check COMMAND PaperTests)

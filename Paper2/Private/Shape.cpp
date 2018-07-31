@@ -55,6 +55,7 @@ namespace paper
                 m_data.rectangle.size = Vec2f(w, h);
                 m_data.rectangle.cornerRadius = Vec2f(0);
             }
+            //@TODO: Double check this once we reintroduced rounded rectangle again
             else if (curves.count() == 8 &&
                      curves[1].isArc() &&
                      curves[3].isArc() &&

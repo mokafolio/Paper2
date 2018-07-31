@@ -7,8 +7,8 @@ namespace paper
 {
     using namespace stick;
 
-    Document::Document(Allocator & _alloc) :
-        Item(_alloc, this, ItemType::Document, "Paper Document"),
+    Document::Document(const char * _name, Allocator & _alloc) :
+        Item(_alloc, this, ItemType::Document, _name),
         m_itemStorage(_alloc),
         m_size(0)
     {

@@ -46,8 +46,7 @@ namespace paper
         m_fillPaintTransformDirty(false),
         m_strokePaintTransformDirty(false)
     {
-        if (_name)
-            m_name.append(_name);
+        m_name.append(_name);
     }
 
     Item::~Item()
@@ -474,14 +473,11 @@ namespace paper
 
     const Rect & Item::strokeBounds() const
     {
-        printf("A\n");
         if (!m_strokeBounds)
         {
-            printf("B\n");
             auto mb = computeBounds(nullptr, BoundsType::Stroke);
             m_strokeBounds = mb ? *mb : noBounds();
         }
-        printf("C\n");
         return *m_strokeBounds;
     }
 
@@ -770,12 +766,7 @@ namespace paper
         return (bool)m_strokePaintTransform;
     }
 
-    Document * Item::document()
-    {
-        return m_document;
-    }
-
-    const Document * Item::document() const
+    Document * Item::document() const
     {
         return m_document;
     }

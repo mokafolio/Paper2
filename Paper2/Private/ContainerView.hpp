@@ -47,6 +47,10 @@ namespace paper
             {
                 using ValueType = VT;
 
+                //only here to satisfy IteratorTraits
+                using ReferenceType = ValueType&;
+                using PointerType = ValueType*;
+
                 bool operator == (const IterT & _other) const
                 {
                     return m_it == _other.m_it;

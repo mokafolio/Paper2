@@ -253,9 +253,7 @@ namespace paper
 
         virtual Item * clone() const = 0;
 
-        const Document * document() const;
-
-        Document * document();
+        Document * document() const;
 
         ItemType itemType() const;
 

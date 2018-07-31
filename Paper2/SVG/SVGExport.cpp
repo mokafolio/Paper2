@@ -352,9 +352,9 @@ namespace paper
                     for (; it != _item->dashArray().end(); ++it)
                     {
                         if (it != _item->dashArray().begin())
-                            dashString.appendFormatted(", %f", *it);
+                            dashString.appendFormatted(", %.4f", *it);
                         else
-                            dashString.appendFormatted("%f", *it);
+                            dashString.appendFormatted("%.4f", *it);
                     }
                     _node.append_attribute("stroke-dasharray") = dashString.cString();
                 }
@@ -410,9 +410,9 @@ namespace paper
                     {
                         auto & segData = _path->segmentData()[i];
                         if (i != _path->segmentCount() - 1)
-                            points.appendFormatted("%f,%f ", segData.position.x, segData.position.y);
+                            points.appendFormatted("%.4f,%.4f ", segData.position.x, segData.position.y);
                         else
-                            points.appendFormatted("%f,%f", segData.position.x, segData.position.y);
+                            points.appendFormatted("%.4f,%.4f", segData.position.x, segData.position.y);
                     }
 
                     pugi::xml_node node = _parent.append_child(_path->isClosed() ? "polygon" : "polyline");

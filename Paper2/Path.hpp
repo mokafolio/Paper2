@@ -577,19 +577,20 @@ namespace paper
     template<class PT>
     CurveT<PT> SegmentT<PT>::curveIn() const
     {
-        if (m_index == 0 && m_path->isClosed())
-            return Curve(m_path, m_path->m_curveData.count() - 1);
-        else
-            return Curve(m_path, m_index - 1);
+        if (m_path->m_segmentData.count() > 1)
+        {
+            if (m_index == 0 && m_path->isClosed())
+                return Curve(m_path, m_path->m_segmentData.count() - 1);
+            else if(m_index > 0)
+                return Curve(m_path, m_index - 1);
+        }
         return Curve();
     }
 
     template<class PT>
     CurveT<PT> SegmentT<PT>::curveOut() const
     {
-        if (m_index == m_path->m_segmentData.count() - 1 && m_path->isClosed())
-            return Curve(m_path, m_path->m_curveData.count() - 1);
-        else
+        if (m_path->m_segmentData.count() > 1)
             return Curve(m_path, m_index);
         return Curve();
     }
@@ -603,6 +604,13 @@ namespace paper
             return true;
 
         return false;
+    }
+
+    template<class PT>
+    void SegmentT<PT>::remove()
+    {
+        STICK_ASSERT(m_path);
+        m_path->removeSegment(m_index);
     }
 
     template<class PT>
@@ -626,9 +634,15 @@ namespace paper
         auto ci = curveIn();
         auto co = curveOut();
         if (ci)
+        {
+            printf("CURVE IN CHANGED %lu\n", ci.m_index);
             ci.markDirty();
+        }
         if (co)
+        {
+            printf("CURVE OUT CHANGED %lu\n", co.m_index);
             co.markDirty();
+        }
     }
 
     template<class PT>
@@ -904,7 +918,7 @@ namespace paper
         Float offset = 0;
         for (ConstCurve c : m_path->curves())
         {
-            if (&c != this)
+            if (c.m_index != m_index)
                 offset += c.length();
             else
                 break;

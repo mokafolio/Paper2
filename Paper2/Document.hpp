@@ -20,22 +20,22 @@ namespace paper
     public:
 
 
-        Document(stick::Allocator & _alloc = stick::defaultAllocator());
+        Document(const char * _name = "Paper Document", stick::Allocator & _alloc = stick::defaultAllocator());
 
         ~Document() = default;
 
 
-        Path * createPath(const char * _name = nullptr);
+        Path * createPath(const char * _name = "");
 
-        Path * createEllipse(const Vec2f & _center, const Vec2f & _size, const char * _name = nullptr);
+        Path * createEllipse(const Vec2f & _center, const Vec2f & _size, const char * _name = "");
 
-        Path * createCircle(const Vec2f & _center, Float _radius, const char * _name = nullptr);
+        Path * createCircle(const Vec2f & _center, Float _radius, const char * _name = "");
 
-        Path * createRectangle(const Vec2f & _from, const Vec2f & _to, const char * _name = nullptr);
+        Path * createRectangle(const Vec2f & _from, const Vec2f & _to, const char * _name = "");
 
-        Group * createGroup(const char * _name = nullptr);
+        Group * createGroup(const char * _name = "");
 
-        Symbol * createSymbol(Item * _item, const char * _name = nullptr);
+        Symbol * createSymbol(Item * _item, const char * _name = "");
 
         void setSize(Float _width, Float _height);
 

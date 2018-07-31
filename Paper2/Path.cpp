@@ -57,7 +57,6 @@ namespace paper
 
     Vec2f CurveLocation::position() const
     {
-        printf("CurveLocation::position()\n");
         return m_curve.positionAtParameter(m_parameter);
     }
 

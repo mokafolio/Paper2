@@ -634,15 +634,9 @@ namespace paper
         auto ci = curveIn();
         auto co = curveOut();
         if (ci)
-        {
-            printf("CURVE IN CHANGED %lu\n", ci.m_index);
             ci.markDirty();
-        }
         if (co)
-        {
-            printf("CURVE OUT CHANGED %lu\n", co.m_index);
             co.markDirty();
-        }
     }
 
     template<class PT>

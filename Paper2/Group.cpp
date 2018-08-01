@@ -24,7 +24,7 @@ namespace paper
 
     Group * Group::clone() const
     {
-        Group * ret = m_document->createGroup(m_name.cString());
+        Group * ret = m_document->createGroup(m_name.cString() ? m_name.cString() : "");
         ret->m_bIsClipped = m_bIsClipped;
 
         //clone properties and children

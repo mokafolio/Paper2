@@ -25,7 +25,7 @@ namespace paper
 
     Symbol * Symbol::clone() const
     {
-        Symbol * ret = m_document->createSymbol(m_item, m_name.cString());
+        Symbol * ret = m_document->createSymbol(m_item, m_name.cString() ? m_name.cString() : "");
 
         //clone properties and children
         cloneItemTo(ret);

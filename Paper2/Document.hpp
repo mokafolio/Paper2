@@ -33,6 +33,8 @@ namespace paper
 
         Path * createRectangle(const Vec2f & _from, const Vec2f & _to, const char * _name = "");
 
+        Path * createRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius, const char * _name = "");
+
         Group * createGroup(const char * _name = "");
 
         Symbol * createSymbol(Item * _item, const char * _name = "");

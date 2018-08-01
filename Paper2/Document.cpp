@@ -69,10 +69,42 @@ namespace paper
             {Vec2f(0), Vec2f(_to.x, _from.y), Vec2f(0)},
             {Vec2f(0), _to, Vec2f(0)},
             {Vec2f(0), Vec2f(_from.x, _to.y), Vec2f(0)},
-            {Vec2f(0), _from, Vec2f(0)},
+            {Vec2f(0), _from, Vec2f(0)}
         };
 
         ret->addSegments(segs, 4);
+        ret->closePath();
+
+        return ret;
+    }
+
+    Path * Document::createRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius, const char * _name)
+    {
+        Path * ret = createPath(_name);
+
+        static Float s_kappa = detail::PaperConstants::kappa();
+        Vec2f delta = _max - _min;
+        Vec2f radius = crunch::min(_radius, delta / 2);
+        Float rx = radius.x;
+        Float ry = radius.y;
+        Float hx = rx * s_kappa;
+        Float hy = ry * s_kappa;
+        Float rh = delta.y;
+        Float rw = delta.x;
+
+        SegmentData segs[8] =
+        {
+            {Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0)},
+            {Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0)},
+            {Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0)},
+            {Vec2f(0), _max + Vec2f(0, -ry), Vec2f(0, hy)},
+            {Vec2f(hx, 0), _max + Vec2f(-rx, 0), Vec2f(0)},
+            {Vec2f(0), _min + Vec2f(rx, rh), Vec2f(-hx, 0)},
+            {Vec2f(0, hy), _min + Vec2f(0, rh - ry), Vec2f(0)},
+            {Vec2f(0), _min + Vec2f(0, ry), Vec2f(0, -hy)}
+        };
+
+        ret->addSegments(segs, 8);
         ret->closePath();
 
         return ret;

@@ -1169,7 +1169,7 @@ namespace paper
 
     Path * Path::clone() const
     {
-        Path * ret = m_document->createPath(m_name.cString());
+        Path * ret = m_document->createPath(m_name.cString() ? m_name.cString() : "");
 
         //clone path specific things
         ret->m_segmentData = m_segmentData;

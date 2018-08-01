@@ -97,20 +97,22 @@ int main(int _argc, const char * _args[])
         path->flattenRegular(15.0, true);
         path->smooth(Smoothing::Asymmetric, true);
 
-
         Path * p3 = path->clone();
         p3->translate(300, 0);
 
-        Path * p4 = doc.createPath();
-        p4->addPoint(Vec2f(100, 100));
-        p4->addPoint(Vec2f(200, 110));
-        p4->addPoint(Vec2f(130, 160));
-        p4->addPoint(Vec2f(140, 190));
-        p4->closePath();
-        p4->setStroke("red");
+        // Path * p4 = doc.createPath();
+        // p4->addPoint(Vec2f(100, 100));
+        // p4->addPoint(Vec2f(200, 110));
+        // p4->addPoint(Vec2f(130, 160));
+        // p4->addPoint(Vec2f(140, 190));
+        // p4->closePath();
+        // p4->setStroke("red");
 
-        Path * p5 = p4->clone();
-        p5->simplify();
+        // Path * p5 = p4->clone();
+        // p5->simplify();
+
+        Path * p6 = doc.createRoundedRectangle(Vec2f(10, 10), Vec2f(300, 200), Vec2f(10, 10));
+        p6->setFill(ColorRGBA(1, 1, 0.5, 0.5));
 
         
 

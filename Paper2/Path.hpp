@@ -22,8 +22,7 @@ namespace paper
 
     public:
 
-
-        SegmentT(PT * _path, Size _idx);
+        SegmentT(PT * _path = nullptr, Size _idx = -1);
 
         template<class OPT>
         SegmentT(const SegmentT<OPT> & _other);

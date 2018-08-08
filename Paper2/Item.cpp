@@ -2,6 +2,7 @@
 #include <Paper2/Symbol.hpp>
 #include <Paper2/SVG/SVGExport.hpp>
 #include <Crunch/MatrixFunc.hpp>
+#include <Stick/FIleUtilities.hpp>
 
 #define PROPERTY_GETTER(name, def) \
 do \
@@ -904,6 +905,13 @@ namespace paper
     TextResult Item::exportSVG() const
     {
         return svg::exportItem(this, m_document->allocator(), true);
+    }
+
+    Error Item::saveSVG(const String & _uri) const
+    {
+        auto res = exportSVG();
+        if(!res) return res.error();
+        return saveTextFile(res.get(), _uri);
     }
 
     bool Item::cleanDirtyfillPaintTransform()

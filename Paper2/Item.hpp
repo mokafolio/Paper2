@@ -259,6 +259,8 @@ namespace paper
 
         stick::TextResult exportSVG() const;
 
+        Error saveSVG(const String & _uri) const;
+
 
         //mainly for internal/rendering use
         RenderData * renderData();

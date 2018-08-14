@@ -97,16 +97,16 @@ namespace paper
                     return ret;
                 }
 
-                IterT operator - (int _i)
-                {
-                    IterT ret(*this);
-                    ret.m_it -= _i;
-                    return ret;
-                }
+                // IterT operator - (int _i)
+                // {
+                //     IterT ret(*this);
+                //     ret.m_it -= _i;
+                //     return ret;
+                // }
 
                 difference_type operator - (IterT _b)
                 {
-                    return std::distance(m_it, _b.m_it);
+                    return std::distance(_b.m_it, m_it);
                 }
 
                 IterT operator++(int)

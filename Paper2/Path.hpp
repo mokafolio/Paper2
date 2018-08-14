@@ -580,7 +580,7 @@ namespace paper
         {
             if (m_index == 0 && m_path->isClosed())
                 return Curve(m_path, m_path->m_segmentData.count() - 1);
-            else if(m_index > 0)
+            else if (m_index > 0)
                 return Curve(m_path, m_index - 1);
         }
         return Curve();
@@ -589,8 +589,11 @@ namespace paper
     template<class PT>
     CurveT<PT> SegmentT<PT>::curveOut() const
     {
-        if (m_path->m_segmentData.count() > 1)
+        if (m_path->m_segmentData.count() > 1 &&
+                (m_index < m_path->m_segmentData.count() - 1 || m_path->isClosed()))
+        {
             return Curve(m_path, m_index);
+        }
         return Curve();
     }
 
@@ -618,13 +621,15 @@ namespace paper
         STICK_ASSERT(m_path);
         m_path->applyTransformToSegment(m_index, _transform);
 
-        //mark the affected curves dirty
-        Curve ci = curveIn();
-        Curve co = curveOut();
-        if (ci)
-            ci.markDirty();
-        if (co)
-            co.markDirty();
+        // //mark the affected curves dirty
+        // Curve ci = curveIn();
+        // Curve co = curveOut();
+        // if (ci)
+        //     ci.markDirty();
+        // if (co)
+        //     co.markDirty();
+
+        segmentChanged();
     }
 
     template<class PT>

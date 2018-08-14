@@ -694,18 +694,29 @@ namespace paper
     {
         SegmentDataArray segs(m_segmentData.allocator());
         segs.reserve(m_segmentData.count() * 2);
-        auto stepAndSampleCount = regularOffsetAndSampleCount(_maxDistance);
-        Float step = stepAndSampleCount.offset;
-        Float currentOffset = 0;
+        // auto stepAndSampleCount = regularOffsetAndSampleCount(_maxDistance);
+        // Float step = stepAndSampleCount.offset;
+        // Float currentOffset = 0;
+        // Float len = length();
+        // for (Int32 i = 0; i < stepAndSampleCount.sampleCount; ++i)
+        // {
+        //     segs.append({Vec2f(0), positionAt(std::min(currentOffset, len)), Vec2f(0)});
+        //     // Float delta = len - currentOffset;
+        //     // if (delta < step)
+        //     //     step = delta * 0.5;
+        //     currentOffset += step;
+        // }
+
         Float len = length();
-        for (Int32 i = 0; i < stepAndSampleCount.sampleCount; ++i)
+        Float off = 0;
+        while(off < len)
         {
-            segs.append({Vec2f(0), positionAt(std::min(currentOffset, len)), Vec2f(0)});
-            // Float delta = len - currentOffset;
-            // if (delta < step)
-            //     step = delta * 0.5;
-            currentOffset += step;
+            segs.append({Vec2f(0), positionAt(std::min(off, len)), Vec2f(0)});
+            off += _maxDistance;
         }
+
+        if(off - len > 0)
+            segs.append({Vec2f(0), positionAt(len), Vec2f(0)});
 
         swapSegments(segs, isClosed());
 
@@ -720,7 +731,7 @@ namespace paper
     {
         Float len = length();
         Size sampleCount = std::ceil(len / _maxDistance);
-        return {std::min(len, len / (Float)sampleCount), isClosed() ? sampleCount - 1 : sampleCount};
+        return {std::min(len, len / (Float)sampleCount), /*isClosed() ? sampleCount - 1 :*/ sampleCount};
     }
 
     Float Path::regularOffset(Float _maxDistance)

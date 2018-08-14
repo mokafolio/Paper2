@@ -26,9 +26,9 @@ namespace paper
 
         stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
 
-
         //called from Document
         void setItem(Item * _item);
+
 
         Item * m_item;
     };

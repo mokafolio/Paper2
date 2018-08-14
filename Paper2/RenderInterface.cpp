@@ -13,6 +13,12 @@ namespace paper
 
     }
 
+    RenderInterface::RenderInterface(RenderInterface && _other) :
+    m_document(std::move(_other.m_document))
+    {
+
+    }
+
     RenderInterface::~RenderInterface()
     {
 

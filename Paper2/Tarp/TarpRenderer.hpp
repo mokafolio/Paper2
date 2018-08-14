@@ -19,7 +19,11 @@ namespace paper
 
             TarpRenderer();
 
+            TarpRenderer(TarpRenderer && _other);
+
             ~TarpRenderer();
+
+
 
 
             Error init(Document & _doc) final;

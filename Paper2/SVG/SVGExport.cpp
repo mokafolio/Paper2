@@ -66,8 +66,13 @@ namespace paper
             UInt32 b = crunch::min(static_cast<UInt32>(255), crunch::max(static_cast<UInt32>(0),
                                    static_cast<UInt32>(_color.b * 255)));
 
-            return String::concatWithAllocator(_alloc, "#", toHexString(r, 2), toHexString(g, 2), toHexString(b, 2));
+            return String::formatted(_alloc, "#%02x%02x%02x", r, g, b);
         }
+
+        // static String colorToHexCSSString(const ColorRGBA & _color, Allocator & _alloc = defaultAllocator())
+        // {
+        //     return String::formatted(_alloc, "rgb(%i, %i, %i)", (Int32)(_color.r * 255), (Int32)(_color.g * 255), (Int32)(_color.b * 255));
+        // }
 
         static void setTransform(const Item * _item, pugi::xml_node _node)
         {
@@ -233,7 +238,7 @@ namespace paper
                         }
 
                         //@TODO: SVG radial gradients are somewhat limited. In order to properly support elliptical
-                        //gradients when the ratio is no 1.0, we need to most likely create a gradient transform :/
+                        //gradients when the ratio is not 1.0, we need to most likely create a gradient transform :/
 
                         // if (const auto & mr = rgrad->ratio())
                         // {

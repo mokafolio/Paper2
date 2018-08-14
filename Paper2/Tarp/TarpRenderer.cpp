@@ -91,6 +91,13 @@ namespace paper
 
         }
 
+        TarpRenderer::TarpRenderer(TarpRenderer && _other) :
+        m_tarp(std::move(_other.m_tarp)),
+        m_viewport(std::move(_other.m_viewport))
+        {
+
+        }
+
         TarpRenderer::~TarpRenderer()
         {
             if (m_tarp)

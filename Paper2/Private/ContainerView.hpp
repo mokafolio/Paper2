@@ -18,7 +18,7 @@ namespace paper
         struct ContainerViewTraits<true, CT, TO>
         {
             using ContainerType = const CT;
-            using IterType = typename CT::ConstIter;
+            using IterType = typename ContainerType::ConstIter;
             using ValueType = const TO;
             using PathType = const Path;
         };
@@ -50,6 +50,16 @@ namespace paper
                 //only here to satisfy IteratorTraits
                 using ReferenceType = ValueType&;
                 using PointerType = ValueType*;
+                using TmpStorageType = typename std::remove_const<VT>::type;
+
+                //for sol lua binding...remove this as soon as we can
+                using iterator_category = std::random_access_iterator_tag;
+                using value_type = ValueType;
+                using reference = value_type&;
+                using const_reference = const value_type &;
+                using pointer = value_type*;
+                using const_pointer = const value_type *;
+                using difference_type = std::ptrdiff_t;
 
                 bool operator == (const IterT & _other) const
                 {
@@ -61,9 +71,11 @@ namespace paper
                     return m_it != _other.m_it;
                 }
 
-                ValueType operator* () const
+                const ValueType & operator* () const
                 {
-                    return ValueType(m_view->m_path, std::distance(m_view->m_container->begin(), m_it));
+                    //@Note: see comment at the variable declaration
+                    tmp = ValueType(m_view->m_path, std::distance(m_view->m_container->begin(), m_it));
+                    return tmp;
                 }
 
                 IterT operator++()
@@ -85,6 +97,18 @@ namespace paper
                     return ret;
                 }
 
+                IterT operator - (int _i)
+                {
+                    IterT ret(*this);
+                    ret.m_it -= _i;
+                    return ret;
+                }
+
+                difference_type operator - (IterT _b)
+                {
+                    return std::distance(m_it, _b.m_it);
+                }
+
                 IterT operator++(int)
                 {
                     IterT ret(*this);
@@ -94,9 +118,24 @@ namespace paper
 
                 InternalIter m_it;
                 const ContainerView * m_view;
+                //@NOTE This is just so we can return a reference from the * dereferencing function to
+                //make things work with the sol container binding mechanics. :(
+                //It might be worth it to create another proxy that deals with this rather
+                //than cluttering this implementation :/
+                mutable TmpStorageType tmp;
             };
 
             using Iter = IterT<ValueType>;
+
+            //for sol lua binding...remove this as soon as we can
+            using iterator = Iter;
+            using const_iterator = Iter;
+            using value_type = ValueType;
+            using difference_type = std::ptrdiff_t;
+            using reference = value_type&;
+            using const_reference = const value_type &;
+            using pointer = value_type*;
+            using const_pointer = const value_type *;
 
             ContainerView() :
                 m_path(nullptr),

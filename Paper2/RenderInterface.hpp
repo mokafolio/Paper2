@@ -15,6 +15,8 @@ namespace paper
 
         RenderInterface();
 
+        RenderInterface(RenderInterface && _other);
+
         virtual ~RenderInterface();
 
 

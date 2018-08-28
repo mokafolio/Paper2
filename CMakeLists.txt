@@ -9,9 +9,9 @@ find_package(OpenGL REQUIRED)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR} /usr/local/include /usr/local/include/pugixml-1.9 ${CMAKE_CURRENT_SOURCE_DIR}/Paper2/Libs)
 
-link_directories(/usr/local/lib ${CMAKE_INSTALL_PREFIX}/lib)
+link_directories(/usr/local/lib ${CMAKE_INSTALL_PREFIX}/lib /usr/local/lib/pugixml-1.9)
 
-set (PAPERDEPS Stick Brick Scrub ${OPENGL_LIBRARIES})
+set (PAPERDEPS Stick pugixml ${OPENGL_LIBRARIES})
 
 set (PAPERINC 
 Paper2/BasicTypes.hpp

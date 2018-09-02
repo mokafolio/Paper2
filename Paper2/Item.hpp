@@ -66,6 +66,8 @@ namespace paper
 
         void setPivot(const Vec2f & _pivot);
 
+        void removePivot();
+
         void setVisible(bool _b);
 
         void setName(const stick::String & _name);

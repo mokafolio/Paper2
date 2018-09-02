@@ -219,6 +219,11 @@ namespace paper
         m_pivot = _pivot;
     }
 
+    void Item::removePivot()
+    {
+        m_pivot.reset();
+    }
+
     void Item::setVisible(bool _b)
     {
         m_bVisible = _b;

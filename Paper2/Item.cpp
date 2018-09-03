@@ -385,6 +385,9 @@ namespace paper
     {
         //by default an item is emtpy and has nothing to apply the transform to...
         applyTransformToChildren(_transform);
+
+        //...but we mark the bounds dirty
+        markBoundsDirty(_bMarkParentsBoundsDirty);
     }
 
     void Item::applyTransformToChildren(const Mat32f & _transform)
@@ -824,8 +827,8 @@ namespace paper
 
     void Item::markBoundsDirty(bool _bNotifyParent)
     {
-        markStrokeBoundsDirty(false);
-        markFillBoundsDirty(false);
+        markStrokeBoundsDirty(_bNotifyParent);
+        markFillBoundsDirty(_bNotifyParent);
     }
 
     void Item::markStrokeBoundsDirty(bool _bNotifyParent)

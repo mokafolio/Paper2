@@ -349,9 +349,10 @@ namespace paper
 
     void Item::scale(const Vec2f & _scale, const Vec2f & _center)
     {
-        Mat32f mat = Mat32f::translation(-_center);
+        auto center = _center - translation();
+        Mat32f mat = Mat32f::translation(-center);
         mat.scale(_scale);
-        mat.translate(_center);
+        mat.translate(center);
         applyTransform(mat, true);
     }
 
@@ -362,9 +363,10 @@ namespace paper
 
     void Item::rotate(Float _radians, const Vec2f & _center)
     {
-        Mat32f mat = Mat32f::translation(-_center);
+        auto center = _center - translation();
+        Mat32f mat = Mat32f::translation(-center);
         mat.rotate(_radians);
-        mat.translate(_center);
+        mat.translate(center);
         applyTransform(mat, true);
     }
 
@@ -375,9 +377,10 @@ namespace paper
 
     void Item::skew(const Vec2f & _angles, const Vec2f & _center)
     {
-        Mat32f mat = Mat32f::translation(-_center);
+        auto center = _center - translation();
+        Mat32f mat = Mat32f::translation(-center);
         mat.skew(_angles);
-        mat.translate(_center);
+        mat.translate(center);
         applyTransform(mat, true);
     }
 

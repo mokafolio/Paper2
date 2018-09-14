@@ -198,13 +198,13 @@ namespace paper
 
         void removeFill();
 
-        void setfillPaintTransform(const Mat32f & _transform);
+        void setFillPaintTransform(const Mat32f & _transform);
 
-        void setstrokePaintTransform(const Mat32f & _transform);
+        void setStrokePaintTransform(const Mat32f & _transform);
 
-        void removefillPaintTransform();
+        void removeFillPaintTransform();
 
-        void removestrokePaintTransform();
+        void removeStrokePaintTransform();
 
 
         void setWindingRule(WindingRule _rule);

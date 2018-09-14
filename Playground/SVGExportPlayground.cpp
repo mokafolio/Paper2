@@ -63,12 +63,12 @@ int main(int _argc, const char * _args[])
         // grad->setFocalPointOffset(Vec2f(20, -10));
         // grad->setRatio(0.5);
         path->setFill(grad);
-        path->setfillPaintTransform(Mat32f::rotation(1.2));
+        path->setFillPaintTransform(Mat32f::rotation(1.2));
 
 
         Path * clone = path->clone();
         clone->translateTransform(100, 50);
-        clone->setfillPaintTransform(Mat32f::rotation(0.75));
+        clone->setFillPaintTransform(Mat32f::rotation(0.75));
         clone->setStroke("red");
         clone->setStrokeWidth(3);
         clone->setDashArray({10, 5});

@@ -638,25 +638,25 @@ namespace paper
         PROPERTY_SETTER(fill, NoPaint());
     }
 
-    void Item::setfillPaintTransform(const Mat32f & _transform)
+    void Item::setFillPaintTransform(const Mat32f & _transform)
     {
         m_fillPaintTransform = _transform;
         m_fillPaintTransformDirty = true;
     }
 
-    void Item::setstrokePaintTransform(const Mat32f & _transform)
+    void Item::setStrokePaintTransform(const Mat32f & _transform)
     {
         m_strokePaintTransform = _transform;
         m_strokePaintTransformDirty = true;
     }
 
-    void Item::removefillPaintTransform()
+    void Item::removeFillPaintTransform()
     {
         m_fillPaintTransform.reset();
         m_fillPaintTransformDirty = true;
     }
 
-    void Item::removestrokePaintTransform()
+    void Item::removeStrokePaintTransform()
     {
         m_strokePaintTransform.reset();
         m_strokePaintTransformDirty = true;

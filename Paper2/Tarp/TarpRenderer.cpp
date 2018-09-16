@@ -376,7 +376,7 @@ namespace paper
             updateTarpPath(m_tarp->tmpSegmentBuffer, _clippingPath, rd.path, nullptr);
 
             tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
-            tpBool err = tpBeginClipping(m_tarp->ctx, rd.path);
+            tpBool err = tpBeginClippingWithFillRule(m_tarp->ctx, rd.path, _clippingPath->windingRule() == WindingRule::NonZero ? kTpFillRuleNonZero : kTpFillRuleEvenOdd);
             if (err) return Error(ec::InvalidOperation, "Failed to draw tarp clip path", STICK_FILE, STICK_LINE);
             return Error();
         }

@@ -654,6 +654,10 @@ namespace paper
     void Path::reverse()
     {
         //TODO: Can be optimized
+        for(auto & seg : m_segmentData)
+        {
+            std::swap(seg.handleIn, seg.handleOut);
+        }
         std::reverse(m_segmentData.begin(), m_segmentData.end());
 
         for (Item * c : this->children())
@@ -1371,8 +1375,8 @@ namespace paper
     void Path::addedChild(Item * _e)
     {
         //for non zero winding rule we adjust the direction of the added path if needed
-        if (windingRule() == WindingRule::NonZero)
-            static_cast<Path *>(_e)->setClockwise(!isClockwise());
+        // if (windingRule() == WindingRule::NonZero)
+        //     static_cast<Path *>(_e)->setClockwise(!isClockwise());
     }
 
     static Mat32f strokeTransformHelper(const Mat32f & _transform, Float _strokeWidth, bool _bIsScalingStroke)

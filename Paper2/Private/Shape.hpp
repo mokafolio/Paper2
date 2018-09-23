@@ -5,73 +5,66 @@
 
 namespace paper
 {
-    class Path;
+class Path;
 
-    namespace detail
+namespace detail
+{
+STICK_LOCAL_ENUM_CLASS(ShapeType){None,
+                                  Rectangle, // also rounded rect
+                                  Circle,
+                                  Ellipse};
+
+class STICK_LOCAL Shape
+{
+  public:
+    struct Circle
     {
-        STICK_LOCAL_ENUM_CLASS(ShapeType)
+        Vec2f position;
+        Float radius;
+    };
+
+    struct Ellipse
+    {
+        Vec2f position;
+        Vec2f size;
+    };
+
+    struct Rectangle
+    {
+        Vec2f position;
+        Vec2f size;
+        Vec2f cornerRadius;
+    };
+
+    Shape();
+
+    Shape(const Path * _path);
+
+    ShapeType shapeType() const;
+
+    const Circle & circle() const;
+
+    const Ellipse & ellipse() const;
+
+    const Rectangle & rectangle() const;
+
+  private:
+    ShapeType m_type;
+
+    union Data
+    {
+        Data()
         {
-            None,
-            Rectangle, //also rounded rect
-            Circle,
-            Ellipse
-        };
+        }
 
-        class STICK_LOCAL Shape
-        {
-        public:
+        Circle circle;
+        Ellipse ellipse;
+        Rectangle rectangle;
+    };
 
-            struct Circle
-            {
-                Vec2f position;
-                Float radius;
-            };
+    Data m_data;
+};
+} // namespace detail
+} // namespace paper
 
-            struct Ellipse
-            {
-                Vec2f position;
-                Vec2f size;
-            };
-
-            struct Rectangle
-            {
-                Vec2f position;
-                Vec2f size;
-                Vec2f cornerRadius;
-            };
-
-            Shape();
-
-            Shape(const Path * _path);
-
-            ShapeType shapeType() const;
-
-            const Circle & circle() const;
-
-            const Ellipse & ellipse() const;
-
-            const Rectangle & rectangle() const;
-
-
-        private:
-
-            ShapeType m_type;
-
-            union Data
-            {
-                Data()
-                {
-
-                }
-
-                Circle circle;
-                Ellipse ellipse;
-                Rectangle rectangle;
-            };
-
-            Data m_data;
-        };
-    }
-}
-
-#endif //PAPER_PRIVATE_SHAPE_HPP
+#endif // PAPER_PRIVATE_SHAPE_HPP

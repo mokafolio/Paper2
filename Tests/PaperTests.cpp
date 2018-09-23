@@ -1,15 +1,18 @@
 //#include <Paper/Components.hpp>
-#include <Paper2/Document.hpp>
-#include <Paper2/Path.hpp>
-#include <Paper2/Group.hpp>
-#include <Stick/Test.hpp>
 #include <Crunch/StringConversion.hpp>
+#include <Paper2/Document.hpp>
+#include <Paper2/Group.hpp>
+#include <Paper2/Path.hpp>
+#include <Stick/Test.hpp>
 // #include <Paper/Private/ContainerView.hpp>
 
 using namespace stick;
 using namespace paper;
 using namespace crunch;
 
+// clang format fails to usefully format the test macro stuff
+// so we turn it off for now :/
+// clang-format off
 const Suite spec[] =
 {
     SUITE("DOM Tests")
@@ -89,8 +92,14 @@ const Suite spec[] =
 
         stick::DynamicArray<Vec2f> expectedCurves =
         {
-            Vec2f(100.0f, 30.0f), Vec2f(0.0f, 0.0f), Vec2f(0.0f, 0.0f), Vec2f(200.0f, 30.0f),
-            Vec2f(200.0f, 30.0f), Vec2f(0.0f, 0.0f), Vec2f(-5.0f, -3.0f), Vec2f(150.0f, 150.0f)
+            Vec2f(100.0f, 30.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(200.0f, 30.0f),
+            Vec2f(200.0f, 30.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(-5.0f, -3.0f),
+            Vec2f(150.0f, 150.0f)
         };
         Size i = 0;
         for (auto c : p->curves())
@@ -108,7 +117,7 @@ const Suite spec[] =
         EXPECT(p->curves().last().handleOne() == Vec2f(5.0f, 3.0f));
         EXPECT(p->curves().last().positionTwo() == Vec2f(100.0f, 30.0f));
 
-        //test insertion
+        // test insertion
         p->insertSegment(1, SegmentData{Vec2f(0), Vec2f(100, 75.0), Vec2f(0)});
         EXPECT(p->segmentData()[0].position == Vec2f(100.0f, 30.0f));
         EXPECT(p->segmentData()[1].position == Vec2f(100.0f, 75.0f));
@@ -117,10 +126,22 @@ const Suite spec[] =
         EXPECT(p->curves().count() == 4);
         stick::DynamicArray<Vec2f> expectedCurves2 =
         {
-            Vec2f(100.0f, 30.0f), Vec2f(0.0f, 0.0f), Vec2f(0.0f, 0.0f), Vec2f(100.0f, 75.0f),
-            Vec2f(100.0f, 75.0f), Vec2f(0.0f, 0.0f), Vec2f(0.0f, 0.0f), Vec2f(200.0f, 30.0f),
-            Vec2f(200.0f, 30.0f), Vec2f(0.0f, 0.0f), Vec2f(-5.0f, -3.0f), Vec2f(150.0f, 150.0f),
-            Vec2f(150.0f, 150.0f), Vec2f(5.0f, 3.0f), Vec2f(0.0f, 0.0f), Vec2f(100.0f, 30.0f),
+            Vec2f(100.0f, 30.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(100.0f, 75.0f),
+            Vec2f(100.0f, 75.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(200.0f, 30.0f),
+            Vec2f(200.0f, 30.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(-5.0f, -3.0f),
+            Vec2f(150.0f, 150.0f),
+            Vec2f(150.0f, 150.0f),
+            Vec2f(5.0f, 3.0f),
+            Vec2f(0.0f, 0.0f),
+            Vec2f(100.0f, 30.0f),
         };
         i = 0;
         for (auto c : p->curves())
@@ -295,133 +316,134 @@ const Suite spec[] =
 
         EXPECT(grp2->strokeBounds() == grp->strokeBounds());
         EXPECT(grp2->bounds() == grp->bounds());
-    },
-    // SUITE("SVG Export Tests")
-    // {
-    //     //TODO: Turn this into an actual test
-    //     Document doc = createDocument();
-    //     doc.translateTransform(Vec2f(100, 200));
-    //     doc.scaleTransform(3.0);
-    //     Path c = doc.createCircle(Vec2f(100, 100), 10);
-    //     c.setFill(ColorRGBA(1.0, 1.0, 0.0, 1.0));
-    //     auto res = doc.exportSVG();
-    //     printf("%s\n", res.ensure().cString());
-    // },
-    // SUITE("SVG Import Tests")
-    // {
-    //     {
-    //         Document doc = createDocument();
-    //         String svg = "<svg width='100px' height='50px'><path d='M10 20 L100 20 100 120 Z'/></svg>";
-    //         printf("SVG:\n%s\n", svg.cString());
-    //         auto svgdata = doc.parseSVG(svg);
-    //         EXPECT(svgdata.width() == 100);
-    //         EXPECT(svgdata.height() == 50);
-    //         EXPECT(svgdata.group().isValid());
-    //         EXPECT(svgdata.group().children().count() == 1);
-    //         EXPECT(Item(svgdata.group().children()[0]).itemType() == EntityType::Path);
-    //         Path p = reinterpretEntity<Path>(svgdata.group().children()[0]);
-    //         EXPECT(p.segmentArray().count() == 3);
-    //         EXPECT(isClose(p.segmentArray()[0]->position(), Vec2f(10, 20)));
-    //         EXPECT(isClose(p.segmentArray()[1]->position(), Vec2f(100, 20)));
-    //         EXPECT(isClose(p.segmentArray()[2]->position(), Vec2f(100, 120)));
-    //         EXPECT(p.isClosed());
-    //     }
-    //     {
-    //         //TODO: test transforms on the group element
-    //         Document doc = createDocument();
-    //         String svg = "<svg><g transform='translate(10, 10) rotate(30)'><path d='M10 20 L100 20'/><path d='M-30 30.0e4 L100 20'/></g></svg>";
-    //         printf("SVG:\n%s\n", svg.cString());
-    //         auto svgdata = doc.parseSVG(svg);
-    //         EXPECT(!svgdata.error());
-    //         EXPECT(svgdata.group().children().count() == 1);
-    //         EXPECT(Item(svgdata.group().children()[0]).itemType() == EntityType::Group);
-    //         Group grp = reinterpretEntity<Group>(svgdata.group().children()[0]);
-    //         EXPECT(grp.children().count() == 2);
-    //     }
-    //     {
-    //         //test basic colors and attribute import
-    //         Document doc = createDocument();
-    //         String svg = "<svg><path d='M10 20 L100 20' fill='red' style='stroke: #333; stroke-width: 2px'/><circle cx='100' cy='200' r='20' fill='#4286f4' fill-rule='nonzero' stroke='black' stroke-miterlimit='33.5' stroke-dasharray='1, 2,3 4 5' stroke-dashoffset='20.33' vector-effect='non-scaling-stroke' stroke-linejoin='miter' stroke-linecap='round'/></svg>";
-    //         printf("SVG:\n%s\n", svg.cString());
-    //         auto svgdata = doc.parseSVG(svg);
-    //         Path p = reinterpretEntity<Path>(svgdata.group().children()[0]);
-    //         EXPECT(p.fill().get<ColorRGBA>() == ColorRGBA(1, 0, 0, 1));
-    //         auto s = p.stroke().get<ColorRGBA>();
-    //         EXPECT(isClose(s.r, 51.0f / 255.0f) && isClose(s.g, 51.0f / 255.0f) && isClose(s.b, 51.0f / 255.0f));
-    //         EXPECT(p.strokeWidth() == 2.0f);
-    //         Path p2 = reinterpretEntity<Path>(svgdata.group().children()[1]);
-    //         auto & c2 = p2.fill().get<ColorRGBA>();
-    //         EXPECT(isClose(c2.r, 66.0f / 255.0f) && isClose(c2.g, 134.0f / 255.0f) && isClose(c2.b, 244.0f / 255.0f));
-    //         EXPECT(p2.stroke().get<ColorRGBA>() == ColorRGBA(0, 0, 0, 1));
-    //         EXPECT(p2.isScalingStroke() == false);
-    //         EXPECT(isClose(p2.miterLimit(), 33.5f));
-    //         EXPECT(isClose(p2.dashOffset(), 20.33f));
-    //         EXPECT(p2.windingRule() == WindingRule::NonZero);
-    //         printf("DA COUNT %lu\n", p2.dashArray().count());
-    //         EXPECT(p2.dashArray().count() == 5);
-    //         EXPECT(p2.dashArray()[0] == 1);
-    //         EXPECT(p2.dashArray()[1] == 2);
-    //         EXPECT(p2.dashArray()[2] == 3);
-    //         EXPECT(p2.dashArray()[3] == 4);
-    //         EXPECT(p2.dashArray()[4] == 5);
-    //         EXPECT(p2.strokeCap() == StrokeCap::Round);
-    //         EXPECT(p2.strokeJoin() == StrokeJoin::Miter);
-    //     }
-    // },
-    // SUITE("Basic Intersection Tests")
-    // {
-    //     Document doc = createDocument();
-    //     Path circle = doc.createCircle(Vec2f(100, 100), 100);
-    //     auto isecs = circle.intersections();
-    //     EXPECT(isecs.count() == 0);
-    //     // printf("DA COUNT %lu\n", isecs.count());
-    //     // for (auto & isec : isecs)
-    //     //     printf("ISEC %f %f\n", isec.position.x, isec.position.y);
+    }
+// SUITE("SVG Export Tests")
+// {
+//     //TODO: Turn this into an actual test
+//     Document doc = createDocument();
+//     doc.translateTransform(Vec2f(100, 200));
+//     doc.scaleTransform(3.0);
+//     Path c = doc.createCircle(Vec2f(100, 100), 10);
+//     c.setFill(ColorRGBA(1.0, 1.0, 0.0, 1.0));
+//     auto res = doc.exportSVG();
+//     printf("%s\n", res.ensure().cString());
+// },
+// SUITE("SVG Import Tests")
+// {
+//     {
+//         Document doc = createDocument();
+//         String svg = "<svg width='100px' height='50px'><path d='M10 20 L100 20 100 120
+//         Z'/></svg>"; printf("SVG:\n%s\n", svg.cString()); auto svgdata = doc.parseSVG(svg);
+//         EXPECT(svgdata.width() == 100);
+//         EXPECT(svgdata.height() == 50);
+//         EXPECT(svgdata.group().isValid());
+//         EXPECT(svgdata.group().children().count() == 1);
+//         EXPECT(Item(svgdata.group().children()[0]).itemType() == EntityType::Path);
+//         Path p = reinterpretEntity<Path>(svgdata.group().children()[0]);
+//         EXPECT(p.segmentArray().count() == 3);
+//         EXPECT(isClose(p.segmentArray()[0]->position(), Vec2f(10, 20)));
+//         EXPECT(isClose(p.segmentArray()[1]->position(), Vec2f(100, 20)));
+//         EXPECT(isClose(p.segmentArray()[2]->position(), Vec2f(100, 120)));
+//         EXPECT(p.isClosed());
+//     }
+//     {
+//         //TODO: test transforms on the group element
+//         Document doc = createDocument();
+//         String svg = "<svg><g transform='translate(10, 10) rotate(30)'><path d='M10 20 L100
+//         20'/><path d='M-30 30.0e4 L100 20'/></g></svg>"; printf("SVG:\n%s\n", svg.cString());
+//         auto svgdata = doc.parseSVG(svg);
+//         EXPECT(!svgdata.error());
+//         EXPECT(svgdata.group().children().count() == 1);
+//         EXPECT(Item(svgdata.group().children()[0]).itemType() == EntityType::Group);
+//         Group grp = reinterpretEntity<Group>(svgdata.group().children()[0]);
+//         EXPECT(grp.children().count() == 2);
+//     }
+//     {
+//         //test basic colors and attribute import
+//         Document doc = createDocument();
+//         String svg = "<svg><path d='M10 20 L100 20' fill='red' style='stroke: #333; stroke-width:
+//         2px'/><circle cx='100' cy='200' r='20' fill='#4286f4' fill-rule='nonzero' stroke='black'
+//         stroke-miterlimit='33.5' stroke-dasharray='1, 2,3 4 5' stroke-dashoffset='20.33'
+//         vector-effect='non-scaling-stroke' stroke-linejoin='miter'
+//         stroke-linecap='round'/></svg>"; printf("SVG:\n%s\n", svg.cString()); auto svgdata =
+//         doc.parseSVG(svg); Path p = reinterpretEntity<Path>(svgdata.group().children()[0]);
+//         EXPECT(p.fill().get<ColorRGBA>() == ColorRGBA(1, 0, 0, 1));
+//         auto s = p.stroke().get<ColorRGBA>();
+//         EXPECT(isClose(s.r, 51.0f / 255.0f) && isClose(s.g, 51.0f / 255.0f) && isClose(s.b, 51.0f
+//         / 255.0f)); EXPECT(p.strokeWidth() == 2.0f); Path p2 =
+//         reinterpretEntity<Path>(svgdata.group().children()[1]); auto & c2 =
+//         p2.fill().get<ColorRGBA>(); EXPECT(isClose(c2.r, 66.0f / 255.0f) && isClose(c2.g, 134.0f
+//         / 255.0f) && isClose(c2.b, 244.0f / 255.0f)); EXPECT(p2.stroke().get<ColorRGBA>() ==
+//         ColorRGBA(0, 0, 0, 1)); EXPECT(p2.isScalingStroke() == false);
+//         EXPECT(isClose(p2.miterLimit(), 33.5f));
+//         EXPECT(isClose(p2.dashOffset(), 20.33f));
+//         EXPECT(p2.windingRule() == WindingRule::NonZero);
+//         printf("DA COUNT %lu\n", p2.dashArray().count());
+//         EXPECT(p2.dashArray().count() == 5);
+//         EXPECT(p2.dashArray()[0] == 1);
+//         EXPECT(p2.dashArray()[1] == 2);
+//         EXPECT(p2.dashArray()[2] == 3);
+//         EXPECT(p2.dashArray()[3] == 4);
+//         EXPECT(p2.dashArray()[4] == 5);
+//         EXPECT(p2.strokeCap() == StrokeCap::Round);
+//         EXPECT(p2.strokeJoin() == StrokeJoin::Miter);
+//     }
+// },
+// SUITE("Basic Intersection Tests")
+// {
+//     Document doc = createDocument();
+//     Path circle = doc.createCircle(Vec2f(100, 100), 100);
+//     auto isecs = circle.intersections();
+//     EXPECT(isecs.count() == 0);
+//     // printf("DA COUNT %lu\n", isecs.count());
+//     // for (auto & isec : isecs)
+//     //     printf("ISEC %f %f\n", isec.position.x, isec.position.y);
 
-    //     Path line = doc.createPath();
-    //     line.addPoint(Vec2f(-100, 100));
-    //     line.addPoint(Vec2f(300, 100));
-    //     auto isecs2 = line.intersections(circle);
-    //     printf("DA COUNT %lu\n", isecs2.count());
-    //     EXPECT(isecs2.count() == 2);
+//     Path line = doc.createPath();
+//     line.addPoint(Vec2f(-100, 100));
+//     line.addPoint(Vec2f(300, 100));
+//     auto isecs2 = line.intersections(circle);
+//     printf("DA COUNT %lu\n", isecs2.count());
+//     EXPECT(isecs2.count() == 2);
 
-    //     Path selfIntersectingLinear = doc.createPath();
-    //     selfIntersectingLinear.addPoint(Vec2f(0, 0));
-    //     selfIntersectingLinear.addPoint(Vec2f(100, 0));
-    //     selfIntersectingLinear.addPoint(Vec2f(50, 100));
-    //     selfIntersectingLinear.addPoint(Vec2f(50, -100));
-    //     auto isecs3 = selfIntersectingLinear.intersections();
-    //     EXPECT(isecs3.count() == 1);
-    //     EXPECT(crunch::isClose(isecs3[0].position, Vec2f(50, 0)));
+//     Path selfIntersectingLinear = doc.createPath();
+//     selfIntersectingLinear.addPoint(Vec2f(0, 0));
+//     selfIntersectingLinear.addPoint(Vec2f(100, 0));
+//     selfIntersectingLinear.addPoint(Vec2f(50, 100));
+//     selfIntersectingLinear.addPoint(Vec2f(50, -100));
+//     auto isecs3 = selfIntersectingLinear.intersections();
+//     EXPECT(isecs3.count() == 1);
+//     EXPECT(crunch::isClose(isecs3[0].position, Vec2f(50, 0)));
 
-    //     Path selfIntersecting = doc.createPath();
-    //     selfIntersecting.addPoint(Vec2f(100, 100));
-    //     selfIntersecting.arcTo(Vec2f(200, 100));
-    //     selfIntersecting.arcTo(Vec2f(200, 0));
+//     Path selfIntersecting = doc.createPath();
+//     selfIntersecting.addPoint(Vec2f(100, 100));
+//     selfIntersecting.arcTo(Vec2f(200, 100));
+//     selfIntersecting.arcTo(Vec2f(200, 0));
 
-    //     auto isecs4 = selfIntersecting.intersections();
-    //     EXPECT(isecs4.count() == 1);
-    //     EXPECT(crunch::isClose(isecs4[0].position, Vec2f(150, 50)));
+//     auto isecs4 = selfIntersecting.intersections();
+//     EXPECT(isecs4.count() == 1);
+//     EXPECT(crunch::isClose(isecs4[0].position, Vec2f(150, 50)));
 
-    //     Path a = doc.createPath();
-    //     a.addPoint(Vec2f(100, 100));
-    //     a.arcTo(Vec2f(200, 100));
+//     Path a = doc.createPath();
+//     a.addPoint(Vec2f(100, 100));
+//     a.arcTo(Vec2f(200, 100));
 
-    //     Path b = doc.createPath();
-    //     b.addPoint(Vec2f(200, 100));
-    //     b.arcTo(Vec2f(200, 0));
+//     Path b = doc.createPath();
+//     b.addPoint(Vec2f(200, 100));
+//     b.arcTo(Vec2f(200, 0));
 
-    //     auto isecs5 = a.intersections(b);
-    //     EXPECT(isecs5.count() == 2);
-    //     EXPECT(crunch::isClose(isecs5[0].position, Vec2f(150, 50)));
-    //     EXPECT(crunch::isClose(isecs5[1].position, Vec2f(200, 100)));
+//     auto isecs5 = a.intersections(b);
+//     EXPECT(isecs5.count() == 2);
+//     EXPECT(crunch::isClose(isecs5[0].position, Vec2f(150, 50)));
+//     EXPECT(crunch::isClose(isecs5[1].position, Vec2f(200, 100)));
 
-    //     auto isecs6 = b.intersections(a);
-    //     EXPECT(isecs6.count() == 2);
-    //     EXPECT(crunch::isClose(isecs6[0].position, Vec2f(200, 100)));
-    //     EXPECT(crunch::isClose(isecs6[1].position, Vec2f(150, 50)));
-    // }
+//     auto isecs6 = b.intersections(a);
+//     EXPECT(isecs6.count() == 2);
+//     EXPECT(crunch::isClose(isecs6[0].position, Vec2f(200, 100)));
+//     EXPECT(crunch::isClose(isecs6[1].position, Vec2f(150, 50)));
+// }
 };
+// clang-format on
 
 int main(int _argc, const char * _args[])
 {

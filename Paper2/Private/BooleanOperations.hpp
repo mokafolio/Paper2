@@ -5,37 +5,39 @@
 
 namespace paper
 {
-    class Path;
+class Path;
 
-    namespace detail
-    {
-        struct STICK_LOCAL MonoCurve
-        {
-            Bezier bezier;
-            Int32 winding;
-        };
+namespace detail
+{
+struct STICK_LOCAL MonoCurve
+{
+    Bezier bezier;
+    Int32 winding;
+};
 
-        using MonoCurveArray = stick::DynamicArray<MonoCurve>;
+using MonoCurveArray = stick::DynamicArray<MonoCurve>;
 
-        struct STICK_LOCAL MonoCurveLoop
-        {
-            Mat32f inverseTransform;
-            bool bTransformed;
-            MonoCurveArray monoCurves;
-            MonoCurve last;
-        };
+struct STICK_LOCAL MonoCurveLoop
+{
+    Mat32f inverseTransform;
+    bool bTransformed;
+    MonoCurveArray monoCurves;
+    MonoCurve last;
+};
 
-        using MonoCurveLoopArray = stick::DynamicArray<MonoCurveLoop>;
+using MonoCurveLoopArray = stick::DynamicArray<MonoCurveLoop>;
 
-        //wrapped in a class so we can easily friend it with Path.
-        //not the prettiest solution but imo the best one without
-        //having to clutter the Path header even more.
-        struct STICK_LOCAL BooleanOperations
-        {
-            static const MonoCurveLoopArray & monoCurves(const Path * _path);
-            static stick::Int32 winding(const Vec2f & _point, const MonoCurveLoopArray & _loops, bool _bHorizontal);
-        };
-    }
-}
+// wrapped in a class so we can easily friend it with Path.
+// not the prettiest solution but imo the best one without
+// having to clutter the Path header even more.
+struct STICK_LOCAL BooleanOperations
+{
+    static const MonoCurveLoopArray & monoCurves(const Path * _path);
+    static stick::Int32 winding(const Vec2f & _point,
+                                const MonoCurveLoopArray & _loops,
+                                bool _bHorizontal);
+};
+} // namespace detail
+} // namespace paper
 
-#endif //PAPER_PRIVATE_BOOLEANOPERATIONS_HPP
+#endif // PAPER_PRIVATE_BOOLEANOPERATIONS_HPP

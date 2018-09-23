@@ -5,33 +5,30 @@
 
 namespace paper
 {
-    class Document;
+class Document;
 
-    class STICK_API Symbol : public Item
-    {
-        friend class Item;
-        friend class Document;
+class STICK_API Symbol : public Item
+{
+    friend class Item;
+    friend class Document;
 
-    public:
+  public:
+    Symbol(stick::Allocator & _alloc, Document * _document, const char * _name);
 
-        Symbol(stick::Allocator & _alloc, Document * _document, const char * _name);
+    Item * item();
 
-        Item * item();
+    const Mat32f & absoluteTransform() const final;
 
-        const Mat32f & absoluteTransform() const final;
+    Symbol * clone() const;
 
-        Symbol * clone() const;
+  private:
+    stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
 
-    private:
+    // called from Document
+    void setItem(Item * _item);
 
-        stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
+    Item * m_item;
+};
+} // namespace paper
 
-        //called from Document
-        void setItem(Item * _item);
-
-
-        Item * m_item;
-    };
-}
-
-#endif //PAPER_SYMBOL_HPP
+#endif // PAPER_SYMBOL_HPP

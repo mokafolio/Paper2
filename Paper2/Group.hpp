@@ -5,29 +5,26 @@
 
 namespace paper
 {
-    class Document;
+class Document;
 
-    class STICK_API Group : public Item
-    {
-    public:
+class STICK_API Group : public Item
+{
+  public:
+    Group(stick::Allocator & _alloc, Document * _document, const char * _name);
 
-        Group(stick::Allocator & _alloc, Document * _document, const char * _name);
+    void setClipped(bool _b);
 
-        void setClipped(bool _b);
-        
-        bool isClipped() const;
+    bool isClipped() const;
 
-        Group * clone() const final;
+    Group * clone() const final;
 
-    private:
-        
-        bool canAddChild(Item * _e) const final;
+  private:
+    bool canAddChild(Item * _e) const final;
 
-        stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
+    stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
 
+    bool m_bIsClipped;
+};
+} // namespace paper
 
-        bool m_bIsClipped;
-    };
-}
-
-#endif //PAPER_GROUP_HPP
+#endif // PAPER_GROUP_HPP

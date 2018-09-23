@@ -4,11 +4,11 @@
 // we use GLFW to open a simple window
 #include <GLFW/glfw3.h>
 
-//include some paper headers.
+// include some paper headers.
 #include <Paper2/Document.hpp>
+#include <Paper2/Group.hpp>
 #include <Paper2/Paint.hpp>
 #include <Paper2/Path.hpp>
-#include <Paper2/Group.hpp>
 #include <Paper2/Symbol.hpp>
 #include <Paper2/Tarp/TarpRenderer.hpp>
 
@@ -16,10 +16,10 @@
 
 #include <memory>
 
-//we want to use the paper, brick, crunch & stick namespaces
-using namespace paper; // paper namespace
+// we want to use the paper, brick, crunch & stick namespaces
+using namespace paper;  // paper namespace
 using namespace crunch; // crunch namespace for math
-using namespace stick; // stick namespace for core data structures/containers etc.
+using namespace stick;  // stick namespace for core data structures/containers etc.
 
 int main(int _argc, const char * _args[])
 {
@@ -34,7 +34,7 @@ int main(int _argc, const char * _args[])
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //create the window
+    // create the window
     GLFWwindow * window = glfwCreateWindow(800, 600, "Hello Paper Example", NULL, NULL);
     if (window)
     {
@@ -65,7 +65,6 @@ int main(int _argc, const char * _args[])
         path->setFill(grad);
         path->setFillPaintTransform(Mat32f::rotation(1.2));
 
-
         Path * clone = path->clone();
         clone->translateTransform(100, 50);
         clone->setFillPaintTransform(Mat32f::rotation(0.75));
@@ -77,7 +76,6 @@ int main(int _argc, const char * _args[])
 
         Path * path2 = doc.createCircle(Vec2f(200, 100), 30);
         path2->setFill(grad);
-
 
         Group * grp = doc.createGroup();
         grp->setClipped(true);
@@ -92,7 +90,6 @@ int main(int _argc, const char * _args[])
         grp2->addChild(mask);
         grp2->addChild(grp);
 
-
         crunch::Randomizer rnd;
         for (int i = 0; i < 20; i++)
         {
@@ -105,7 +102,6 @@ int main(int _argc, const char * _args[])
             grp2->addChild(p);
         }
 
-
         auto grad2 = createRadialGradient(Vec2f(200, 200), Vec2f(300, 200));
         grad2->addStop(ColorRGBA(0.5, 0.3, 1.0, 1.0), 0.0);
         grad2->addStop(ColorRGBA(0.5, 1.0, 0.3, 1.0), 0.35);
@@ -116,9 +112,8 @@ int main(int _argc, const char * _args[])
         Path * anotherCircle = doc.createCircle(Vec2f(200, 200), 100);
         anotherCircle->setFill(grad2);
 
-
         Path * rpath = doc.createPath();
-        for(int i = 0; i < 10; ++i)
+        for (int i = 0; i < 10; ++i)
         {
             rpath->addPoint(Vec2f(rnd.randomf(50, 300), rnd.randomf(90, 170)));
         }

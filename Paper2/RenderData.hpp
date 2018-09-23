@@ -5,18 +5,19 @@
 
 namespace paper
 {
-    //used by the render interface to store rendering specific user data
-    class RenderData;
-    using RenderDataUniquePtr = stick::UniquePtr<RenderData>;
+// used by the render interface to store rendering specific user data
+class RenderData;
+using RenderDataUniquePtr = stick::UniquePtr<RenderData>;
 
-    class STICK_API RenderData
+class STICK_API RenderData
+{
+  public:
+    virtual ~RenderData()
     {
-    public:
+    }
 
-        virtual ~RenderData() {}
+    virtual RenderDataUniquePtr clone() const = 0;
+};
+} // namespace paper
 
-        virtual RenderDataUniquePtr clone() const = 0;
-    };
-}
-
-#endif //PAPER_RENDERDATA_HPP
+#endif // PAPER_RENDERDATA_HPP

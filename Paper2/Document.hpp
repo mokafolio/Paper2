@@ -1,70 +1,68 @@
 #ifndef PAPER_DOCUMENT_HPP
 #define PAPER_DOCUMENT_HPP
 
-#include <Stick/UniquePtr.hpp>
 #include <Paper2/Item.hpp>
+#include <Stick/UniquePtr.hpp>
 
 namespace paper
 {
-    class Path;
-    class Group;
-    class Symbol;
+class Path;
+class Group;
+class Symbol;
 
-    using ItemUniquePtr = stick::UniquePtr<Item>;
-    using ItemUniquePtrArray = stick::DynamicArray<ItemUniquePtr>;
+using ItemUniquePtr = stick::UniquePtr<Item>;
+using ItemUniquePtrArray = stick::DynamicArray<ItemUniquePtr>;
 
-    class STICK_API Document : public Item
-    {
-        friend class Item;
+class STICK_API Document : public Item
+{
+    friend class Item;
 
-    public:
+  public:
+    Document(const char * _name = "Paper Document",
+             stick::Allocator & _alloc = stick::defaultAllocator());
 
+    ~Document() = default;
 
-        Document(const char * _name = "Paper Document", stick::Allocator & _alloc = stick::defaultAllocator());
+    Path * createPath(const char * _name = "");
 
-        ~Document() = default;
+    Path * createEllipse(const Vec2f & _center, const Vec2f & _size, const char * _name = "");
 
+    Path * createCircle(const Vec2f & _center, Float _radius, const char * _name = "");
 
-        Path * createPath(const char * _name = "");
+    Path * createRectangle(const Vec2f & _from, const Vec2f & _to, const char * _name = "");
 
-        Path * createEllipse(const Vec2f & _center, const Vec2f & _size, const char * _name = "");
+    Path * createRoundedRectangle(const Vec2f & _min,
+                                  const Vec2f & _max,
+                                  const Vec2f & _radius,
+                                  const char * _name = "");
 
-        Path * createCircle(const Vec2f & _center, Float _radius, const char * _name = "");
+    Group * createGroup(const char * _name = "");
 
-        Path * createRectangle(const Vec2f & _from, const Vec2f & _to, const char * _name = "");
+    Symbol * createSymbol(Item * _item, const char * _name = "");
 
-        Path * createRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius, const char * _name = "");
+    void setSize(Float _width, Float _height);
 
-        Group * createGroup(const char * _name = "");
+    Float width() const;
 
-        Symbol * createSymbol(Item * _item, const char * _name = "");
+    Float height() const;
 
-        void setSize(Float _width, Float _height);
+    const Vec2f & size() const;
 
-        Float width() const;
+    stick::Allocator & allocator() const;
 
-        Float height() const;
+    Error saveSVG(const stick::String & _uri) const;
 
-        const Vec2f & size() const;
+  private:
+    // documents can't be cloned for now
+    Document * clone() const final;
 
-        stick::Allocator & allocator() const;
+    bool canAddChild(Item * _e) const final;
 
+    void destroyItem(Item * _e);
 
-        Error saveSVG(const stick::String & _uri) const;
+    ItemUniquePtrArray m_itemStorage;
+    Vec2f m_size;
+};
+} // namespace paper
 
-
-    private:
-
-        // documents can't be cloned for now
-        Document * clone() const final;
-
-        bool canAddChild(Item * _e) const final;
-
-        void destroyItem(Item * _e);
-
-        ItemUniquePtrArray m_itemStorage;
-        Vec2f m_size;
-    };
-}
-
-#endif //PAPER_DOCUMENT_HPP
+#endif // PAPER_DOCUMENT_HPP

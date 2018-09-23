@@ -6,12 +6,14 @@
 
 namespace paper
 {
-    class Item;
+class Item;
 
-    namespace svg
-    {
-        STICK_LOCAL stick::TextResult exportItem(const Item * _item, stick::Allocator & _alloc, bool _bMatchShapes);
-    }
+namespace svg
+{
+STICK_LOCAL stick::TextResult exportItem(const Item * _item,
+                                         stick::Allocator & _alloc,
+                                         bool _bMatchShapes);
 }
+} // namespace paper
 
-#endif //PAPER_SVG_SVGEXPORT_HPP
+#endif // PAPER_SVG_SVGEXPORT_HPP

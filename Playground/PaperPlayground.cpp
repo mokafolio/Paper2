@@ -4,28 +4,38 @@
 // we use GLFW to open a simple window
 #include <GLFW/glfw3.h>
 
-//include some paper headers.
+// include some paper headers.
 #include <Paper2/Document.hpp>
+#include <Paper2/Group.hpp>
 #include <Paper2/Paint.hpp>
 #include <Paper2/Path.hpp>
-#include <Paper2/Group.hpp>
 #include <Paper2/Symbol.hpp>
 #include <Paper2/Tarp/TarpRenderer.hpp>
 
 #include <memory>
 
-//we want to use the paper, brick, crunch & stick namespaces
-using namespace paper; // paper namespace
+// we want to use the paper, brick, crunch & stick namespaces
+using namespace paper;  // paper namespace
 using namespace crunch; // crunch namespace for math
-using namespace stick; // stick namespace for core data structures/containers etc.
+using namespace stick;  // stick namespace for core data structures/containers etc.
 
 Maybe<Paint> bla;
 Paint bla2;
 
 void fu(RadialGradientPtr _grad)
 {
-    static_assert(stick::detail::Traits<decltype(_grad), NoPaint, ColorRGBA, LinearGradientPtr, RadialGradientPtr>::bIsDirect, "DAFUQ");
-    static_assert(TypeInfoT<stick::detail::Traits<decltype(_grad), NoPaint, ColorRGBA, LinearGradientPtr, RadialGradientPtr>::TargetType>::typeID() == TypeInfoT<RadialGradientPtr>::typeID(), "FUUUUCK");
+    static_assert(stick::detail::Traits<decltype(_grad),
+                                        NoPaint,
+                                        ColorRGBA,
+                                        LinearGradientPtr,
+                                        RadialGradientPtr>::bIsDirect,
+                  "DAFUQ");
+    static_assert(
+        TypeInfoT<
+            stick::detail::
+                Traits<decltype(_grad), NoPaint, ColorRGBA, LinearGradientPtr, RadialGradientPtr>::
+                    TargetType>::typeID() == TypeInfoT<RadialGradientPtr>::typeID(),
+        "FUUUUCK");
 
     // bla = _grad;
     printf("TYPE %s\n", typeid(decltype(_grad)).name());
@@ -53,7 +63,7 @@ int main(int _argc, const char * _args[])
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //create the window
+    // create the window
     GLFWwindow * window = glfwCreateWindow(800, 600, "Hello Paper Example", NULL, NULL);
     if (window)
     {
@@ -63,7 +73,8 @@ int main(int _argc, const char * _args[])
         Document doc;
         doc.setSize(800, 600);
 
-        printf("ITEM SIZE %i %i\n", sizeof(std::shared_ptr<float>), sizeof(stick::SharedPtr<float>));
+        printf(
+            "ITEM SIZE %i %i\n", sizeof(std::shared_ptr<float>), sizeof(stick::SharedPtr<float>));
 
         // create the opengl renderer for the document
         tarp::TarpRenderer renderer;
@@ -74,126 +85,29 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
+        Path * path = doc.createPath();
+        path->addPoint(Vec2f(100, 100));
+        path->addPoint(Vec2f(150, 110));
+        path->addPoint(Vec2f(150, 130));
+        path->addPoint(Vec2f(135, 200));
+        path->closePath();
+        path->setFill("red");
 
-        auto grad = createRadialGradient(Vec2f(100, 100), Vec2f(200, 200));
-        grad->addStop(ColorRGBA(0.5, 1.0, 0.0, 1.0), 0.0);
-        grad->addStop(ColorRGBA(0.5, 0.0, 1.0, 1.0), 1.0);
-        grad->setFocalPointOffset(Vec2f(20, -10));
-        grad->setRatio(0.5);
-
-        Path * path = doc.createCircle(Vec2f(100, 100), 50);
-
-        path->setStroke(ColorRGBA(1, 1, 1, 1));
-        path->setFill(grad);
-        // path->translateTransform(100, 0);
-        path->setStrokeWidth(1.0);
-        // path->setScaleStroke(false);
-        path->addChild(doc.createCircle(Vec2f(120, 100), 20));
-
-        Path * p2 = doc.createCircle(Vec2f(100, 100), 20);
-        p2->addChild(doc.createCircle(Vec2f(110, 97), 12));
-        path->addChild(p2);
-
-        path->flattenRegular(15.0, true);
-        path->smooth(Smoothing::Asymmetric, true);
-
-        Path * p3 = path->clone();
-        p3->translate(300, 0);
-
-        // Path * p4 = doc.createPath();
-        // p4->addPoint(Vec2f(100, 100));
-        // p4->addPoint(Vec2f(200, 110));
-        // p4->addPoint(Vec2f(130, 160));
-        // p4->addPoint(Vec2f(140, 190));
-        // p4->closePath();
-        // p4->setStroke("red");
-
-        // Path * p5 = p4->clone();
-        // p5->simplify();
-
-        Path * p6 = doc.createRoundedRectangle(Vec2f(10, 10), Vec2f(300, 200), Vec2f(10, 10));
-        p6->setFill(ColorRGBA(1, 1, 0.5, 0.5));
-
-        
-
-        // p3->flattenRegular(15.0, true);
-
-        // if (path->contains(Vec2f(160, 100)))
-        //     printf("ITS CONTAINED BABY!!!\n");
-
-        // Path * slice = path->slice(path->length() * 0.1, path->length() * 0.7895);
-        // // slice->translate(0, 100);
-        // slice->setFill(ColorRGBA(1, 0, 0, 1));
-
-        // Path * clone = path->clone();
-        // clone->translate(0, 100);
-
-        // Group * grp = doc.createGroup();
-        // // grp->addChild(doc.createRectangle(Vec2f(150,50), Vec2f(250, 100)));
-        // // grp->setClipped(true);
-        // grp->addChild(path);
-        // grp->translateTransform(-100, 0);
-
-        // Symbol * sym = doc.createSymbol(path);
-
-        // // STICK_ASSERT(grp->absoluteTransform() == sym->absoluteTransform());
-        // sym->translateTransform(Vec2f(100, 0));
-        // sym->scaleTransform(0.5);
-        // // sym->rotateTransform(crunch::Constants<Float>::halfPi() * 0.5);
-
-        // // Symbol * sym2 = doc.createSymbol(sym);
-        // // sym2->translateTransform(Vec2f(0, 200));
-
-        // Path * bounds = doc.createRectangle(sym->bounds().min(), sym->bounds().max());
-        // bounds->setFill(ColorRGBA(1, 1, 1, 0.2));
-
-        // Path * clone = path->clone();
-        // clone->translate(85, 0);
-
-        auto isecs = path->intersections();
-        printf("ISEC COUNT %lu\n", isecs.count());
-        for(auto & isec : isecs)
+        Curve longest;
+        Float32 maxLen = 0;
+        Size idx = 0;
+        for (Curve curve : path->curves())
         {
-            Path * p = doc.createCircle(isec.position, 2);
-            p->setFill("red");
+            printf("IDX %lu\n", idx);
+            if (curve.length() > maxLen)
+            {
+                longest = curve;
+                maxLen = curve.length();
+                printf("GOT LONGEST %f\n", maxLen);
+            }
+            printf("lidx %i\n", longest.index());
+            idx++;
         }
-
-        // Path * center = doc.createCircle(sym->position(), 2.0);
-        // center->setFill(ColorRGBA(1, 0, 0, 1));
-
-        // Randomizer r;
-
-        // LinearGradient grad = doc.createLinearGradient(Vec2f(r.randomf(100, 700), r.randomf(100, 500)),
-        //                       Vec2f(r.randomf(100, 700), r.randomf(100, 500)));
-
-        // for (int i = 0; i < r.randomi(2, 10); ++i)
-        // {
-        //     grad.addStop(ColorRGBA(r.randomf(0, 1), r.randomf(0, 1), r.randomf(0, 1), 1.0), r.randomf(0, 1));
-        // }
-
-        // Path circle = doc.createCircle(Vec2f(400, 300), 200);
-        // circle.setName("A");
-        // circle.setFill(ColorRGBA(1, 0, 0, 1));
-        // circle.setStroke(ColorRGBA(0.0, 1.0, 1.0, 1.0));
-        // circle.setStrokeWidth(10.0);
-        // circle.setStroke(grad);
-
-        // Path circle2 = doc.createCircle(Vec2f(400, 300), 20);
-        // circle2.setName("B");
-        // circle2.translateTransform(10, 10);
-        // circle.addChild(circle2);
-
-        // Path circle3 = doc.createCircle(Vec2f(400, 300), 10);
-        // circle3.setName("C");
-        // circle3.translateTransform(-100, -100);
-        // circle2.addChild(circle3);
-
-
-        // Symbol s = doc.createSymbol(circle);
-        // PlacedSymbol ps = s.place(Vec2f(0, 0));
-
-        // PlacedSymbol ps2 = s.place(Vec2f(100, 100));
-
 
         int counter = 0;
 
@@ -213,15 +127,6 @@ int main(int _argc, const char * _args[])
             glfwGetWindowSize(window, &width, &height);
             renderer.setProjection(Mat4f::ortho(0, width, height, 0, -1, 1));
             // renderer.setTransform(Mat3f::identity());
-
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-
-            if(path->contains(Vec2f(xpos, ypos)))
-                path->setFill(grad);
-            else
-                path->setFill(ColorRGBA(1,1,0,1));
-
 
             auto err = renderer.draw();
             if (err)

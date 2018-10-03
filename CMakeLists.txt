@@ -52,6 +52,11 @@ Paper2/SVG/SVGExport.cpp
 Paper2/Tarp/TarpRenderer.cpp
 )
 
+#avoid opengl deprecation warnings on mojave +
+if (APPLE)
+add_compile_options(-D GL_SILENCE_DEPRECATION)
+endif()
+
 add_library (Paper2 SHARED ${PAPERSRC})
 add_library (Paper2Static STATIC ${PAPERSRC})
 target_link_libraries(Paper2 ${PAPERDEPS})

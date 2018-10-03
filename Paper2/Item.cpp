@@ -2,7 +2,7 @@
 #include <Paper2/Document.hpp>
 #include <Paper2/SVG/SVGExport.hpp>
 #include <Paper2/Symbol.hpp>
-#include <Stick/FIleUtilities.hpp>
+#include <Stick/FileUtilities.hpp>
 
 #define PROPERTY_GETTER(name, def)                                                                 \
     do                                                                                             \

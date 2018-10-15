@@ -31,6 +31,8 @@ Paper2/Private/PathFitter.hpp
 Paper2/Private/PathFlattener.hpp
 Paper2/Private/Shape.hpp
 Paper2/SVG/SVGExport.hpp
+Paper2/SVG/SVGImport.hpp
+Paper2/SVG/SVGImportResult.hpp
 Paper2/Tarp/TarpRenderer.hpp
 )
 
@@ -49,6 +51,8 @@ Paper2/Private/PathFitter.cpp
 Paper2/Private/PathFlattener.cpp
 Paper2/Private/Shape.cpp
 Paper2/SVG/SVGExport.cpp
+Paper2/SVG/SVGImport.cpp
+Paper2/SVG/SVGImportResult.cpp
 Paper2/Tarp/TarpRenderer.cpp
 )
 

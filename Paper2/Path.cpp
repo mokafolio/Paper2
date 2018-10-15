@@ -10,6 +10,101 @@ namespace paper
 {
 using namespace stick;
 
+namespace detail
+{
+
+// void addPoint(SegmentData & _segments, const Vec2f & _to)
+// {
+//     _segments.append({_to, _to, _to});
+// }
+
+// void cubicCurveTo(SegmentData & _segments,
+//                   const Vec2f & _handleOneAbs,
+//                   const Vec2f & _handleTwoAbs,
+//                   const Vec2f & _to)
+// {
+//     STICK_ASSERT(_segments.count());
+//     SegmentData & current = _segments.last();
+
+//     // make relative
+//     current.handleOut = _handleOneAbs;
+//     _segments.append({_handleTwoAbs, _to, _to});
+// }
+
+// void quadraticCurveTo(SegmentData & _segments, const Vec2f & _handleAbs, const Vec2f & _to)
+// {
+//     STICK_ASSERT(_segments.count());
+//     SegmentData & current = _segments.last();
+
+//     auto fact = 2.0 / 3.0
+//     cubicCurveTo(_segments, current.position + fact * (_handleAbs - current.position), _to + fact
+//     * (_handleAbs - _to), _to);
+// }
+
+// void curveTo(SegmentData & _segments,
+//              const Vec2f & _through,
+//              const Vec2f & _to,
+//              Float _parameter = 0.5)
+// {
+//     STICK_ASSERT(_segments.count());
+//     SegmentData & current = _segments.last();
+
+//     Float t1 = 1 - _parameter;
+//     Float tt = _parameter * _parameter;
+//     Vec2f handle = (_through - current.position * tt - _to * tt) / (2 * _parameter * t1);
+
+//     quadraticCurveTo(_segments, handle, _to);
+// }
+
+// Error arcTo(SegmentData & _segments, const Vec2f & _through, const Vec2f & _to)
+// {
+
+// }
+
+// Error arcTo(SegmentData & _segments, const Vec2f & _to, bool _bClockwise)
+// {
+
+// }
+
+// Error arcTo(SegmentData & _segments,
+//             const Vec2f & _to,
+//             const Vec2f & _radii,
+//             Float _rotation,
+//             bool _bClockwise,
+//             bool _bLarge)
+// {
+
+// }
+
+// void cubicCurveBy(SegmentData & _segments, const Vec2f & _handleOne, const Vec2f & _handleTwo,
+// const Vec2f & _by)
+// {
+
+// }
+
+// void quadraticCurveBy(SegmentData & _segments, const Vec2f & _handle, const Vec2f & _by)
+// {
+
+// }
+
+// void curveBy(SegmentData & _segments, const Vec2f & _through, const Vec2f & _by, Float
+// _parameter)
+// {
+
+// }
+
+// Error arcBy(SegmentData & _segments, const Vec2f & _through, const Vec2f & _by)
+// {
+
+// }
+
+// Error arcBy(SegmentData & _segments, const Vec2f & _to, bool _bClockwise)
+// {
+
+// }
+
+} // namespace detail
+
 CurveLocation::CurveLocation()
 {
 }
@@ -99,62 +194,54 @@ ConstCurve CurveLocation::curve() const
     return m_curve;
 }
 
-Path::Path(stick::Allocator & _alloc, Document * _document, const char * _name) :
-    Item(_alloc, _document, ItemType::Path, _name),
-    m_segmentData(_alloc),
-    m_curveData(_alloc),
-    m_bGeometryDirty(false),
-    m_bIsClosed(false)
+namespace segments
 {
+void addPoint(SegmentDataArray & _segs, const Vec2f & _to)
+{
+    _segs.append({ _to, _to, _to });
 }
 
-void Path::addPoint(const Vec2f & _to)
+void cubicCurveTo(SegmentDataArray & _segs,
+                  const Vec2f & _handleOne,
+                  const Vec2f & _handleTwo,
+                  const Vec2f & _to)
 {
-    createSegment(_to, Vec2f(0.0), Vec2f(0.0));
-}
-
-void Path::cubicCurveTo(const Vec2f & _handleOne, const Vec2f & _handleTwo, const Vec2f & _to)
-{
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
 
     // make relative
-    current.handleOut = _handleOne - current.position;
-    createSegment(_to, _handleTwo - _to, Vec2f(0.0));
+    current.handleOut = _handleOne;
+    _segs.append({ _handleTwo, _to, _to });
 }
 
-void Path::quadraticCurveTo(const Vec2f & _handle, const Vec2f & _to)
+void quadraticCurveTo(SegmentDataArray & _segs, const Vec2f & _handle, const Vec2f & _to)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
 
-    // Comment from paper.js Path.js:
-    // This is exact:
-    // If we have the three quad points: A E D,
-    // and the cubic is A B C D,
-    // B = E + 1/3 (A - E)
-    // C = E + 1/3 (D - E)
-
-    cubicCurveTo(
-        _handle + (current.position - _handle) / 3.0, _handle + (_to - _handle) / 3.0, _to);
+    auto fact = 2.0 / 3.0;
+    cubicCurveTo(_segs,
+                 current.position + (_handle - current.position) * fact,
+                 _to + (_handle - _to) * fact,
+                 _to);
 }
 
-void Path::curveTo(const Vec2f & _through, const Vec2f & _to, Float _parameter)
+void curveTo(SegmentDataArray & _segs, const Vec2f & _through, const Vec2f & _to, Float _parameter)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
 
     Float t1 = 1 - _parameter;
     Float tt = _parameter * _parameter;
     Vec2f handle = (_through - current.position * tt - _to * tt) / (2 * _parameter * t1);
 
-    quadraticCurveTo(handle, _to);
+    quadraticCurveTo(_segs, handle, _to);
 }
 
-Error Path::arcTo(const Vec2f & _through, const Vec2f & _to)
+Error arcTo(SegmentDataArray & _segs, const Vec2f & _through, const Vec2f & _to)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
 
     const Vec2f & from = current.position;
 
@@ -167,7 +254,9 @@ Error Path::arcTo(const Vec2f & _through, const Vec2f & _to)
                                 crunch::rotate(_to - _through, crunch::Constants<Float>::halfPi()));
 
     auto result = crunch::intersect(lineOne, lineTwo);
-    crunch::Line<Vec2f> line(from, _to - from);
+    //@TODO: double check if turning this into a line segment fixes:
+    // https://github.com/paperjs/paper.js/issues/1477
+    crunch::LineSegment<Vec2f> line(from, _to);
     Int32 throughSide = line.side(_through);
 
     if (!result)
@@ -180,7 +269,7 @@ Error Path::arcTo(const Vec2f & _through, const Vec2f & _to)
             // 0, the connecting arc line of this huge circle is a line
             // between the two points, so we can use #lineTo instead.
             // Otherwise we bail out:
-            addPoint(_to);
+            addPoint(_segs, _to);
             return Error();
         }
         return Error(ec::InvalidArgument,
@@ -210,31 +299,35 @@ Error Path::arcTo(const Vec2f & _through, const Vec2f & _to)
         extent -= 360.0 * (extent < 0 ? -1 : 1);
     }
 
-    return arcHelper(extent, Segment(this, m_segmentData.count() - 1), vec, _to, *result, nullptr);
+    return arcHelper(_segs, extent, vec, _to, *result, nullptr);
 }
 
-Error Path::arcTo(const Vec2f & _to, bool _bClockwise)
+Error arcTo(SegmentDataArray & _segs, const Vec2f & _to, bool _bClockwise)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
 
     Vec2f mid = (current.position + _to) * 0.5;
     Vec2f dir = (mid - current.position);
     dir = !_bClockwise ? Vec2f(-dir.y, dir.x) : Vec2f(dir.y, -dir.x);
-    return arcTo(mid + dir, _to);
+    return arcTo(_segs, mid + dir, _to);
 }
 
-Error Path::arcTo(
-    const Vec2f & _to, const Vec2f & _radii, Float _rotation, bool _bClockwise, bool _bLarge)
+Error arcTo(SegmentDataArray & _segs,
+            const Vec2f & _to,
+            const Vec2f & _radii,
+            Float _rotation,
+            bool _bClockwise,
+            bool _bLarge)
 {
-    STICK_ASSERT(m_segmentData.count());
+    STICK_ASSERT(_segs.count());
     if (crunch::isClose(_radii.x, (Float)0.0) || crunch::isClose(_radii.y, (Float)0.0))
     {
-        addPoint(_to);
+        addPoint(_segs, _to);
         return Error();
     }
 
-    Vec2f from = m_segmentData.last().position;
+    Vec2f from = _segs.last().position;
     Vec2f middle = (from + _to) * 0.5;
     Vec2f pt = crunch::rotate(from - middle, -_rotation);
     Float rx = crunch::abs(_radii.x);
@@ -288,12 +381,330 @@ Error Path::arcTo(
     else if (_bClockwise && extent < 0)
         extent += crunch::Constants<Float>::twoPi();
 
-    return arcHelper(crunch::toDegrees(extent),
-                     Segment(this, m_segmentData.count() - 1),
-                     vect,
-                     _to,
-                     center,
-                     &matrix);
+    return arcHelper(_segs, crunch::toDegrees(extent), vect, _to, center, &matrix);
+}
+
+Error arcHelper(SegmentDataArray & _segs,
+                Float _extentDeg,
+                const Vec2f & _direction,
+                const Vec2f & _to,
+                const Vec2f & _center,
+                const Mat32f * _transform)
+{
+    Float ext = crunch::abs(_extentDeg);
+    Int32 count = ext >= 360.0 ? 4 : crunch::ceil(ext / 90.0);
+    Float inc = _extentDeg / (Float)count;
+    Float half = inc * crunch::Constants<Float>::pi() / 360.0;
+    Float z = 4.0 / 3.0 * std::sin(half) / (1.0 + std::cos(half));
+    Vec2f dir = _direction;
+
+    for (Int32 i = 0; i <= count; ++i)
+    {
+        // Explicitely use to point for last segment, since depending
+        // on values the calculation adds imprecision:
+        Vec2f pt = _to;
+        Vec2f out(-dir.y * z, dir.x * z);
+        if (i < count)
+        {
+            if (_transform)
+            {
+                pt = *_transform * dir;
+                out = (*_transform * (dir + out)) - pt;
+            }
+            else
+            {
+                pt = _center + dir;
+            }
+        }
+        if (i == 0)
+        {
+            // Modify startSegment
+            _segs.last().handleOut = _segs.last().position + out;
+        }
+        else
+        {
+            // Add new Segment
+            Vec2f in(dir.y * z, -dir.x * z);
+            if (!_transform)
+            {
+                _segs.append({ pt, pt + in, i < count ? pt + out : pt });
+            }
+            else
+            {
+                // createSegment(pt, (*_transform * (dir + in)) - pt, i < count ? out : Vec2f(0.0));
+                _segs.append({ pt, *_transform * (dir + in), i < count ? pt + out : pt });
+            }
+        }
+        dir = crunch::rotate(dir, crunch::toRadians(inc));
+    }
+    return Error();
+}
+
+void cubicCurveBy(SegmentDataArray & _segs,
+                  const Vec2f & _handleOne,
+                  const Vec2f & _handleTwo,
+                  const Vec2f & _by)
+{
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
+    cubicCurveTo(_segs,
+                 current.position + _handleOne,
+                 current.position + _handleTwo,
+                 current.position + _by);
+}
+
+void quadraticCurveBy(SegmentDataArray & _segs, const Vec2f & _handle, const Vec2f & _by)
+{
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
+    quadraticCurveTo(_segs, current.position + _handle, current.position + _by);
+}
+
+void curveBy(SegmentDataArray & _segs, const Vec2f & _through, const Vec2f & _by, Float _parameter)
+{
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
+    curveTo(_segs, current.position + _through, current.position + _by, _parameter);
+}
+
+Error arcBy(SegmentDataArray & _segs, const Vec2f & _through, const Vec2f & _by)
+{
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
+    return arcTo(_segs, current.position + _through, current.position + _by);
+}
+
+Error arcBy(SegmentDataArray & _segs, const Vec2f & _to, bool _bClockwise)
+{
+    STICK_ASSERT(_segs.count());
+    SegmentData & current = _segs.last();
+    return arcTo(_segs, current.position + _to, _bClockwise);
+}
+} // namespace segments
+
+Path::Path(stick::Allocator & _alloc, Document * _document, const char * _name) :
+    Item(_alloc, _document, ItemType::Path, _name),
+    m_segmentData(_alloc),
+    m_curveData(_alloc),
+    m_bGeometryDirty(false),
+    m_bIsClosed(false)
+{
+}
+
+void Path::addPoint(const Vec2f & _to)
+{
+    // createSegment(_to, Vec2f(0.0), Vec2f(0.0));
+    segments::addPoint(m_segmentData, _to);
+    appendedSegment();
+}
+
+void Path::cubicCurveTo(const Vec2f & _handleOne, const Vec2f & _handleTwo, const Vec2f & _to)
+{
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+
+    // // make relative
+    // current.handleOut = _handleOne - current.position;
+    // createSegment(_to, _handleTwo - _to, Vec2f(0.0));
+    segments::cubicCurveTo(m_segmentData, _handleOne, _handleTwo, _to);
+    appendedSegment();
+}
+
+void Path::quadraticCurveTo(const Vec2f & _handle, const Vec2f & _to)
+{
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+
+    // // Comment from paper.js Path.js:
+    // // This is exact:
+    // // If we have the three quad points: A E D,
+    // // and the cubic is A B C D,
+    // // B = E + 1/3 (A - E)
+    // // C = E + 1/3 (D - E)
+
+    // cubicCurveTo(
+    //     _handle + (current.position - _handle) / 3.0, _handle + (_to - _handle) / 3.0, _to);
+
+    segments::quadraticCurveTo(m_segmentData, _handle, _to);
+    appendedSegment();
+}
+
+void Path::curveTo(const Vec2f & _through, const Vec2f & _to, Float _parameter)
+{
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+
+    // Float t1 = 1 - _parameter;
+    // Float tt = _parameter * _parameter;
+    // Vec2f handle = (_through - current.position * tt - _to * tt) / (2 * _parameter * t1);
+
+    // quadraticCurveTo(handle, _to);
+    segments::curveTo(m_segmentData, _through, _to, _parameter);
+    appendedSegment();
+}
+
+Error Path::arcTo(const Vec2f & _through, const Vec2f & _to)
+{
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+
+    // const Vec2f & from = current.position;
+
+    // Vec2f lineOneStart = (from + _through) * 0.5;
+    // crunch::Line<Vec2f> lineOne(
+    //     lineOneStart, crunch::rotate(_through - from, crunch::Constants<Float>::halfPi()));
+
+    // Vec2f lineTwoStart = (_through + _to) * 0.5;
+    // crunch::Line<Vec2f> lineTwo(lineTwoStart,
+    //                             crunch::rotate(_to - _through,
+    //                             crunch::Constants<Float>::halfPi()));
+
+    // auto result = crunch::intersect(lineOne, lineTwo);
+    // //@TODO: double check if turning this into a line segment fixes:
+    // // https://github.com/paperjs/paper.js/issues/1477
+    // crunch::LineSegment<Vec2f> line(from, _to);
+    // Int32 throughSide = line.side(_through);
+
+    // if (!result)
+    // {
+    //     if (throughSide == 0)
+    //     {
+    //         // From paper.js
+    //         // If the two lines are colinear, there cannot be an arc as the
+    //         // circle is infinitely big and has no center point. If side is
+    //         // 0, the connecting arc line of this huge circle is a line
+    //         // between the two points, so we can use #lineTo instead.
+    //         // Otherwise we bail out:
+    //         addPoint(_to);
+    //         return Error();
+    //     }
+    //     return Error(ec::InvalidArgument,
+    //                  String::concat("Cannot put an arc through the given points: ",
+    //                                 crunch::toString(_through),
+    //                                 " and ",
+    //                                 crunch::toString(_to)),
+    //                  STICK_FILE,
+    //                  STICK_LINE);
+    // }
+    // Vec2f vec = from - *result;
+    // Float extent = crunch::toDegrees(crunch::directedAngle(vec, _to - *result));
+    // Int32 centerSide = line.side(*result);
+
+    // if (centerSide == 0)
+    // {
+    //     // If the center is lying on the line, we might have gotten the
+    //     // wrong sign for extent above. Use the sign of the side of the
+    //     // through point.
+    //     extent = throughSide * crunch::abs(extent);
+    // }
+    // else if (throughSide == centerSide)
+    // {
+    //     // If the center is on the same side of the line (from, to) as
+    //     // the through point, we're extending bellow 180 degrees and
+    //     // need to adapt extent.
+    //     extent -= 360.0 * (extent < 0 ? -1 : 1);
+    // }
+
+    // return arcHelper(extent, Segment(this, m_segmentData.count() - 1), vec, _to, *result,
+    // nullptr);
+
+    auto err = segments::arcTo(m_segmentData, _through, _to);
+    if (!err)
+        appendedSegment();
+    return err;
+}
+
+Error Path::arcTo(const Vec2f & _to, bool _bClockwise)
+{
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+
+    // Vec2f mid = (current.position + _to) * 0.5;
+    // Vec2f dir = (mid - current.position);
+    // dir = !_bClockwise ? Vec2f(-dir.y, dir.x) : Vec2f(dir.y, -dir.x);
+    // return arcTo(mid + dir, _to);
+
+    auto err = segments::arcTo(m_segmentData, _to, _bClockwise);
+    if (!err)
+        appendedSegment();
+    return err;
+}
+
+Error Path::arcTo(
+    const Vec2f & _to, const Vec2f & _radii, Float _rotation, bool _bClockwise, bool _bLarge)
+{
+    // STICK_ASSERT(m_segmentData.count());
+    // if (crunch::isClose(_radii.x, (Float)0.0) || crunch::isClose(_radii.y, (Float)0.0))
+    // {
+    //     addPoint(_to);
+    //     return Error();
+    // }
+
+    // Vec2f from = m_segmentData.last().position;
+    // Vec2f middle = (from + _to) * 0.5;
+    // Vec2f pt = crunch::rotate(from - middle, -_rotation);
+    // Float rx = crunch::abs(_radii.x);
+    // Float ry = crunch::abs(_radii.y);
+    // // printf("RX, RY %f %f\n", rx, ry);
+    // Float rxSq = rx * rx;
+    // Float rySq = ry * ry;
+    // Float xSq = pt.x * pt.x;
+    // Float ySq = pt.y * pt.y;
+    // Float factor = std::sqrt(xSq / rxSq + ySq / rySq);
+    // if (factor > 1)
+    // {
+    //     // printf("APPLY FACTOR\n");
+    //     rx *= factor;
+    //     ry *= factor;
+    //     rxSq = rx * rx;
+    //     rySq = ry * ry;
+    // }
+    // // printf("RX2, RY2 %f %f\n", rx, ry);
+
+    // factor = (rxSq * rySq - rxSq * ySq - rySq * xSq) / (rxSq * ySq + rySq * xSq);
+    // if (crunch::abs(factor) < detail::PaperConstants::trigonometricEpsilon())
+    // {
+    //     // printf("SET FACTOR TO 0\n");
+    //     factor = 0;
+    // }
+
+    // if (factor < 0)
+    // {
+    //     return Error(ec::InvalidArgument,
+    //                  "Cannot create an arc with the given arguments",
+    //                  STICK_FILE,
+    //                  STICK_LINE);
+    // }
+
+    // Vec2f center(rx * pt.y / ry, -ry * pt.x / rx);
+    // center = crunch::rotate(center * ((_bLarge == _bClockwise ? -1 : 1) * std::sqrt(factor)),
+    //                         _rotation) +
+    //          middle;
+    // // Now create a matrix that maps the unit circle to the ellipse,
+    // // for easier construction below.
+    // Mat32f matrix = Mat32f::translation(center);
+    // matrix.rotate(_rotation);
+    // matrix.scale(_radii);
+    // Mat32f inv = crunch::inverse(matrix);
+    // Vec2f vect = inv * from;
+    // Float extent = crunch::directedAngle(vect, inv * _to);
+
+    // if (!_bClockwise && extent > 0)
+    //     extent -= crunch::Constants<Float>::twoPi();
+    // else if (_bClockwise && extent < 0)
+    //     extent += crunch::Constants<Float>::twoPi();
+
+    // return arcHelper(crunch::toDegrees(extent),
+    //                  Segment(this, m_segmentData.count() - 1),
+    //                  vect,
+    //                  _to,
+    //                  center,
+    //                  &matrix);
+
+    auto err = segments::arcTo(m_segmentData, _to, _radii, _rotation, _bClockwise, _bLarge);
+    if (!err)
+        appendedSegment();
+    return err;
 }
 
 Error Path::arcHelper(Float _extentDeg,
@@ -353,38 +764,53 @@ Error Path::arcHelper(Float _extentDeg,
 
 void Path::cubicCurveBy(const Vec2f & _handleOne, const Vec2f & _handleTwo, const Vec2f & _by)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
-    cubicCurveTo(
-        current.position + _handleOne, current.position + _handleTwo, current.position + _by);
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+    // cubicCurveTo(
+    //     current.position + _handleOne, current.position + _handleTwo, current.position + _by);
+    segments::cubicCurveBy(m_segmentData, _handleOne, _handleTwo, _by);
+    appendedSegment();
 }
 
 void Path::quadraticCurveBy(const Vec2f & _handle, const Vec2f & _by)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
-    quadraticCurveTo(current.position + _handle, current.position + _by);
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+    // quadraticCurveTo(current.position + _handle, current.position + _by);
+    segments::quadraticCurveBy(m_segmentData, _handle, _by);
+    appendedSegment();
 }
 
 void Path::curveBy(const Vec2f & _through, const Vec2f & _by, Float _parameter)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
-    curveTo(current.position + _through, current.position + _by, _parameter);
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+    // curveTo(current.position + _through, current.position + _by, _parameter);
+    segments::curveBy(m_segmentData, _through, _by, _parameter);
+    appendedSegment();
 }
 
 Error Path::arcBy(const Vec2f & _through, const Vec2f & _by)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
-    return arcTo(current.position + _through, current.position + _by);
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+    // return arcTo(current.position + _through, current.position + _by);
+    auto err = segments::arcBy(m_segmentData, _through, _by);
+    if (!err)
+        appendedSegment();
+    return err;
 }
 
 Error Path::arcBy(const Vec2f & _to, bool _bClockwise)
 {
-    STICK_ASSERT(m_segmentData.count());
-    SegmentData & current = m_segmentData.last();
-    return arcTo(current.position + _to, _bClockwise);
+    // STICK_ASSERT(m_segmentData.count());
+    // SegmentData & current = m_segmentData.last();
+    // return arcTo(current.position + _to, _bClockwise);
+
+    auto err = segments::arcBy(m_segmentData, _to, _bClockwise);
+    if (!err)
+        appendedSegment();
+    return err;
 }
 
 void Path::closePath()
@@ -587,7 +1013,9 @@ void Path::simplify(Float _tolerance)
 
 void Path::addSegment(const Vec2f & _point, const Vec2f & _handleIn, const Vec2f & _handleOut)
 {
-    createSegment(_point, _handleIn, _handleOut);
+    // createSegment(_point, _handleIn, _handleOut);
+    m_segmentData.append({_point + _handleIn, _point, _point + _handleOut});
+    appendedSegment();
 }
 
 void Path::addSegments(const SegmentData * _segments, Size _count)
@@ -674,7 +1102,15 @@ void Path::removeSegments()
 
 Segment Path::createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const Vec2f & _handleOut)
 {
-    return insertSegment(m_segmentData.count(), SegmentData{_handleIn, _pos, _handleOut});
+    return insertSegment(m_segmentData.count(),
+                         SegmentData{ _pos + _handleIn, _pos, _pos + _handleOut });
+}
+
+void Path::appendedSegment()
+{
+    if(m_segmentData.count() > 1)
+        m_curveData.append(CurveData{});
+    markGeometryDirty(true);
 }
 
 void Path::reverse()
@@ -712,7 +1148,7 @@ void Path::flatten(Float _angleTolerance,
 
     SegmentDataArray segs(newSegmentPositions.count(), m_segmentData.allocator());
     for (Size i = 0; i < newSegmentPositions.count(); ++i)
-        segs[i] = SegmentData{Vec2f(0), newSegmentPositions[i], Vec2f(0)};
+        segs[i] = SegmentData{ Vec2f(0), newSegmentPositions[i], Vec2f(0) };
 
     swapSegments(segs, isClosed());
 
@@ -744,12 +1180,12 @@ void Path::flattenRegular(Float _maxDistance, bool _bFlattenChildren)
     Float off = 0;
     while (off < len)
     {
-        segs.append({Vec2f(0), positionAt(std::min(off, len)), Vec2f(0)});
+        segs.append({ Vec2f(0), positionAt(std::min(off, len)), Vec2f(0) });
         off += _maxDistance;
     }
 
     if (off - len > 0)
-        segs.append({Vec2f(0), positionAt(len), Vec2f(0)});
+        segs.append({ Vec2f(0), positionAt(len), Vec2f(0) });
 
     swapSegments(segs, isClosed());
 
@@ -764,8 +1200,8 @@ Path::OffsetAndSampleCount Path::regularOffsetAndSampleCount(Float _maxDistance)
 {
     Float len = length();
     Size sampleCount = std::ceil(len / _maxDistance);
-    return {std::min(len, len / (Float)sampleCount),
-            /*isClosed() ? sampleCount - 1 :*/ sampleCount};
+    return { std::min(len, len / (Float)sampleCount),
+             /*isClosed() ? sampleCount - 1 :*/ sampleCount };
 }
 
 Float Path::regularOffset(Float _maxDistance)
@@ -873,7 +1309,7 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
 
     SegmentDataArray tmp(m_segmentData.allocator());
     tmp.reserve(_to.curve().segmentOne().m_index - _from.curve().segmentTwo().m_index + 1);
-    tmp.append({Vec2f(0.0), bez.positionOne(), bez.handleOne() - bez.positionOne()});
+    tmp.append({ Vec2f(0.0), bez.positionOne(), bez.handleOne() - bez.positionOne() });
 
     // add all the segments inbetween
     for (Size i = _from.curve().segmentTwo().m_index; i <= _to.curve().segmentOne().m_index; ++i)
@@ -896,11 +1332,11 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
             handleOut = bez2.handleOne() - bez2.positionOne();
         }
 
-        tmp.append({handleIn, seg.position(), handleOut});
+        tmp.append({ handleIn, seg.position(), handleOut });
     }
 
     // add the last segment based on the end curve location
-    tmp.append({bez2.handleTwo() - bez2.positionTwo(), bez2.positionTwo(), Vec2f(0.0f)});
+    tmp.append({ bez2.handleTwo() - bez2.positionTwo(), bez2.positionTwo(), Vec2f(0.0f) });
 
     ret->swapSegments(tmp, false);
 
@@ -1340,7 +1776,7 @@ static inline void intersectPaths(const Path * _self,
                     }
                     if (bAdd)
                     {
-                        _intersections.append({cl, intersections.values[z].position});
+                        _intersections.append({ cl, intersections.values[z].position });
                     }
                 }
             }
@@ -1588,9 +2024,9 @@ Maybe<Rect> Path::computeStrokeBounds(const Mat32f * _transform) const
     SegmentDataArray strokeSegs(m_segmentData.count(), m_segmentData.allocator());
     for (Size i = 0; i < strokeSegs.count(); ++i)
     {
-        strokeSegs[i] = {ismat * (m_segmentData[i].position + m_segmentData[i].handleIn),
-                         ismat * m_segmentData[i].position,
-                         ismat * (m_segmentData[i].position + m_segmentData[i].handleOut)};
+        strokeSegs[i] = { ismat * (m_segmentData[i].position + m_segmentData[i].handleIn),
+                          ismat * m_segmentData[i].position,
+                          ismat * (m_segmentData[i].position + m_segmentData[i].handleOut) };
     }
 
     for (Size i = 1; i < m_segmentData.count(); ++i)

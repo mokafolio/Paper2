@@ -41,13 +41,13 @@ class STICK_API SegmentT
 
     const Vec2f & position() const;
 
-    const Vec2f & handleIn() const;
+    Vec2f handleIn() const;
 
-    const Vec2f & handleOut() const;
+    Vec2f handleOut() const;
 
-    Vec2f handleInAbsolute() const;
+    const Vec2f & handleInAbsolute() const;
 
-    Vec2f handleOutAbsolute() const;
+    const Vec2f & handleOutAbsolute() const;
 
     CurveT<PT> curveIn() const;
 
@@ -107,13 +107,13 @@ class STICK_API CurveT
 
     const Vec2f & positionTwo() const;
 
-    const Vec2f & handleOne() const;
+    Vec2f handleOne() const;
 
-    Vec2f handleOneAbsolute() const;
+    const Vec2f & handleOneAbsolute() const;
 
-    const Vec2f & handleTwo() const;
+    Vec2f handleTwo() const;
 
-    Vec2f handleTwoAbsolute() const;
+    const Vec2f & handleTwoAbsolute() const;
 
     SegmentT<PT> segmentOne() const;
 
@@ -269,6 +269,58 @@ struct STICK_API Intersection
 };
 
 using IntersectionArray = stick::DynamicArray<Intersection>;
+
+namespace segments
+{
+void addPoint(SegmentDataArray & _segs, const Vec2f & _to);
+
+void cubicCurveTo(SegmentDataArray & _segs,
+                  const Vec2f & _handleOne,
+                  const Vec2f & _handleTwo,
+                  const Vec2f & _to);
+
+void quadraticCurveTo(SegmentDataArray & _segs, const Vec2f & _handle, const Vec2f & _to);
+
+void curveTo(SegmentDataArray & _segs,
+             const Vec2f & _through,
+             const Vec2f & _to,
+             Float _parameter = 0.5);
+
+Error arcTo(SegmentDataArray & _segs, const Vec2f & _through, const Vec2f & _to);
+
+Error arcTo(SegmentDataArray & _segs, const Vec2f & _to, bool _bClockwise = true);
+
+Error arcTo(SegmentDataArray & _segs,
+            const Vec2f & _to,
+            const Vec2f & _radii,
+            Float _rotation,
+            bool _bClockwise,
+            bool _bLarge);
+
+// relative post-script style drawing commands
+void cubicCurveBy(SegmentDataArray & _segs,
+                  const Vec2f & _handleOne,
+                  const Vec2f & _handleTwo,
+                  const Vec2f & _by);
+
+void quadraticCurveBy(SegmentDataArray & _segs, const Vec2f & _handle, const Vec2f & _by);
+
+void curveBy(SegmentDataArray & _segs,
+             const Vec2f & _through,
+             const Vec2f & _by,
+             Float _parameter = 0.5);
+
+Error arcBy(SegmentDataArray & _segs, const Vec2f & _through, const Vec2f & _by);
+
+Error arcBy(SegmentDataArray & _segs, const Vec2f & _to, bool _bClockwise = true);
+
+Error arcHelper(SegmentDataArray & _segs,
+                Float _extentDeg,
+                const Vec2f & _direction,
+                const Vec2f & _to,
+                const Vec2f & _center,
+                const Mat32f * _transform);
+} // namespace segments
 
 class STICK_API Path : public Item
 {
@@ -473,6 +525,8 @@ class STICK_API Path : public Item
 
     void markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDirty = true);
 
+    void appendedSegment();
+
     SegmentDataArray m_segmentData;
     mutable CurveDataArray m_curveData;
     bool m_bIsClosed;
@@ -526,27 +580,29 @@ const Vec2f & SegmentT<PT>::position() const
 }
 
 template <class PT>
-const Vec2f & SegmentT<PT>::handleIn() const
+Vec2f SegmentT<PT>::handleIn() const
 {
+    return m_path->m_segmentData[m_index].handleIn - m_path->m_segmentData[m_index].position;
+}
+
+template <class PT>
+Vec2f SegmentT<PT>::handleOut() const
+{
+    return m_path->m_segmentData[m_index].handleOut - m_path->m_segmentData[m_index].position;
+}
+
+template <class PT>
+const Vec2f & SegmentT<PT>::handleInAbsolute() const
+{
+    // return position() + handleIn();
     return m_path->m_segmentData[m_index].handleIn;
 }
 
 template <class PT>
-const Vec2f & SegmentT<PT>::handleOut() const
+const Vec2f & SegmentT<PT>::handleOutAbsolute() const
 {
+    // return position() + handleOut();
     return m_path->m_segmentData[m_index].handleOut;
-}
-
-template <class PT>
-Vec2f SegmentT<PT>::handleInAbsolute() const
-{
-    return position() + handleIn();
-}
-
-template <class PT>
-Vec2f SegmentT<PT>::handleOutAbsolute() const
-{
-    return position() + handleOut();
 }
 
 template <class PT>
@@ -702,25 +758,25 @@ const Vec2f & CurveT<PT>::positionTwo() const
 }
 
 template <class PT>
-const Vec2f & CurveT<PT>::handleOne() const
+Vec2f CurveT<PT>::handleOne() const
 {
     return segmentOne().handleOut();
 }
 
 template <class PT>
-Vec2f CurveT<PT>::handleOneAbsolute() const
+const Vec2f & CurveT<PT>::handleOneAbsolute() const
 {
     return segmentOne().handleOutAbsolute();
 }
 
 template <class PT>
-const Vec2f & CurveT<PT>::handleTwo() const
+Vec2f CurveT<PT>::handleTwo() const
 {
     return segmentTwo().handleIn();
 }
 
 template <class PT>
-Vec2f CurveT<PT>::handleTwoAbsolute() const
+const Vec2f & CurveT<PT>::handleTwoAbsolute() const
 {
     return segmentTwo().handleInAbsolute();
 }
@@ -809,9 +865,9 @@ stick::Maybe<CurveT<PT>> CurveT<PT>::divideAtParameter(Float _t)
     segmentTwo().setPosition(splitResult.second.positionTwo());
 
     // create the new segment
-    SegmentData seg = {splitResult.first.handleTwo() - splitResult.first.positionTwo(),
-                       splitResult.first.positionTwo(),
-                       splitResult.second.handleOne() - splitResult.second.positionOne()};
+    SegmentData seg = { splitResult.first.handleTwo() - splitResult.first.positionTwo(),
+                        splitResult.first.positionTwo(),
+                        splitResult.second.handleOne() - splitResult.second.positionOne() };
 
     m_path->insertSegment(m_index + 1, seg);
 

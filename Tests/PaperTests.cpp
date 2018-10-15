@@ -82,8 +82,8 @@ const Suite spec[] =
         p->addSegment(Vec2f(150.0f, 150.0f), Vec2f(-5.0f, -3.0f), Vec2f(5.0f, 3.0f));
         EXPECT(p->segmentData().count() == 3);
         EXPECT(p->segmentData()[2].position == Vec2f(150.0f, 150.0f));
-        EXPECT(p->segmentData()[2].handleIn == Vec2f(-5.0f, -3.0f));
-        EXPECT(p->segmentData()[2].handleOut == Vec2f(5.0f, 3.0f));
+        EXPECT(p->segmentData()[2].handleIn == Vec2f(145.0f, 147.0f));
+        EXPECT(p->segmentData()[2].handleOut == Vec2f(155.0f, 153.0f));
 
         printf("CC %lu\n", p->curveData().count());
         EXPECT(p->curveData().count() == 2);
@@ -118,7 +118,7 @@ const Suite spec[] =
         EXPECT(p->curves().last().positionTwo() == Vec2f(100.0f, 30.0f));
 
         // test insertion
-        p->insertSegment(1, SegmentData{Vec2f(0), Vec2f(100, 75.0), Vec2f(0)});
+        p->insertSegment(1, SegmentData{Vec2f(100, 75.0), Vec2f(100, 75.0), Vec2f(100, 75.0)});
         EXPECT(p->segmentData()[0].position == Vec2f(100.0f, 30.0f));
         EXPECT(p->segmentData()[1].position == Vec2f(100.0f, 75.0f));
         EXPECT(p->segmentData()[2].position == Vec2f(200.0f, 30.0f));
@@ -141,11 +141,12 @@ const Suite spec[] =
             Vec2f(150.0f, 150.0f),
             Vec2f(5.0f, 3.0f),
             Vec2f(0.0f, 0.0f),
-            Vec2f(100.0f, 30.0f),
+            Vec2f(100.0f, 30.0f)
         };
         i = 0;
         for (auto c : p->curves())
         {
+            printf("I %i\n", i);
             EXPECT(c.positionOne() == expectedCurves2[i++]);
             EXPECT(c.handleOne() == expectedCurves2[i++]);
             EXPECT(c.handleTwo() == expectedCurves2[i++]);

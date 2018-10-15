@@ -20,6 +20,75 @@ using namespace crunch;
 
 namespace detail
 {
+const char * toCString(const char * _begin, const char * _end)
+{
+    return _begin;
+}
+} // namespace detail
+
+template <class InputIter>
+class StringViewT
+{
+  public:
+    StringViewT()
+    {
+    }
+
+    StringViewT(const StringViewT &) = default;
+    StringViewT(StringViewT &&) = default;
+    StringViewT & operator=(const StringViewT &) = default;
+    StringViewT & operator=(StringViewT &&) = default;
+
+    StringViewT(InputIter _begin, InputIter _end) : m_begin(_begin), m_end(_end)
+    {
+    }
+
+    InputIter begin() const
+    {
+        return m_begin;
+    }
+
+    InputIter end() const
+    {
+        return m_end;
+    }
+
+    bool operator==(const char * _str) const
+    {
+        return std::strncmp(
+                   m_begin,
+                   _str,
+                   std::min((Size)std::strlen(_str), (Size)std::distance(m_begin, m_end))) == 0;
+    }
+
+    bool operator!=(const char * _str) const
+    {
+        return !(*this == _str);
+    }
+
+    const char * cString() const
+    {
+        return detail::toCString(m_begin, m_end);
+    }
+
+  private:
+    InputIter m_begin;
+    InputIter m_end;
+};
+
+template <class T>
+StringViewT<T> makeStringView(T _begin, T _end)
+{
+    return StringViewT<T>(_begin, _end);
+}
+
+StringViewT<const char *> makeStringView(const char * _str)
+{
+    return StringViewT<const char *>(_str, _str + std::strlen(_str));
+}
+
+namespace detail
+{
 static bool isCommand(const char _c)
 {
     return _c == 'M' || _c == 'm' || _c == 'L' || _c == 'l' || _c == 'H' || _c == 'h' ||
@@ -241,33 +310,7 @@ static stick::Maybe<ColorRGB> parseColor(String::ConstIter _begin, String::Const
     return Maybe<ColorRGB>();
 }
 
-class StringView
-{
-  public:
-    StringView()
-    {
-    }
-
-    StringView(String::ConstIter _begin, String::ConstIter _end) : m_begin(_begin), m_end(_end)
-    {
-    }
-
-    String::ConstIter begin() const
-    {
-        return m_begin;
-    }
-
-    String::ConstIter end() const
-    {
-        return m_end;
-    }
-
-  private:
-    String::ConstIter m_begin;
-    String::ConstIter m_end;
-};
-
-static StringView parseURL(String::ConstIter _begin, String::ConstIter _end)
+static StringViewT<String::ConstIter> parseURL(String::ConstIter _begin, String::ConstIter _end)
 {
     while (_begin != _end && *_begin != '(')
         ++_begin;
@@ -277,7 +320,7 @@ static StringView parseURL(String::ConstIter _begin, String::ConstIter _end)
     auto begin = _begin;
     while (_begin != _end && *_begin != ')')
         ++_begin;
-    return StringView(begin, _begin);
+    return StringViewT<String::ConstIter>(begin, _begin);
 };
 
 template <class Functor>
@@ -477,22 +520,166 @@ class SVGImportSession
                           bool _bIsPolygon,
                           Error & _error)
     {
+        auto mpoints = _node.attribute("points");
+        if (mpoints)
+        {
+            DynamicArray<Float> numbers(m_document->allocator());
+            numbers.reserve(64);
+            detail::parseNumbers(mpoints.value(),
+                                 mpoints.value() + std::strlen(mpoints.value()),
+                                 [](char) { return false; },
+                                 numbers);
+
+            SegmentDataArray segs(m_document->allocator());
+            segs.reserve(numbers.count() / 2);
+            for (Size i = 0; i < numbers.count(); i += 2)
+            {
+                segments::addPoint(segs, Vec2f(numbers[i], numbers[i + 1]));
+            }
+
+            Path * ret = m_document->createPath();
+            ret->swapSegments(segs, _bIsPolygon);
+
+            pushAttributes(_node, _rootNode, ret);
+            popAttributes();
+            return ret;
+        }
+        else
+        {
+            _error = Error(ec::ParseFailed,
+                           "SVG polyline/polygon is missing points attribute",
+                           STICK_FILE,
+                           STICK_LINE);
+        }
+        return nullptr;
     }
 
     Path * importCircle(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
     {
+        auto mcx = _node.attribute("cx");
+        auto mcy = _node.attribute("cy");
+        auto mr = _node.attribute("r");
+        if (mr)
+        {
+            Float x = mcx ? coordinatePixels(mcx.value()) : 0;
+            Float y = mcy ? coordinatePixels(mcx.value()) : 0;
+            Path * ret = m_document->createCircle(Vec2f(x, y), coordinatePixels(mr.value()));
+            pushAttributes(_node, _rootNode, ret);
+            popAttributes();
+            return ret;
+        }
+        else
+        {
+            _error = Error(
+                ec::ParseFailed, "SVG circle has to provide cx, cy and r", STICK_FILE, STICK_LINE);
+        }
+        return nullptr;
     }
 
     Path * importEllipse(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
     {
+        auto mcx = _node.attribute("cx");
+        auto mcy = _node.attribute("cy");
+        auto mrx = _node.attribute("rx");
+        auto mry = _node.attribute("ry");
+        if (mrx && mry)
+        {
+            Float x = mcx ? coordinatePixels(mcx.value()) : 0;
+            Float y = mcy ? coordinatePixels(mcy.value()) : 0;
+            Path * ret = m_document->createEllipse(
+                Vec2f(x, y),
+                Vec2f(coordinatePixels(mrx.value()) * 2, coordinatePixels(mry.value()) * 2));
+            pushAttributes(_node, _rootNode, ret);
+            popAttributes();
+            return ret;
+        }
+        else
+        {
+            _error = Error(ec::ParseFailed,
+                           "SVG ellipse has to provide cx, cy, rx and ry",
+                           STICK_FILE,
+                           STICK_LINE);
+        }
+        return nullptr;
     }
 
     Path * importRectangle(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
     {
+        auto mx = _node.attribute("x");
+        auto my = _node.attribute("y");
+        auto mw = _node.attribute("width");
+        auto mh = _node.attribute("height");
+
+        if (mx && my && mw && mh)
+        {
+            auto mrx = _node.attribute("rx");
+            auto mry = _node.attribute("ry");
+
+            Float x = coordinatePixels(mx.value());
+            Float y = coordinatePixels(my.value());
+            Path * ret;
+            if (mrx || mry)
+            {
+                Float rx = mrx ? coordinatePixels(mrx.value()) : coordinatePixels(mry.value());
+                Float ry = mry ? coordinatePixels(mry.value()) : rx;
+                ret = m_document->createRoundedRectangle(
+                    Vec2f(x, y),
+                    Vec2f(x, y) + Vec2f(coordinatePixels(mw.value()), coordinatePixels(mh.value())),
+                    Vec2f(rx, ry));
+            }
+            else
+            {
+                ret =
+                    m_document->createRectangle(Vec2f(x, y),
+                                                Vec2f(x, y) + Vec2f(coordinatePixels(mw.value()),
+                                                                    coordinatePixels(mh.value())));
+            }
+            pushAttributes(_node, _rootNode, ret);
+            popAttributes();
+            return ret;
+        }
+        else
+        {
+            _error = Error(ec::ParseFailed,
+                           "SVG rect missing x, y, width or height attribute",
+                           STICK_FILE,
+                           STICK_LINE);
+        }
+
+        return nullptr;
     }
 
     Path * importLine(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
     {
+        auto mx1 = _node.attribute("x1");
+        auto my1 = _node.attribute("y1");
+        auto mx2 = _node.attribute("x2");
+        auto my2 = _node.attribute("y2");
+        if (mx1 && my1 && mx2 && my2)
+        {
+            Float x1 = coordinatePixels(mx1.value());
+            Float y1 = coordinatePixels(my1.value());
+            Float x2 = coordinatePixels(mx2.value());
+            Float y2 = coordinatePixels(my2.value());
+
+            SegmentDataArray segs(m_document->allocator());
+            segs.reserve(2);
+            segments::addPoint(segs, Vec2f(x1, y1));
+            segments::addPoint(segs, Vec2f(x2, y2));
+            Path * ret = m_document->createPath();
+            ret->swapSegments(segs, false);
+            pushAttributes(_node, _rootNode, ret);
+            popAttributes();
+            return ret;
+        }
+        else
+        {
+            _error = Error(ec::ParseFailed,
+                           "SVG line missing x1, y1, x2 or y1 attribute",
+                           STICK_FILE,
+                           STICK_LINE);
+        }
+        return nullptr;
     }
 
     static void parsePathData(Document & _doc, Path * _path, const String & _data)
@@ -750,22 +937,22 @@ class SVGImportSession
         return toPixels(coord.value, coord.units, _start, _length);
     }
 
-    void parseAttribute(pugi::xml_attribute _attr, SVGAttributes & _attributes, Item * _item)
+    template <class SVA, class SVB>
+    void parseAttribute(SVA _name, SVB _value, SVGAttributes & _attributes, Item * _item)
     {
-        if (std::strcmp(_attr.name(), "style") == 0)
+        if (_name == "style")
         {
-            // parseStyle(_value, _attr, _item);
+            parseStyle(_value, _attributes, _item);
         }
-        else if (std::strcmp(_attr.name(), "fill") == 0)
+        else if (_name == "fill")
         {
-            if (std::strcmp(_attr.value(), "none") == 0)
+            if (_value == "none")
             {
                 _item->removeFill();
             }
             else
             {
-                auto col =
-                    detail::parseColor(_attr.value(), _attr.value() + std::strlen(_attr.value()));
+                auto col = detail::parseColor(_value.begin(), _value.end());
                 if (col)
                 {
                     auto c = toRGBA(*col);
@@ -776,32 +963,31 @@ class SVGImportSession
                 }
             }
         }
-        else if (std::strcmp(_attr.name(), "fill-opacity") == 0)
+        else if (_name == "fill-opacity")
         {
-            _attributes.fillColor.a = _attr.as_float();
+            _attributes.fillColor.a = std::atof(_value.cString());
             if (auto mf = _item->fill().maybe<ColorRGBA>())
             {
                 _item->setFill(ColorRGBA((*mf).r, (*mf).g, (*mf).b, (*mf).a));
             }
         }
-        else if (std::strcmp(_attr.name(), "fill-rule") == 0)
+        else if (_name == "fill-rule")
         {
-            if (std::strcmp(_attr.value(), "nonzero") == 0)
+            if (_value == "nonzero")
                 _attributes.windingRule = WindingRule::NonZero;
-            else if (std::strcmp(_attr.value(), "evenodd") == 0)
+            else if (_value == "evenodd")
                 _attributes.windingRule = WindingRule::EvenOdd;
             _item->setWindingRule(_attributes.windingRule);
         }
-        else if (std::strcmp(_attr.name(), "stroke") == 0)
+        else if (_name == "stroke")
         {
-            if (std::strcmp(_attr.value(), "none") == 0)
+            if (_value == "none")
             {
                 _item->removeStroke();
             }
             else
             {
-                auto col =
-                    detail::parseColor(_attr.value(), _attr.value() + std::strlen(_attr.value()));
+                auto col = detail::parseColor(_value.begin(), _value.end());
                 if (col)
                 {
                     auto c = toRGBA(*col);
@@ -812,57 +998,57 @@ class SVGImportSession
                 }
             }
         }
-        else if (std::strcmp(_attr.name(), "stroke-opacity") == 0)
+        else if (_name == "stroke-opacity")
         {
-            _attributes.strokeColor.a = _attr.as_float();
+            _attributes.strokeColor.a = std::atof(_value.cString());
             if (auto mf = _item->stroke().maybe<ColorRGBA>())
             {
                 _item->setStroke(ColorRGBA((*mf).r, (*mf).g, (*mf).b, _attributes.strokeColor.a));
             }
         }
-        else if (std::strcmp(_attr.name(), "stroke-width") == 0)
+        else if (_name == "stroke-width")
         {
-            _attributes.strokeWidth = coordinatePixels(_attr.value());
+            _attributes.strokeWidth = coordinatePixels(_value.cString());
             _item->setStrokeWidth(_attributes.strokeWidth);
         }
-        else if (std::strcmp(_attr.name(), "stroke-linecap") == 0)
+        else if (_name == "stroke-linecap")
         {
-            if (std::strcmp(_attr.value(), "butt") == 0)
+            if (_value == "butt")
                 _attributes.strokeCap = StrokeCap::Butt;
-            else if (std::strcmp(_attr.value(), "round") == 0)
+            else if (_value == "round")
                 _attributes.strokeCap = StrokeCap::Round;
-            else if (std::strcmp(_attr.value(), "square") == 0)
+            else if (_value == "square")
                 _attributes.strokeCap = StrokeCap::Square;
 
             _item->setStrokeCap(_attributes.strokeCap);
         }
-        else if (std::strcmp(_attr.name(), "stroke-linejoin") == 0)
+        else if (_name == "stroke-linejoin")
         {
-            if (std::strcmp(_attr.value(), "miter") == 0)
+            if (_value == "miter")
                 _attributes.strokeJoin = StrokeJoin::Miter;
-            else if (std::strcmp(_attr.value(), "round") == 0)
+            else if (_value == "round")
                 _attributes.strokeJoin = StrokeJoin::Round;
-            else if (std::strcmp(_attr.value(), "bevel") == 0)
+            else if (_value == "bevel")
                 _attributes.strokeJoin = StrokeJoin::Bevel;
 
             _item->setStrokeJoin(_attributes.strokeJoin);
         }
-        else if (std::strcmp(_attr.name(), "stroke-miterlimit") == 0)
+        else if (_name == "stroke-miterlimit")
         {
-            _attributes.miterLimit = coordinatePixels(_attr.value());
+            _attributes.miterLimit = coordinatePixels(_value.cString());
             _item->setMiterLimit(_attributes.miterLimit);
         }
-        else if (std::strcmp(_attr.name(), "vector-effect") == 0)
+        else if (_name == "vector-effect")
         {
-            _attributes.bScalingStroke = std::strcmp(_attr.value(), "non-scaling-stroke") != 0;
+            _attributes.bScalingStroke = _value != "non-scaling-stroke";
             _item->setScaleStroke(_attributes.bScalingStroke);
         }
-        else if (std::strcmp(_attr.name(), "stroke-dasharray") == 0)
+        else if (_name == "stroke-dasharray")
         {
             _attributes.dashArray.clear();
 
-            auto it = _attr.value();
-            auto end = _attr.value() + std::strlen(_attr.value());
+            auto it = _value.begin();
+            auto end = _value.end();
             it = detail::skipWhitespaceAndCommas(it, end);
 
             // handle none case
@@ -880,37 +1066,69 @@ class SVGImportSession
 
             _item->setDashArray(_attributes.dashArray);
         }
-        else if (std::strcmp(_attr.name(), "stroke-dashoffset") == 0)
+        else if (_name == "stroke-dashoffset")
         {
-            _attributes.dashOffset = coordinatePixels(_attr.value());
+            _attributes.dashOffset = coordinatePixels(_value.cString());
             _item->setDashOffset(_attributes.dashOffset);
         }
-        else if (std::strcmp(_attr.name(), "font-size") == 0)
+        else if (_name == "font-size")
         {
-            _attributes.fontSize = coordinatePixels(_attr.value());
+            _attributes.fontSize = coordinatePixels(_value.cString());
         }
-        else if (std::strcmp(_attr.name(), "transform") == 0)
+        else if (_name == "transform")
         {
-            _item->setTransform(
-                detail::parseTransform(_attr.value(), _attr.value() + std::strlen(_attr.value())));
+            _item->setTransform(detail::parseTransform(_value.begin(), _value.end()));
         }
-        else if (std::strcmp(_attr.name(), "id") == 0)
+        else if (_name == "id")
         {
-            _item->setName(_attr.value());
-            m_namedItems.insert(_attr.value(), _item);
+            //@TODO: Correct allocators
+            _item->setName(String(_value.begin(), _value.end()));
+            m_namedItems.insert(String(_value.begin(), _value.end()), _item);
         }
     }
 
-    void parseStyle(const String & _style, SVGAttributes & _attr, Item * _item)
+    template <class SV>
+    void parseStyle(SV _style, SVGAttributes & _attributes, Item * _item)
     {
+        auto b = _style.begin();
+        auto e = _style.end();
+        SV left, right;
+        while (b != e)
+        {
+            while (b != e && std::isspace(*b))
+                ++b;
+            auto ls = b;
+            while (b != e && *b != ':')
+                ++b;
+            left = SV(ls, b);
+            ++b;
+            while (b != e && std::isspace(*b))
+                ++b;
+            ls = b;
+            while (b != e && *b != ';')
+                ++b;
+            right = SV(ls, b);
+            parseAttribute(left, right, _attributes, _item);
+            if (b != e)
+                ++b;
+        }
     }
 
     void pushAttributes(pugi::xml_node _node, pugi::xml_node _rootNode, Item * _item)
     {
+        SVGAttributes attr;
+        if (m_attributeStack.count())
+            attr = m_attributeStack.last();
+
+        for (auto it = _node.attributes_begin(); it != _node.attributes_end(); ++it)
+            parseAttribute(makeStringView(it->name()), makeStringView(it->value()), attr, _item);
+
+        m_attributeStack.append(attr);
     }
 
     void popAttributes()
     {
+        m_attributeStack.removeLast();
     }
 
     Document * m_document;
@@ -922,6 +1140,16 @@ class SVGImportSession
     DynamicArray<Item *> m_tmpItems;
     HashMap<String, Item *> m_namedItems;
 };
+
+SVGImport::SVGImport()
+{
+}
+
+SVGImportResult SVGImport::parse(Document & _doc, const String & _svg, Size _dpi)
+{
+    SVGImportSession session;
+    return session.parse(_doc, _svg, _dpi);
+}
 
 } // namespace svg
 } // namespace paper

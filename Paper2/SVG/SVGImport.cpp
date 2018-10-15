@@ -428,7 +428,7 @@ class SVGImportSession
 
     Item * recursivelyImportNode(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
     {
-        Item * item;
+        Item * item = nullptr;
         if (std::strcmp(_node.name(), "svg") == 0)
         {
             item = importGroup(_node, _rootNode, true, _error);
@@ -483,6 +483,7 @@ class SVGImportSession
         {
             //?
         }
+        return item;
     }
 
     Group * importGroup(pugi::xml_node _node,
@@ -490,10 +491,92 @@ class SVGImportSession
                         bool _bSVGNode,
                         Error & _error)
     {
+        Group * grp = m_document->createGroup();
+
+        // establish a new view based on the provided x,y,width,height (needed for viewbox
+        // calculation)
+        if (_bSVGNode)
+        {
+            Float x, y, w, h;
+            auto mx = _node.attribute("x");
+            auto my = _node.attribute("y");
+            auto mw = _node.attribute("width");
+            auto mh = _node.attribute("height");
+            if (mw && mh)
+            {
+                w = mw.as_float();
+                h = mh.as_float();
+                x = mx ? mx.as_float() : 0;
+                y = my ? my.as_float() : 0;
+                m_viewStack.append(Rect(x, y, x + w, y + h));
+            }
+        }
+        pushAttributes(_node, _rootNode, grp);
+        for (auto & child : _node)
+        {
+            Item * item = recursivelyImportNode(child, _rootNode, _error);
+            if (_error)
+                break;
+            else
+                grp->addChild(item);
+
+            // set the default fill if none is inherited
+            if (item->itemType() == ItemType::Path && !item->hasFill())
+                item->setFill(ColorRGBA(0, 0, 0, 1));
+        }
+
+        detail::findXMLAttrCB(_node, "viewBox", grp, [&](Item * _it, pugi::xml_attribute _attr) {
+            // if no view is esablished, ignore viewbox
+            if (m_viewStack.count())
+            {
+                // TODO: take preserveAspectRatio attribute into account (argh NOOOOOOOOOO)
+                const Rect & r = m_viewStack.last();
+
+                stick::DynamicArray<Float> numbers(m_document->allocator());
+                numbers.reserve(4);
+
+                detail::parseNumbers(_attr.value(),
+                                     _attr.value() + std::strlen(_attr.value()),
+                                     [](char _c) { return false; },
+                                     numbers);
+                Mat32f viewTransform = Mat32f::identity();
+                if (m_viewStack.count() > 1)
+                    viewTransform.translate(r.min());
+                Vec2f scale(r.width() / numbers[2], r.height() / numbers[3]);
+                viewTransform.scale(scale);
+                _it->setTransform(viewTransform);
+
+                Path * mask =
+                    m_document->createRectangle(Vec2f(0, 0), r.size() * (Vec2f(1.0) / scale));
+                mask->insertBelow(grp->children().first());
+                grp->setClipped(true);
+            }
+        });
+
+        if (_bSVGNode)
+            m_viewStack.removeLast();
+
+        popAttributes();
+        return grp;
     }
 
     Path * importClipPath(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
     {
+        Path * ret = m_document->createPath();
+        for (auto & child : _node)
+        {
+            Item * item = recursivelyImportNode(child, _rootNode, _error);
+            if (_error)
+                break;
+            // only add paths as children, ignore the rest (there should be no rest though,
+            // safety first :))
+            if (item->itemType() == ItemType::Path)
+                ret->addChild(static_cast<Path *>(item));
+        }
+        pushAttributes(_node, _rootNode, ret);
+        popAttributes();
+        m_tmpItems.append(ret);
+        return ret;
     }
 
     Path * importPath(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)

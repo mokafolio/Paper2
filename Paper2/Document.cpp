@@ -3,6 +3,10 @@
 #include <Paper2/Path.hpp>
 #include <Paper2/Symbol.hpp>
 
+#include <Paper2/SVG/SVGImport.hpp>
+
+#include <Stick/FileUtilities.hpp>
+
 namespace paper
 {
 using namespace stick;
@@ -27,10 +31,12 @@ Path * Document::createEllipse(const Vec2f & _center, const Vec2f & _size, const
 
     // NOTE: Last time I checked original paper.js build a circle differently.
     // we are building it this way to be identical with SVG.
-    static SegmentData s_unitSegments[4] = {{Vec2f(0, -s_kappa), Vec2f(1, 0), Vec2f(0, s_kappa)},
-                                            {Vec2f(s_kappa, 0), Vec2f(0, 1), Vec2f(-s_kappa, 0)},
-                                            {Vec2f(0, s_kappa), Vec2f(-1, 0), Vec2f(0, -s_kappa)},
-                                            {Vec2f(-s_kappa, 0), Vec2f(0, -1), Vec2f(s_kappa, 0)}};
+    static SegmentData s_unitSegments[4] = {
+        { Vec2f(0, -s_kappa), Vec2f(1, 0), Vec2f(0, s_kappa) },
+        { Vec2f(s_kappa, 0), Vec2f(0, 1), Vec2f(-s_kappa, 0) },
+        { Vec2f(0, s_kappa), Vec2f(-1, 0), Vec2f(0, -s_kappa) },
+        { Vec2f(-s_kappa, 0), Vec2f(0, -1), Vec2f(s_kappa, 0) }
+    };
 
     Path * ret = createPath(_name);
 
@@ -38,9 +44,9 @@ Path * Document::createEllipse(const Vec2f & _center, const Vec2f & _size, const
     SegmentData segs[4];
     for (Int32 i = 0; i < 4; ++i)
     {
-        segs[i] = {s_unitSegments[i].handleIn * rad,
-                   s_unitSegments[i].position * rad + _center,
-                   s_unitSegments[i].handleOut * rad};
+        segs[i] = { s_unitSegments[i].handleIn * rad,
+                    s_unitSegments[i].position * rad + _center,
+                    s_unitSegments[i].handleOut * rad };
     }
     ret->addSegments(segs, 4);
     ret->closePath();
@@ -57,10 +63,10 @@ Path * Document::createRectangle(const Vec2f & _from, const Vec2f & _to, const c
 {
     Path * ret = createPath(_name);
 
-    SegmentData segs[4] = {{Vec2f(0), Vec2f(_to.x, _from.y), Vec2f(0)},
-                           {Vec2f(0), _to, Vec2f(0)},
-                           {Vec2f(0), Vec2f(_from.x, _to.y), Vec2f(0)},
-                           {Vec2f(0), _from, Vec2f(0)}};
+    SegmentData segs[4] = { { Vec2f(0), Vec2f(_to.x, _from.y), Vec2f(0) },
+                            { Vec2f(0), _to, Vec2f(0) },
+                            { Vec2f(0), Vec2f(_from.x, _to.y), Vec2f(0) },
+                            { Vec2f(0), _from, Vec2f(0) } };
 
     ret->addSegments(segs, 4);
     ret->closePath();
@@ -85,14 +91,14 @@ Path * Document::createRoundedRectangle(const Vec2f & _min,
     Float rh = delta.y;
     Float rw = delta.x;
 
-    SegmentData segs[8] = {{Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0)},
-                           {Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0)},
-                           {Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0)},
-                           {Vec2f(0), _max + Vec2f(0, -ry), Vec2f(0, hy)},
-                           {Vec2f(hx, 0), _max + Vec2f(-rx, 0), Vec2f(0)},
-                           {Vec2f(0), _min + Vec2f(rx, rh), Vec2f(-hx, 0)},
-                           {Vec2f(0, hy), _min + Vec2f(0, rh - ry), Vec2f(0)},
-                           {Vec2f(0), _min + Vec2f(0, ry), Vec2f(0, -hy)}};
+    SegmentData segs[8] = { { Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0) },
+                            { Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0) },
+                            { Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0) },
+                            { Vec2f(0), _max + Vec2f(0, -ry), Vec2f(0, hy) },
+                            { Vec2f(hx, 0), _max + Vec2f(-rx, 0), Vec2f(0) },
+                            { Vec2f(0), _min + Vec2f(rx, rh), Vec2f(-hx, 0) },
+                            { Vec2f(0, hy), _min + Vec2f(0, rh - ry), Vec2f(0) },
+                            { Vec2f(0), _min + Vec2f(0, ry), Vec2f(0, -hy) } };
 
     ret->addSegments(segs, 8);
     ret->closePath();
@@ -162,7 +168,18 @@ void Document::destroyItem(Item * _e)
         m_itemStorage.remove(it);
 }
 
-Error Document::saveSVG(const String & _uri) const
+svg::SVGImportResult Document::parseSVG(const String & _svg, Size _dpi)
 {
+    svg::SVGImport import;
+    return import.parse(*this, _svg, _dpi);
 }
+
+svg::SVGImportResult Document::loadSVG(const String & _uri, Size _dpi)
+{
+    auto result = loadTextFile(_uri);
+    if (!result)
+        return result.error();
+    return parseSVG(result.get(), _dpi);
+}
+
 } // namespace paper

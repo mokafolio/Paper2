@@ -388,8 +388,10 @@ class SVGImportSession
   public:
     SVGImportResult parse(Document & _doc, const String & _svg, Size _dpi)
     {
-        // m_dpi = _dpi;
-        // m_namedItems.clear();
+        printf("START PARSE\n");
+        m_document = &_doc;
+        m_dpi = _dpi;
+        m_namedItems.clear();
 
         pugi::xml_document doc;
         pugi::xml_parse_result result = doc.load_buffer(_svg.ptr(), _svg.length());
@@ -407,13 +409,14 @@ class SVGImportSession
                 h = val.as_float();
 
             Error err;
-            Group * grp = static_cast<Group *>(recursivelyImportNode(doc, doc, err));
+            Group * grp = static_cast<Group *>(recursivelyImportNode(doc.first_child(), err));
 
             // remove all tmp items
             for (auto & item : m_tmpItems)
                 item->remove();
             m_tmpItems.clear();
 
+            printf("SUCCESS? %p\n", grp);
             return SVGImportResult(grp, w, h, err);
         }
         else
@@ -424,54 +427,56 @@ class SVGImportSession
                       STICK_FILE,
                       STICK_LINE));
         }
+        printf("END PARSE\n");
     }
 
-    Item * recursivelyImportNode(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Item * recursivelyImportNode(pugi::xml_node _node, Error & _error)
     {
+        printf("recursivelyImportNode %s\n", _node.name());
         Item * item = nullptr;
         if (std::strcmp(_node.name(), "svg") == 0)
         {
-            item = importGroup(_node, _rootNode, true, _error);
+            item = importGroup(_node, true, _error);
         }
         else if (std::strcmp(_node.name(), "g") == 0)
         {
-            item = importGroup(_node, _rootNode, false, _error);
+            item = importGroup(_node, false, _error);
         }
         else if (std::strcmp(_node.name(), "rect") == 0)
         {
-            item = importRectangle(_node, _rootNode, _error);
+            item = importRectangle(_node, _error);
         }
         else if (std::strcmp(_node.name(), "circle") == 0)
         {
-            item = importCircle(_node, _rootNode, _error);
+            item = importCircle(_node, _error);
         }
         else if (std::strcmp(_node.name(), "ellipse") == 0)
         {
-            item = importEllipse(_node, _rootNode, _error);
+            item = importEllipse(_node, _error);
         }
         else if (std::strcmp(_node.name(), "line") == 0)
         {
-            item = importLine(_node, _rootNode, _error);
+            item = importLine(_node, _error);
         }
         else if (std::strcmp(_node.name(), "polyline") == 0)
         {
-            item = importPolyline(_node, _rootNode, false, _error);
+            item = importPolyline(_node, false, _error);
         }
         else if (std::strcmp(_node.name(), "polygon") == 0)
         {
-            item = importPolyline(_node, _rootNode, true, _error);
+            item = importPolyline(_node, true, _error);
         }
         else if (std::strcmp(_node.name(), "path") == 0)
         {
-            item = importPath(_node, _rootNode, _error);
+            item = importPath(_node, _error);
         }
         else if (std::strcmp(_node.name(), "clipPath") == 0)
         {
-            item = importClipPath(_node, _rootNode, _error);
+            item = importClipPath(_node, _error);
         }
         else if (std::strcmp(_node.name(), "defs") == 0)
         {
-            item = importGroup(_node, _rootNode, false, _error);
+            item = importGroup(_node, false, _error);
             if (!_error)
                 m_tmpItems.append(item);
         }
@@ -487,10 +492,10 @@ class SVGImportSession
     }
 
     Group * importGroup(pugi::xml_node _node,
-                        pugi::xml_node _rootNode,
                         bool _bSVGNode,
                         Error & _error)
     {
+        printf("IMPORT GROUP\n");
         Group * grp = m_document->createGroup();
 
         // establish a new view based on the provided x,y,width,height (needed for viewbox
@@ -511,10 +516,10 @@ class SVGImportSession
                 m_viewStack.append(Rect(x, y, x + w, y + h));
             }
         }
-        pushAttributes(_node, _rootNode, grp);
+        pushAttributes(_node, grp);
         for (auto & child : _node)
         {
-            Item * item = recursivelyImportNode(child, _rootNode, _error);
+            Item * item = recursivelyImportNode(child, _error);
             if (_error)
                 break;
             else
@@ -557,15 +562,16 @@ class SVGImportSession
             m_viewStack.removeLast();
 
         popAttributes();
+        printf("IMPORT GROUP END\n");
         return grp;
     }
 
-    Path * importClipPath(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Path * importClipPath(pugi::xml_node _node, Error & _error)
     {
         Path * ret = m_document->createPath();
         for (auto & child : _node)
         {
-            Item * item = recursivelyImportNode(child, _rootNode, _error);
+            Item * item = recursivelyImportNode(child, _error);
             if (_error)
                 break;
             // only add paths as children, ignore the rest (there should be no rest though,
@@ -573,19 +579,19 @@ class SVGImportSession
             if (item->itemType() == ItemType::Path)
                 ret->addChild(static_cast<Path *>(item));
         }
-        pushAttributes(_node, _rootNode, ret);
+        pushAttributes(_node, ret);
         popAttributes();
         m_tmpItems.append(ret);
         return ret;
     }
 
-    Path * importPath(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Path * importPath(pugi::xml_node _node, Error & _error)
     {
         if (auto attr = _node.attribute("d"))
         {
             const char * str = attr.value();
             Path * p = m_document->createPath();
-            pushAttributes(_node, _rootNode, p);
+            pushAttributes(_node, p);
             parsePathData(*m_document, p, str);
             popAttributes();
             return p;
@@ -599,7 +605,6 @@ class SVGImportSession
     }
 
     Path * importPolyline(pugi::xml_node _node,
-                          pugi::xml_node _rootNode,
                           bool _bIsPolygon,
                           Error & _error)
     {
@@ -623,7 +628,7 @@ class SVGImportSession
             Path * ret = m_document->createPath();
             ret->swapSegments(segs, _bIsPolygon);
 
-            pushAttributes(_node, _rootNode, ret);
+            pushAttributes(_node, ret);
             popAttributes();
             return ret;
         }
@@ -637,7 +642,7 @@ class SVGImportSession
         return nullptr;
     }
 
-    Path * importCircle(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Path * importCircle(pugi::xml_node _node, Error & _error)
     {
         auto mcx = _node.attribute("cx");
         auto mcy = _node.attribute("cy");
@@ -647,7 +652,7 @@ class SVGImportSession
             Float x = mcx ? coordinatePixels(mcx.value()) : 0;
             Float y = mcy ? coordinatePixels(mcx.value()) : 0;
             Path * ret = m_document->createCircle(Vec2f(x, y), coordinatePixels(mr.value()));
-            pushAttributes(_node, _rootNode, ret);
+            pushAttributes(_node, ret);
             popAttributes();
             return ret;
         }
@@ -659,7 +664,7 @@ class SVGImportSession
         return nullptr;
     }
 
-    Path * importEllipse(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Path * importEllipse(pugi::xml_node _node, Error & _error)
     {
         auto mcx = _node.attribute("cx");
         auto mcy = _node.attribute("cy");
@@ -672,7 +677,7 @@ class SVGImportSession
             Path * ret = m_document->createEllipse(
                 Vec2f(x, y),
                 Vec2f(coordinatePixels(mrx.value()) * 2, coordinatePixels(mry.value()) * 2));
-            pushAttributes(_node, _rootNode, ret);
+            pushAttributes(_node, ret);
             popAttributes();
             return ret;
         }
@@ -686,7 +691,7 @@ class SVGImportSession
         return nullptr;
     }
 
-    Path * importRectangle(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Path * importRectangle(pugi::xml_node _node, Error & _error)
     {
         auto mx = _node.attribute("x");
         auto my = _node.attribute("y");
@@ -717,7 +722,7 @@ class SVGImportSession
                                                 Vec2f(x, y) + Vec2f(coordinatePixels(mw.value()),
                                                                     coordinatePixels(mh.value())));
             }
-            pushAttributes(_node, _rootNode, ret);
+            pushAttributes(_node, ret);
             popAttributes();
             return ret;
         }
@@ -732,7 +737,7 @@ class SVGImportSession
         return nullptr;
     }
 
-    Path * importLine(pugi::xml_node _node, pugi::xml_node _rootNode, Error & _error)
+    Path * importLine(pugi::xml_node _node, Error & _error)
     {
         auto mx1 = _node.attribute("x1");
         auto my1 = _node.attribute("y1");
@@ -751,7 +756,7 @@ class SVGImportSession
             segments::addPoint(segs, Vec2f(x2, y2));
             Path * ret = m_document->createPath();
             ret->swapSegments(segs, false);
-            pushAttributes(_node, _rootNode, ret);
+            pushAttributes(_node, ret);
             popAttributes();
             return ret;
         }
@@ -1197,7 +1202,7 @@ class SVGImportSession
         }
     }
 
-    void pushAttributes(pugi::xml_node _node, pugi::xml_node _rootNode, Item * _item)
+    void pushAttributes(pugi::xml_node _node, Item * _item)
     {
         SVGAttributes attr;
         if (m_attributeStack.count())

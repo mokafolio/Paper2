@@ -2,6 +2,7 @@
 #define PAPER_DOCUMENT_HPP
 
 #include <Paper2/Item.hpp>
+#include <Paper2/SVG/SVGImportResult.hpp>
 #include <Stick/UniquePtr.hpp>
 
 namespace paper
@@ -48,9 +49,11 @@ class STICK_API Document : public Item
 
     const Vec2f & size() const;
 
-    stick::Allocator & allocator() const;
+    svg::SVGImportResult parseSVG(const stick::String & _svg, stick::Size _dpi = 72);
 
-    Error saveSVG(const stick::String & _uri) const;
+    svg::SVGImportResult loadSVG(const stick::String & _uri, stick::Size _dpi = 72);
+
+    stick::Allocator & allocator() const;
 
   private:
     // documents can't be cloned for now

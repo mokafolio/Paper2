@@ -1031,6 +1031,7 @@ Segment Path::insertSegment(Size _index, const SegmentData & _seg)
 
 void Path::swapSegments(SegmentDataArray & _segments, bool _bClose)
 {
+    m_bIsClosed = _bClose;
     m_segmentData.swap(_segments);
     rebuildCurves();
 }

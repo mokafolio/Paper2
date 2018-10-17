@@ -44,9 +44,10 @@ Path * Document::createEllipse(const Vec2f & _center, const Vec2f & _size, const
     SegmentData segs[4];
     for (Int32 i = 0; i < 4; ++i)
     {
-        segs[i] = { s_unitSegments[i].handleIn * rad,
-                    s_unitSegments[i].position * rad + _center,
-                    s_unitSegments[i].handleOut * rad };
+        Vec2f pos = _center + s_unitSegments[i].position * rad;
+        segs[i] = { pos + s_unitSegments[i].handleIn * rad,
+                    pos,
+                    pos + s_unitSegments[i].handleOut * rad };
     }
     ret->addSegments(segs, 4);
     ret->closePath();
@@ -63,10 +64,12 @@ Path * Document::createRectangle(const Vec2f & _from, const Vec2f & _to, const c
 {
     Path * ret = createPath(_name);
 
-    SegmentData segs[4] = { { Vec2f(0), Vec2f(_to.x, _from.y), Vec2f(0) },
-                            { Vec2f(0), _to, Vec2f(0) },
-                            { Vec2f(0), Vec2f(_from.x, _to.y), Vec2f(0) },
-                            { Vec2f(0), _from, Vec2f(0) } };
+    Vec2f a(_to.x, _from.y);
+    Vec2f b(_from.x, _to.y);
+    SegmentData segs[4] = { { a, a, a},
+                            { _to, _to, _to },
+                            { b, b, b },
+                            { _from, _from, _from } };
 
     ret->addSegments(segs, 4);
     ret->closePath();
@@ -90,7 +93,7 @@ Path * Document::createRoundedRectangle(const Vec2f & _min,
     Float hy = ry * s_kappa;
     Float rh = delta.y;
     Float rw = delta.x;
-
+    
     SegmentData segs[8] = { { Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0) },
                             { Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0) },
                             { Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0) },

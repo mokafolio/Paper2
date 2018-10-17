@@ -91,6 +91,7 @@ int main(int _argc, const char * _args[])
         path->addPoint(Vec2f(150, 130));
         path->addPoint(Vec2f(135, 200));
         path->closePath();
+        // path->smooth();
         path->setFill("red");
 
         Curve longest;

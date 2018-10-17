@@ -55,10 +55,10 @@ class StringViewT
 
     bool operator==(const char * _str) const
     {
-        return std::strncmp(
-                   m_begin,
-                   _str,
-                   std::min((Size)std::strlen(_str), (Size)std::distance(m_begin, m_end))) == 0;
+        auto len = std::distance(m_begin, m_end);
+        if (len != std::strlen(_str))
+            return false;
+        return std::strncmp(m_begin, _str, len) == 0;
     }
 
     bool operator!=(const char * _str) const
@@ -356,9 +356,9 @@ enum class SVGUnits
 
 struct STICK_LOCAL SVGAttributes
 {
-    ColorRGBA fillColor;
-    WindingRule windingRule;
-    ColorRGBA strokeColor;
+    ColorRGBA fillColor = ColorRGBA(0, 0, 0, 1);
+    ColorRGBA strokeColor = ColorRGBA(0, 0, 0, 1);
+    WindingRule windingRule = WindingRule::EvenOdd;
     Float strokeWidth;
     StrokeCap strokeCap;
     StrokeJoin strokeJoin;
@@ -491,9 +491,7 @@ class SVGImportSession
         return item;
     }
 
-    Group * importGroup(pugi::xml_node _node,
-                        bool _bSVGNode,
-                        Error & _error)
+    Group * importGroup(pugi::xml_node _node, bool _bSVGNode, Error & _error)
     {
         printf("IMPORT GROUP\n");
         Group * grp = m_document->createGroup();
@@ -594,6 +592,7 @@ class SVGImportSession
             pushAttributes(_node, p);
             parsePathData(*m_document, p, str);
             popAttributes();
+            printf("IMPORT PATH %lu\n", p->segmentCount());
             return p;
         }
         else
@@ -604,9 +603,7 @@ class SVGImportSession
         }
     }
 
-    Path * importPolyline(pugi::xml_node _node,
-                          bool _bIsPolygon,
-                          Error & _error)
+    Path * importPolyline(pugi::xml_node _node, bool _bIsPolygon, Error & _error)
     {
         auto mpoints = _node.attribute("points");
         if (mpoints)
@@ -651,6 +648,7 @@ class SVGImportSession
         {
             Float x = mcx ? coordinatePixels(mcx.value()) : 0;
             Float y = mcy ? coordinatePixels(mcx.value()) : 0;
+            printf("IMPORT CIRCLE %f %f %f\n", x, y, mr.as_float());
             Path * ret = m_document->createCircle(Vec2f(x, y), coordinatePixels(mr.value()));
             pushAttributes(_node, ret);
             popAttributes();
@@ -778,29 +776,45 @@ class SVGImportSession
         Path * currentPath = _path;
         Vec2f last;
         Vec2f lastHandle;
+        bool bCloseCurrentPath = false;
         SegmentDataArray segments(_doc.allocator());
-        segments.reserve(64);
-        //@TODO:Parse path data into SegmentData and use addSegments instead to avoid a lot of
-        // overhead
+        segments.reserve(32);
+
+        // lambda makes this a lot nicer...
+        auto finishCurrentContour = [&](bool _bCreateNewPath) {
+            if (segments.count())
+            {
+                currentPath->swapSegments(segments, bCloseCurrentPath);
+
+                if (_bCreateNewPath)
+                {
+                    segments.reserve(32);
+                    bCloseCurrentPath = false;
+                    Path * tmp = _doc.createPath();
+                    currentPath->addChild(tmp);
+                    currentPath = tmp;
+                }
+                else
+                    currentPath = nullptr;
+            }
+        };
+
         do
         {
             char cmd = *it;
             // auto tend = advanceToNextCommand(it + 1, end);
             ++it;
-            it = detail::parseNumbers(
-                it, end, [](char _c) { return detail::isCommand(_c); }, numbers);
+            it = detail::parseNumbers(it, end, detail::isCommand, numbers);
+
+            printf("CMD %c\n", cmd);
+            for (auto num : numbers)
+                printf("NUM %f\n", num);
 
             // STICK_ASSERT(it == tend);
             if (cmd == 'M' || cmd == 'm')
             {
-                if (segments.count())
-                {
-                    currentPath->swapSegments(segments, false);
-                    segments.reserve(64);
-                    Path * tmp = _doc.createPath();
-                    currentPath->addChild(tmp);
-                    currentPath = tmp;
-                }
+
+                finishCurrentContour(true);
 
                 bool bRelative = cmd == 'm';
                 for (int i = 0; i < numbers.count(); i += 2)
@@ -951,15 +965,18 @@ class SVGImportSession
             }
             else if (cmd == 'Z' || cmd == 'z')
             {
-                currentPath->swapSegments(segments, true);
-                last = currentPath->segmentData().last().position;
-                lastHandle = currentPath->segmentData().last().handleOut;
+                bCloseCurrentPath = true;
+                // currentPath->swapSegments(segments, true);
+                // last = currentPath->segmentData().last().position;
+                // lastHandle = currentPath->segmentData().last().handleOut;
             }
             else
             {
                 //@TODO?
             }
         } while (it != end);
+
+        finishCurrentContour(false);
     }
 
     Float toPixels(Float _value, SVGUnits _units, Float _start = 0.0, Float _length = 1.0)
@@ -1028,6 +1045,11 @@ class SVGImportSession
     template <class SVA, class SVB>
     void parseAttribute(SVA _name, SVB _value, SVGAttributes & _attributes, Item * _item)
     {
+        printf("PARSING ATTR: %s %s\n", _name.cString(), _value.cString());
+
+        if (_name == "stroke-width")
+            printf("YES IT IS BABY\n");
+
         if (_name == "style")
         {
             parseStyle(_value, _attributes, _item);
@@ -1043,9 +1065,11 @@ class SVGImportSession
                 auto col = detail::parseColor(_value.begin(), _value.end());
                 if (col)
                 {
+                    printf("PARSED COLOR: %f %f %f\n", (*col).r, (*col).g, (*col).b);
                     auto c = toRGBA(*col);
                     // we need to get the current alpha, as that might have been set allready
                     c.a = _attributes.fillColor.a;
+                    printf("CA %f\n", c.a);
                     _item->setFill(c);
                     _attributes.fillColor = c;
                 }
@@ -1078,6 +1102,7 @@ class SVGImportSession
                 auto col = detail::parseColor(_value.begin(), _value.end());
                 if (col)
                 {
+                    printf("PARSED COLOR: %f %f %f\n", (*col).r, (*col).g, (*col).b);
                     auto c = toRGBA(*col);
                     // we need to get the current alpha, as that might have been set allready
                     c.a = _attributes.strokeColor.a;
@@ -1096,6 +1121,7 @@ class SVGImportSession
         }
         else if (_name == "stroke-width")
         {
+            printf("dAAAAHAHAHA STROKE WIDTH: %f\n", _attributes.strokeWidth);
             _attributes.strokeWidth = coordinatePixels(_value.cString());
             _item->setStrokeWidth(_attributes.strokeWidth);
         }

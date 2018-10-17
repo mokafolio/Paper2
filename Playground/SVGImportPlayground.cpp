@@ -43,7 +43,6 @@ int main(int _argc, const char * _args[])
         // create the document.
         Document doc;
         doc.setSize(800, 600);
-        doc.translateTransform(400, 0);
 
         // create the opengl renderer for the document
         tarp::TarpRenderer renderer;
@@ -54,17 +53,61 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        auto res = doc.loadSVG("../../Playground/Assets/simple.svg");
-        if(res.error())
+        auto res = doc.loadSVG("../../Playground/Assets/adobe.svg");
+        if (res.error())
         {
             printf("ERROR: %s\n", res.error().message().cString());
             return EXIT_FAILURE;
         }
 
         printf("RES C C %lu\n", res.group()->children().count());
+        printf("SVG POS: %f %f\n", res.group()->position().x, res.group()->position().y);
 
-        Path * c2 = doc.createCircle(Vec2f(200, 200), 50);
-        c2->setFill("blue");
+        Path * b = doc.createRectangle(res.group()->bounds().min(), res.group()->bounds().max());
+        b->setFill(ColorRGBA(1, 1, 0, 0.2));
+        // res.group()->removeTransform();
+        // res.group()->setFill("red");
+        // res.group()->setVisible(true);
+        // res.group()->setClipped(false);
+        // res.group()->setStroke("green");
+        // res.group()->setStrokeWidth(5);
+        for (Item * child : res.group()->children())
+        {
+            // child->removeTransform();
+            if (child->itemType() == ItemType::Path)
+            {
+                for (Segment seg : static_cast<Path *>(child)->segments())
+                    printf("SEG %f %f\n", seg.position().x, seg.position().y);
+
+                if (child->fill().is<ColorRGBA>())
+                    printf("FILL %f %f %f %f\n",
+                           child->fill().get<ColorRGBA>().r,
+                           child->fill().get<ColorRGBA>().g,
+                           child->fill().get<ColorRGBA>().b,
+                           child->fill().get<ColorRGBA>().a);
+
+                printf("PATH CC %lu\n", child->children().count());
+                printf("CURVE COUNT %lu\n", static_cast<Path *>(child)->curves().count());
+                printf("IS CLOSED %i\n", static_cast<Path *>(child)->isClosed());
+            }
+        }
+
+        // Path * c2 = doc.createCircle(Vec2f(200, 200), 50);
+        // c2->setFill("blue");
+
+        // for(auto seg : c2->segments())
+        // {
+        //     printf("hi %f %f\n", seg.handleInAbsolute().x, seg.handleInAbsolute().y);
+        //     printf("pos %f %f\n", seg.position().x, seg.position().y);
+        //     printf("ho %f %f\n", seg.handleOutAbsolute().x, seg.handleOutAbsolute().y);
+        // }
+
+        // Path * r = doc.createRectangle(Vec2f(50, 50), Vec2f(300, 200));
+        // r->setFill("black");
+        // for(auto seg : r->segments())
+        // {
+        //     printf("pos2 %f %f\n", seg.position().x, seg.position().y);
+        // }
 
         // the main loop
         while (!glfwWindowShouldClose(window))

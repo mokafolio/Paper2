@@ -63,13 +63,34 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform)
 
         if (grp->isClipped())
         {
+            Path * mask = nullptr;
+            Item * transformItem = nullptr; //the item that provides the transform (i.e. needed for symbols)
             const auto & c2 = grp->children();
-            STICK_ASSERT(c2.first()->itemType() == ItemType::Path);
-            Path * mask = static_cast<Path *>(c2.first());
+            if (c2.first()->itemType() == ItemType::Path)
+            {
+                mask = static_cast<Path *>(c2.first());
+                transformItem = mask;
+            }
+            else if (c2.first()->itemType() == ItemType::Symbol)
+            {
+                printf("GOT SYMBOL MASK\n");
+                Symbol * s = static_cast<Symbol *>(c2.first());
+                if (s->item()->itemType() == ItemType::Path)
+                {
+                    printf("GOT SYMBOL MASK2\n");
+                    mask = static_cast<Path *>(s->item());
+                    transformItem = s;
+                }
+            }
+            STICK_ASSERT(mask && transformItem);
+
             Mat32f tmp2;
             if (_transform)
-                tmp2 = *_transform * mask->transform();
-            ret = beginClipping(mask, _transform ? tmp2 : mask->absoluteTransform());
+            {
+                printf("TRANSFORM\n");
+                tmp2 = *_transform * transformItem->transform();
+            }
+            ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform());
             if (ret)
                 return ret;
 

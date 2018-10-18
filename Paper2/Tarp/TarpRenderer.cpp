@@ -277,7 +277,7 @@ static detail::TarpGradientData & updateTarpGradient(BaseGradient & _grad)
 }
 
 // ugly template helper using pointer to member
-// so we don't have to write the code for setting strok and fill twice
+// so we don't have to write the code for setting stroke and fill twice
 template <class M, class M2>
 static void setPaint(tpStyle * _style, M _styleMember, Path * _path, M2 _pathMember)
 {

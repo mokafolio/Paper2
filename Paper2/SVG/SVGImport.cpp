@@ -358,7 +358,10 @@ struct STICK_LOCAL SVGAttributes
 {
     ColorRGBA fillColor = ColorRGBA(0, 0, 0, 1);
     ColorRGBA strokeColor = ColorRGBA(0, 0, 0, 1);
-    WindingRule windingRule = WindingRule::EvenOdd;
+    WindingRule windingRule = WindingRule::NonZero;
+    // since we dont support text yet, we only care
+    // about font size for em/ex calculations
+    Float fontSize = 16;
     Float strokeWidth;
     StrokeCap strokeCap;
     StrokeJoin strokeJoin;
@@ -366,9 +369,6 @@ struct STICK_LOCAL SVGAttributes
     Float miterLimit;
     DynamicArray<Float> dashArray;
     Float dashOffset;
-    // since we dont support text yet, we only care
-    // about font size for em/ex calculations
-    Float fontSize;
 };
 
 struct SVGCoordinate
@@ -383,6 +383,16 @@ struct SVGView
     Mat32f viewBoxTransform;
 };
 
+//to differentiate between slight differences in between these types of SVG groups
+//used to trigger specific behavior in importGroup.
+enum class SVGGroupType
+{
+    Group,
+    SVG,
+    Symbol,
+    Defs
+};
+
 class SVGImportSession
 {
   public:
@@ -392,6 +402,7 @@ class SVGImportSession
         m_document = &_doc;
         m_dpi = _dpi;
         m_namedItems.clear();
+        m_rootNode = pugi::xml_node();
 
         pugi::xml_document doc;
         pugi::xml_parse_result result = doc.load_buffer(_svg.ptr(), _svg.length());
@@ -408,6 +419,7 @@ class SVGImportSession
             if (auto val = doc.attribute("height"))
                 h = val.as_float();
 
+            m_rootNode = doc.first_child();
             Error err;
             Group * grp = static_cast<Group *>(recursivelyImportNode(doc.first_child(), err));
 
@@ -432,15 +444,33 @@ class SVGImportSession
 
     Item * recursivelyImportNode(pugi::xml_node _node, Error & _error)
     {
+        //first check if the item was allready imported by name
+        auto it = m_namedItems.end();
+        if(auto idAttr = _node.attribute("id"))
+            it = m_namedItems.find(idAttr.value());
+
+        if(it != m_namedItems.end())
+            return it->value;
+
+        return recursivelyImportNodeImpl(_node, _error);
+    }
+
+    Item * recursivelyImportNodeImpl(pugi::xml_node _node, Error & _error)
+    {
         printf("recursivelyImportNode %s\n", _node.name());
         Item * item = nullptr;
+
         if (std::strcmp(_node.name(), "svg") == 0)
         {
-            item = importGroup(_node, true, _error);
+            item = importGroup(_node, SVGGroupType::SVG, _error);
+        }
+        else if (std::strcmp(_node.name(), "symbol") == 0)
+        {
+            item = importGroup(_node, SVGGroupType::Symbol, _error);
         }
         else if (std::strcmp(_node.name(), "g") == 0)
         {
-            item = importGroup(_node, false, _error);
+            item = importGroup(_node, SVGGroupType::Group, _error);
         }
         else if (std::strcmp(_node.name(), "rect") == 0)
         {
@@ -476,7 +506,7 @@ class SVGImportSession
         }
         else if (std::strcmp(_node.name(), "defs") == 0)
         {
-            item = importGroup(_node, false, _error);
+            item = importGroup(_node, SVGGroupType::Defs, _error);
             if (!_error)
                 m_tmpItems.append(item);
         }
@@ -488,17 +518,135 @@ class SVGImportSession
         {
             //?
         }
+
+        if (item)
+        {
+            // accomodate for SVG's default winding rule (which is NonZero, paper defaults to
+            // EvenOdd)
+            if (!item->hasWindingRule())
+                item->setWindingRule(WindingRule::NonZero);
+
+            // // we take care of the clip-path / viewBox (as it might induce clipping, too)
+            // attribute
+            // // after parsing finished, as it might have us nest the item in a group that needs to
+            // be
+            // // returned instead of the item
+            // detail::findXMLAttrCB(_node, "clip-path", item, [&](Item * _it, pugi::xml_node
+            // _child) {
+            //     auto url =
+            //         detail::parseURL(_child.valueString().begin(), _child.valueString().end());
+
+            //     //@TODO: hmmm any way to avoid this string copy without introducing StringViews
+            //     to Stick? Don't think so :/ String str(url.begin(), url.end()); auto it =
+            //     m_namedItems.find(str); Path * mask;
+            //     // check if we allready imported the clip path
+            //     if (it != m_namedItems.end())
+            //     {
+            //         mask = brick::reinterpretEntity<Path>(it->value);
+            //     }
+            //     else
+            //     {
+            //         // if not, find it in the document and import it
+            //         auto maybe = _rootNode.find([&str](const Shrub & _s) {
+            //             for (auto & _c : _s)
+            //             {
+            //                 if (_c.valueHint() == ValueHint::XMLAttribute && _c.name() == "id" &&
+            //                     _c.valueString() == str)
+            //                     return true;
+            //             }
+            //             return false;
+            //         });
+
+            //         if (maybe)
+            //         {
+            //             Error err;
+            //             mask = importClipPath(*maybe, _rootNode, err);
+            //             // TODO: HANDLE ERROR?
+            //         }
+            //     }
+
+            //     if (mask.isValid())
+            //     {
+            //         if (_it.itemType() == EntityType::Group)
+            //         {
+            //             Group grp = brick::reinterpretEntity<Group>(_it);
+            //             grp.setClipped(true);
+            //             if (grp.children().count())
+            //             {
+            //                 mask.clone().insertBelow(grp.children().first());
+            //             }
+            //             else
+            //             {
+            //                 grp.addChild(mask.clone());
+            //             }
+            //         }
+            //         else
+            //         {
+            //             Group grp = m_document->createGroup();
+            //             grp.addChild(mask.clone());
+            //             grp.addChild(_it);
+            //             grp.setClipped(true);
+            //             item = grp;
+            //         }
+            //     }
+            //     else
+            //     {
+            //         // WARNING? ERROR?
+            //     }
+            // });
+        }
         return item;
     }
 
-    Group * importGroup(pugi::xml_node _node, bool _bSVGNode, Error & _error)
+    void parseViewBox(pugi::xml_node _node, Item * _item)
+    {
+        // parse the attributes that need to be parsed in a certain order first...
+        detail::findXMLAttrCB(_node, "viewBox", _item, [&](Item * _it, pugi::xml_attribute _attr) {
+            printf("PARSING VIEWBOX\n");
+            stick::DynamicArray<Float> numbers(m_document->allocator());
+            numbers.reserve(4);
+
+            detail::parseNumbers(_attr.value(),
+                                 _attr.value() + std::strlen(_attr.value()),
+                                 [](char _c) { return false; },
+                                 numbers);
+
+            // if (m_viewStack.count())
+            // {
+            printf("PARSING VIEWBOX2\n");
+            // @TODO: take preserveAspectRatio attribute into account (argh NOOOOOOOOOO)
+            const Rect & r = m_viewStack.last();
+            Mat32f viewTransform = Mat32f::identity();
+            Vec2f scale(r.width() / numbers[2], r.height() / numbers[3]);
+            viewTransform.scale(scale);
+            viewTransform.translate(r.min());
+            _it->transform(viewTransform);
+
+            // //@TODO: take overflow into account?
+            // Path * mask =
+            //     m_document->createRectangle(Vec2f(0, 0), r.size() * (Vec2f(1.0) / scale));
+            // mask->insertBelow(grp->children().first());
+            // grp->setClipped(true);
+            m_viewStack.append(
+                Rect(numbers[0], numbers[1], numbers[0] + numbers[2], numbers[1] + numbers[3]));
+            // }
+            // else
+            // {
+            //     m_viewStack.append(
+            //         Rect(numbers[0], numbers[1], numbers[0] + numbers[2], numbers[1] +
+            //         numbers[3]));
+            // }
+        });
+    }
+
+    Group * importGroup(pugi::xml_node _node, SVGGroupType _type, Error & _error)
     {
         printf("IMPORT GROUP\n");
         Group * grp = m_document->createGroup();
-
+        Group * childGrp = grp;
         // establish a new view based on the provided x,y,width,height (needed for viewbox
         // calculation)
-        if (_bSVGNode)
+        if (_type == SVGGroupType::SVG || _type == SVGGroupType::Symbol)
         {
             Float x, y, w, h;
             auto mx = _node.attribute("x");
@@ -512,52 +660,41 @@ class SVGImportSession
                 x = mx ? mx.as_float() : 0;
                 y = my ? my.as_float() : 0;
                 m_viewStack.append(Rect(x, y, x + w, y + h));
+
+                Path * mask = m_document->createRectangle(Vec2f(x, y), Vec2f(x + w, y + h));
+
+                grp->addChild(mask);
+                grp->setClipped(true);
+                childGrp = m_document->createGroup();
+                grp->addChild(childGrp);
             }
+            else
+            {
+                m_viewStack.append(Rect(0, 0, m_document->width(), m_document->height()));
+            }
+            parseViewBox(_node, childGrp);
         }
-        pushAttributes(_node, grp);
+        pushAttributes(_node, childGrp);
         for (auto & child : _node)
         {
             Item * item = recursivelyImportNode(child, _error);
             if (_error)
                 break;
-            else
-                grp->addChild(item);
 
-            // set the default fill if none is inherited
-            if (item->itemType() == ItemType::Path && !item->hasFill())
-                item->setFill(ColorRGBA(0, 0, 0, 1));
+            if (item)
+            {
+                childGrp->addChild(item);
+
+                // set the default fill if none is inherited
+                //@TODO: Is this the right place to do this?
+                if (item->itemType() == ItemType::Path && !item->hasFill() &&
+                    !item->fill().is<NoPaint>())
+                    item->setFill(ColorRGBA(0, 0, 0, 1));
+            }
         }
 
-        detail::findXMLAttrCB(_node, "viewBox", grp, [&](Item * _it, pugi::xml_attribute _attr) {
-            // if no view is esablished, ignore viewbox
-            if (m_viewStack.count())
-            {
-                // TODO: take preserveAspectRatio attribute into account (argh NOOOOOOOOOO)
-                const Rect & r = m_viewStack.last();
-
-                stick::DynamicArray<Float> numbers(m_document->allocator());
-                numbers.reserve(4);
-
-                detail::parseNumbers(_attr.value(),
-                                     _attr.value() + std::strlen(_attr.value()),
-                                     [](char _c) { return false; },
-                                     numbers);
-                Mat32f viewTransform = Mat32f::identity();
-                if (m_viewStack.count() > 1)
-                    viewTransform.translate(r.min());
-                Vec2f scale(r.width() / numbers[2], r.height() / numbers[3]);
-                viewTransform.scale(scale);
-                _it->setTransform(viewTransform);
-
-                Path * mask =
-                    m_document->createRectangle(Vec2f(0, 0), r.size() * (Vec2f(1.0) / scale));
-                mask->insertBelow(grp->children().first());
-                grp->setClipped(true);
-            }
-        });
-
-        if (_bSVGNode)
-            m_viewStack.removeLast();
+        if(_type == SVGGroupType::Defs || _type == SVGGroupType::Symbol)
+            grp->setVisible(false);
 
         popAttributes();
         printf("IMPORT GROUP END\n");
@@ -566,6 +703,7 @@ class SVGImportSession
 
     Path * importClipPath(pugi::xml_node _node, Error & _error)
     {
+        printf("IMPORT DA CLIP\n");
         Path * ret = m_document->createPath();
         for (auto & child : _node)
         {
@@ -574,7 +712,7 @@ class SVGImportSession
                 break;
             // only add paths as children, ignore the rest (there should be no rest though,
             // safety first :))
-            if (item->itemType() == ItemType::Path)
+            if (item && item->itemType() == ItemType::Path)
                 ret->addChild(static_cast<Path *>(item));
         }
         pushAttributes(_node, ret);
@@ -595,12 +733,7 @@ class SVGImportSession
             printf("IMPORT PATH %lu\n", p->segmentCount());
             return p;
         }
-        else
-        {
-            _error =
-                Error(ec::ParseFailed, "SVG path is missing d attribute", STICK_FILE, STICK_LINE);
-            return nullptr;
-        }
+        return nullptr;
     }
 
     Path * importPolyline(pugi::xml_node _node, bool _bIsPolygon, Error & _error)
@@ -646,10 +779,12 @@ class SVGImportSession
         auto mr = _node.attribute("r");
         if (mr)
         {
-            Float x = mcx ? coordinatePixels(mcx.value()) : 0;
-            Float y = mcy ? coordinatePixels(mcx.value()) : 0;
+            Vec2f hStartAndLength = currentViewHorizontal();
+            Vec2f vStartAndLength = currentViewVertical();
+            Float x = mcx ? coordinatePixels(mcx.value(), hStartAndLength.x, hStartAndLength.y) : 0;
+            Float y = mcy ? coordinatePixels(mcy.value(), vStartAndLength.x, vStartAndLength.y) : 0;
             printf("IMPORT CIRCLE %f %f %f\n", x, y, mr.as_float());
-            Path * ret = m_document->createCircle(Vec2f(x, y), coordinatePixels(mr.value()));
+            Path * ret = m_document->createCircle(Vec2f(x, y), coordinatePixels(mr.value(), 0, currentViewLength()));
             pushAttributes(_node, ret);
             popAttributes();
             return ret;
@@ -670,11 +805,13 @@ class SVGImportSession
         auto mry = _node.attribute("ry");
         if (mrx && mry)
         {
-            Float x = mcx ? coordinatePixels(mcx.value()) : 0;
-            Float y = mcy ? coordinatePixels(mcy.value()) : 0;
+            Vec2f hStartAndLength = currentViewHorizontal();
+            Vec2f vStartAndLength = currentViewVertical();
+            Float x = mcx ? coordinatePixels(mcx.value(), hStartAndLength.x, hStartAndLength.y) : 0;
+            Float y = mcy ? coordinatePixels(mcy.value(), vStartAndLength.x, vStartAndLength.y) : 0;
             Path * ret = m_document->createEllipse(
                 Vec2f(x, y),
-                Vec2f(coordinatePixels(mrx.value()) * 2, coordinatePixels(mry.value()) * 2));
+                Vec2f(coordinatePixels(mrx.value(), 0, currentViewLength()) * 2, coordinatePixels(mry.value(), 0, currentViewLength()) * 2));
             pushAttributes(_node, ret);
             popAttributes();
             return ret;
@@ -701,24 +838,26 @@ class SVGImportSession
             auto mrx = _node.attribute("rx");
             auto mry = _node.attribute("ry");
 
-            Float x = coordinatePixels(mx.value());
-            Float y = coordinatePixels(my.value());
+            Vec2f hStartAndLength = currentViewHorizontal();
+            Vec2f vStartAndLength = currentViewVertical();
+            Float x = coordinatePixels(mx.value(), hStartAndLength.x, hStartAndLength.y);
+            Float y = coordinatePixels(my.value(), vStartAndLength.x, vStartAndLength.y);
+            Float w = coordinatePixels(mw.value(), hStartAndLength.x, hStartAndLength.y);
+            Float h = coordinatePixels(mh.value(), vStartAndLength.x, vStartAndLength.y);
             Path * ret;
             if (mrx || mry)
             {
-                Float rx = mrx ? coordinatePixels(mrx.value()) : coordinatePixels(mry.value());
-                Float ry = mry ? coordinatePixels(mry.value()) : rx;
+                Float rx =
+                    mrx ? coordinatePixels(mrx.value(), hStartAndLength.x, hStartAndLength.y)
+                        : coordinatePixels(mry.value(), vStartAndLength.x, vStartAndLength.y);
+                Float ry =
+                    mry ? coordinatePixels(mry.value(), vStartAndLength.x, vStartAndLength.y) : rx;
                 ret = m_document->createRoundedRectangle(
-                    Vec2f(x, y),
-                    Vec2f(x, y) + Vec2f(coordinatePixels(mw.value()), coordinatePixels(mh.value())),
-                    Vec2f(rx, ry));
+                    Vec2f(x, y), Vec2f(x, y) + Vec2f(w, h), Vec2f(rx, ry));
             }
             else
             {
-                ret =
-                    m_document->createRectangle(Vec2f(x, y),
-                                                Vec2f(x, y) + Vec2f(coordinatePixels(mw.value()),
-                                                                    coordinatePixels(mh.value())));
+                ret = m_document->createRectangle(Vec2f(x, y), Vec2f(x, y) + Vec2f(w, h));
             }
             pushAttributes(_node, ret);
             popAttributes();
@@ -743,10 +882,13 @@ class SVGImportSession
         auto my2 = _node.attribute("y2");
         if (mx1 && my1 && mx2 && my2)
         {
-            Float x1 = coordinatePixels(mx1.value());
-            Float y1 = coordinatePixels(my1.value());
-            Float x2 = coordinatePixels(mx2.value());
-            Float y2 = coordinatePixels(my2.value());
+            Vec2f hStartAndLength = currentViewHorizontal();
+            Vec2f vStartAndLength = currentViewVertical();
+
+            Float x1 = coordinatePixels(mx1.value(), hStartAndLength.x, hStartAndLength.y);
+            Float y1 = coordinatePixels(my1.value(), vStartAndLength.x, vStartAndLength.y);
+            Float x2 = coordinatePixels(mx2.value(), hStartAndLength.x, hStartAndLength.y);
+            Float y2 = coordinatePixels(my2.value(), vStartAndLength.x, vStartAndLength.y);
 
             SegmentDataArray segs(m_document->allocator());
             segs.reserve(2);
@@ -765,6 +907,30 @@ class SVGImportSession
                            STICK_FILE,
                            STICK_LINE);
         }
+        return nullptr;
+    }
+
+    // Symbol * importUse(pugi::xml_node _node, Error & _error)
+    // {
+
+    //     pushAttributes(_node, ret);
+    //     popAttributes();
+    // }
+
+    Item * namedItem(const char * _name, Error & _error)
+    {
+        auto it = m_namedItems.find(_name);
+        if(it != m_namedItems.end())
+            return it->value;
+
+        auto node = m_rootNode.find_child([_name](pugi::xml_node _node) { 
+            if(auto attr = _node.attribute("id"))
+                return std::strcmp(attr.value(), _name) == 0;
+        });
+
+        if(node)
+            return recursivelyImportNodeImpl(node, _error);
+
         return nullptr;
     }
 
@@ -981,6 +1147,7 @@ class SVGImportSession
 
     Float toPixels(Float _value, SVGUnits _units, Float _start = 0.0, Float _length = 1.0)
     {
+        Float fontSize = m_attributeStack.count() ? m_attributeStack.last().fontSize : 16;
         switch (_units)
         {
         case SVGUnits::PX:
@@ -992,9 +1159,10 @@ class SVGImportSession
         case SVGUnits::PC:
             return _value / (Float)6.0 * m_dpi;
         case SVGUnits::EM:
-            return _value / (Float)6.0 * m_dpi;
+            return _value * fontSize;
         case SVGUnits::EX:
-            return _value / (Float)6.0 * m_dpi;
+            return _value * fontSize *
+                   0.5; // since we don't load fonts (yet), we pick the default x-height of 0.5
         case SVGUnits::CM:
             return _value / (Float)2.54 * m_dpi;
         case SVGUnits::MM:
@@ -1036,20 +1204,43 @@ class SVGImportSession
         return ret;
     }
 
-    Float coordinatePixels(const char * _str, Float _start = 0.0, Float _length = 1.0)
+    Float coordinatePixels(const char * _str, Float _start = 0, Float _length = 1)
     {
         auto coord = parseCoordinate(_str);
+        printf("coord.value %f %f %f\n", coord.value, _start, _length);
         return toPixels(coord.value, coord.units, _start, _length);
+    }
+
+    Vec2f currentViewVertical() const
+    {
+        if (!m_viewStack.count())
+            return (Vec2f(0, 1));
+
+        return Vec2f(m_viewStack.last().min().y, m_viewStack.last().height());
+    }
+
+    Vec2f currentViewHorizontal() const
+    {
+        if (!m_viewStack.count())
+            return (Vec2f(0, 1));
+
+        return Vec2f(m_viewStack.last().min().x, m_viewStack.last().width());
+    }
+
+    Float currentViewLength() const
+    {
+        if (!m_viewStack.count())
+            return 1.0;
+
+        Float w = m_viewStack.last().width();
+        Float h = m_viewStack.last().height();
+        printf("DA FOOOOCKING %lu %f %f\n", m_viewStack.count(), w, h);
+        return std::sqrtf(w * w + h * h) / std::sqrtf(2.0f);
     }
 
     template <class SVA, class SVB>
     void parseAttribute(SVA _name, SVB _value, SVGAttributes & _attributes, Item * _item)
     {
-        printf("PARSING ATTR: %s %s\n", _name.cString(), _value.cString());
-
-        if (_name == "stroke-width")
-            printf("YES IT IS BABY\n");
-
         if (_name == "style")
         {
             parseStyle(_value, _attributes, _item);
@@ -1121,8 +1312,8 @@ class SVGImportSession
         }
         else if (_name == "stroke-width")
         {
+            _attributes.strokeWidth = coordinatePixels(_value.cString(), 0, currentViewLength());
             printf("dAAAAHAHAHA STROKE WIDTH: %f\n", _attributes.strokeWidth);
-            _attributes.strokeWidth = coordinatePixels(_value.cString());
             _item->setStrokeWidth(_attributes.strokeWidth);
         }
         else if (_name == "stroke-linecap")
@@ -1149,7 +1340,7 @@ class SVGImportSession
         }
         else if (_name == "stroke-miterlimit")
         {
-            _attributes.miterLimit = coordinatePixels(_value.cString());
+            _attributes.miterLimit = coordinatePixels(_value.cString(), 0, currentViewLength());
             _item->setMiterLimit(_attributes.miterLimit);
         }
         else if (_name == "vector-effect")
@@ -1171,7 +1362,7 @@ class SVGImportSession
                 while (it != end)
                 {
                     // TODO take percentage start and length into account and pass it to toPixels
-                    _attributes.dashArray.append(coordinatePixels(it));
+                    _attributes.dashArray.append(coordinatePixels(it, 0, currentViewLength()));
                     while (it != end && !std::isspace(*it) && *it != ',')
                         ++it;
                     it = detail::skipWhitespaceAndCommas(it, end);
@@ -1182,12 +1373,13 @@ class SVGImportSession
         }
         else if (_name == "stroke-dashoffset")
         {
-            _attributes.dashOffset = coordinatePixels(_value.cString());
+            _attributes.dashOffset = coordinatePixels(_value.cString(), currentViewLength());
             _item->setDashOffset(_attributes.dashOffset);
         }
         else if (_name == "font-size")
         {
-            _attributes.fontSize = coordinatePixels(_value.cString());
+            _attributes.fontSize = coordinatePixels(_value.cString(), currentViewLength());
+            printf("GOT FONT SIZE %f\n", _attributes.fontSize);
         }
         else if (_name == "transform")
         {
@@ -1231,9 +1423,14 @@ class SVGImportSession
     void pushAttributes(pugi::xml_node _node, Item * _item)
     {
         SVGAttributes attr;
-        if (m_attributeStack.count())
-            attr = m_attributeStack.last();
 
+        //@TODO: Is this needed???!?!?!
+        // if (m_attributeStack.count())
+        //     attr = m_attributeStack.last();
+
+        // parse the attributes that need to be parsed in a certain order first...
+
+        //...parse the remaining attributes
         for (auto it = _node.attributes_begin(); it != _node.attributes_end(); ++it)
             parseAttribute(makeStringView(it->name()), makeStringView(it->value()), attr, _item);
 
@@ -1246,6 +1443,7 @@ class SVGImportSession
     }
 
     Document * m_document;
+    pugi::xml_node m_rootNode;
     Size m_dpi;
     DynamicArray<SVGAttributes> m_attributeStack;
     DynamicArray<Rect> m_viewStack;

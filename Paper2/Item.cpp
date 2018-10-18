@@ -39,8 +39,8 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     m_parent(nullptr),
     m_children(_alloc),
     m_bVisible(true),
-    m_fill(NoPaint()),
-    m_stroke(NoPaint()),
+    // m_fill(NoPaint()),
+    // m_stroke(NoPaint()),
     m_name(_alloc),
     m_fillPaintTransformDirty(false),
     m_strokePaintTransformDirty(false)
@@ -718,12 +718,12 @@ bool Item::scaleStroke() const
 
 Paint Item::fill() const
 {
-    PROPERTY_GETTER(fill, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+    PROPERTY_GETTER(fill, NoPaint());
 }
 
 Paint Item::stroke() const
 {
-    PROPERTY_GETTER(stroke, ColorRGBA(0.0f, 0.0f, 0.0f, 1.0f));
+    PROPERTY_GETTER(stroke, NoPaint());
 }
 
 bool Item::hasStroke() const

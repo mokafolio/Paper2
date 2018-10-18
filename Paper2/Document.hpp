@@ -49,9 +49,9 @@ class STICK_API Document : public Item
 
     const Vec2f & size() const;
 
-    svg::SVGImportResult parseSVG(const stick::String & _svg, stick::Size _dpi = 72);
+    svg::SVGImportResult parseSVG(const stick::String & _svg, stick::Size _dpi = 96);
 
-    svg::SVGImportResult loadSVG(const stick::String & _uri, stick::Size _dpi = 72);
+    svg::SVGImportResult loadSVG(const stick::String & _uri, stick::Size _dpi = 96);
 
     stick::Allocator & allocator() const;
 

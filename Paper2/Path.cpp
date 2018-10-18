@@ -1034,6 +1034,7 @@ void Path::swapSegments(SegmentDataArray & _segments, bool _bClose)
     m_bIsClosed = _bClose;
     m_segmentData.swap(_segments);
     rebuildCurves();
+    markGeometryDirty(true);
 }
 
 void Path::insertSegments(Size _index, const SegmentData * _segments, Size _count)

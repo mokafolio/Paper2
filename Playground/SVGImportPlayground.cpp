@@ -53,7 +53,7 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        auto res = doc.loadSVG("../../Playground/Assets/adobe.svg");
+        auto res = doc.loadSVG("../../Playground/Assets/viewbox.svg");
         if (res.error())
         {
             printf("ERROR: %s\n", res.error().message().cString());
@@ -62,9 +62,11 @@ int main(int _argc, const char * _args[])
 
         printf("RES C C %lu\n", res.group()->children().count());
         printf("SVG POS: %f %f\n", res.group()->position().x, res.group()->position().y);
+        // res.group()->translateTransform(300, 300);
 
-        Path * b = doc.createRectangle(res.group()->bounds().min(), res.group()->bounds().max());
-        b->setFill(ColorRGBA(1, 1, 0, 0.2));
+        // Path * b = doc.createRectangle(res.group()->bounds().min(), res.group()->bounds().max());
+        // b->setFill(ColorRGBA(1, 1, 0, 0.2));
+        // b->removeStroke();
         // res.group()->removeTransform();
         // res.group()->setFill("red");
         // res.group()->setVisible(true);
@@ -92,8 +94,27 @@ int main(int _argc, const char * _args[])
             }
         }
 
-        // Path * c2 = doc.createCircle(Vec2f(200, 200), 50);
+        // Path * c2 = doc.createCircle(Vec2f(0, 0), 50);
         // c2->setFill("blue");
+
+        // Symbol * s = doc.createSymbol(c2);
+        // s->translateTransform(100, 100);
+
+
+        // Group * grp = doc.createGroup();
+        // grp->addChild(s);
+        // grp->setClipped(true);
+        // Path * rect = doc.createRectangle(Vec2f(100, 100), Vec2f(200, 200));
+        // rect->setFill("red");
+        // grp->addChild(rect);
+
+        // Group * grp = doc.createGroup();
+        // grp->setStroke("red");
+        // grp->setStrokeWidth(10);
+        // grp->addChild(c2);
+
+        // printf("SW: %f\n", c2->strokeWidth());
+        // printf("SC: %f %f %f\n", c2->stroke().get<ColorRGBA>().r, c2->stroke().get<ColorRGBA>().g, c2->stroke().get<ColorRGBA>().b);
 
         // for(auto seg : c2->segments())
         // {

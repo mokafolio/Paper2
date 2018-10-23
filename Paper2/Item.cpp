@@ -728,12 +728,14 @@ Paint Item::stroke() const
 
 bool Item::hasStroke() const
 {
-    return !stroke().is<NoPaint>();
+    // return !stroke().is<NoPaint>();
+    return (bool)m_stroke;
 }
 
 bool Item::hasFill() const
 {
-    return !fill().is<NoPaint>();
+    // return !fill().is<NoPaint>();
+    return (bool)m_fill;
 }
 
 bool Item::hasScaleStroke() const
@@ -946,4 +948,51 @@ bool Item::cleanDirtystrokePaintTransform()
     m_strokePaintTransformDirty = false;
     return ret;
 }
+
+// String Item::hierarchyString(Size _indent) const
+// {
+//     String ret;
+
+//     switch(itemType())
+//     {
+//         case ItemType::Document:
+//             ret.append(AppendVariadicFlag(), "Document:\n");
+//         case ItemType::Group:
+//             ret.append(AppendVariadicFlag(), "Group:\n");
+//         case ItemType::Path:
+//             ret.append(AppendVariadicFlag(), "Path:\n");
+//         case ItemType::Symbol:
+//             ret.append(AppendVariadicFlag(), "Symbol:\n");
+//     }
+
+//     return ret;
+// }
+void Item::hierarchyString(String & _outputString, Size _indent) const
+{
+    String indent;
+    for (int i = 0; i < _indent; ++i)
+        indent.append("    ");
+
+    switch (itemType())
+    {
+    case ItemType::Document:
+        _outputString.append(AppendVariadicFlag(), indent, "Document ", name(), ":\n");
+        break;
+    case ItemType::Group:
+        _outputString.append(AppendVariadicFlag(), indent, "Group ", name(), ":\n");
+        break;
+    case ItemType::Path:
+        _outputString.append(AppendVariadicFlag(), indent, "Path ", name(), ":\n");
+        break;
+    case ItemType::Symbol:
+        _outputString.append(AppendVariadicFlag(), indent, "Symbol ", name(), ":\n");
+        break;
+    default:
+        break;
+    }
+
+    for(auto * child : children())
+        child->hierarchyString(_outputString, _indent + 1);
+}
+
 } // namespace paper

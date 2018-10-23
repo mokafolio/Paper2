@@ -53,15 +53,19 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        auto res = doc.loadSVG("../../Playground/Assets/viewbox.svg");
+        auto res = doc.loadSVG("../../Playground/Assets/symbol.svg");
         if (res.error())
         {
             printf("ERROR: %s\n", res.error().message().cString());
             return EXIT_FAILURE;
         }
 
-        printf("RES C C %lu\n", res.group()->children().count());
-        printf("SVG POS: %f %f\n", res.group()->position().x, res.group()->position().y);
+        // printf("RES C C %lu\n", res.group()->children().count());
+        // printf("SVG POS: %f %f\n", res.group()->position().x, res.group()->position().y);
+
+        // String hierarchy;
+        // res.group()->hierarchyString(hierarchy);
+        // printf("%s\n", hierarchy.cString());
         // res.group()->translateTransform(300, 300);
 
         // Path * b = doc.createRectangle(res.group()->bounds().min(), res.group()->bounds().max());
@@ -73,26 +77,61 @@ int main(int _argc, const char * _args[])
         // res.group()->setClipped(false);
         // res.group()->setStroke("green");
         // res.group()->setStrokeWidth(5);
-        for (Item * child : res.group()->children())
-        {
-            // child->removeTransform();
-            if (child->itemType() == ItemType::Path)
-            {
-                for (Segment seg : static_cast<Path *>(child)->segments())
-                    printf("SEG %f %f\n", seg.position().x, seg.position().y);
+        // for (Item * child : res.group()->children())
+        // {
+        //     // child->removeTransform();
+        //     if (child->itemType() == ItemType::Path)
+        //     {
+        //         for (Segment seg : static_cast<Path *>(child)->segments())
+        //             printf("SEG %f %f\n", seg.position().x, seg.position().y);
 
-                if (child->fill().is<ColorRGBA>())
-                    printf("FILL %f %f %f %f\n",
-                           child->fill().get<ColorRGBA>().r,
-                           child->fill().get<ColorRGBA>().g,
-                           child->fill().get<ColorRGBA>().b,
-                           child->fill().get<ColorRGBA>().a);
+        //         if (child->fill().is<ColorRGBA>())
+        //             printf("FILL %f %f %f %f\n",
+        //                    child->fill().get<ColorRGBA>().r,
+        //                    child->fill().get<ColorRGBA>().g,
+        //                    child->fill().get<ColorRGBA>().b,
+        //                    child->fill().get<ColorRGBA>().a);
 
-                printf("PATH CC %lu\n", child->children().count());
-                printf("CURVE COUNT %lu\n", static_cast<Path *>(child)->curves().count());
-                printf("IS CLOSED %i\n", static_cast<Path *>(child)->isClosed());
-            }
-        }
+        //         printf("PATH CC %lu\n", child->children().count());
+        //         printf("CURVE COUNT %lu\n", static_cast<Path *>(child)->curves().count());
+        //         printf("IS CLOSED %i\n", static_cast<Path *>(child)->isClosed());
+        //     }
+        // }
+
+        // Group * grp = doc.createGroup("Outer");
+        // grp->addChild(doc.createRectangle(Vec2f(100, 100), Vec2f(200, 200)));
+        // grp->setClipped(true);
+
+        // Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 300));
+        // bg->setFill("yellow");
+        // grp->addChild(bg);
+
+        // Group * hidden = doc.createGroup("hidden");
+        // hidden->setVisible(false);
+        // Group * inner = doc.createGroup("Inner");
+        // inner->addChild(doc.createRectangle(Vec2f(0, 0), Vec2f(30, 30)));
+        // inner->setClipped(true);
+        // Path * c = doc.createCircle(Vec2f(0, 0), 20);
+        // c->setFill("red");
+        // inner->addChild(c);
+
+        // hidden->addChild(inner);
+
+        // Symbol * grps = doc.createSymbol(inner);
+        // grps->translateTransform(150, 150);
+        // grp->addChild(grps);
+
+        // Path * c2 = doc.createCircle(Vec2f(140, 130), 30);
+        // c2->setFill("blue");
+        // grp->addChild(c2);
+
+
+        // Path * t = doc.createPath();
+        // t->setFill("red");
+        // t->addPoint(Vec2f(100, 100));
+        // // t->arcTo(Vec2f(110, 50), Vec2f(200, 100));
+        // // t->arcTo(Vec2f(200, 100), true);
+        // t->arcTo(Vec2f(200, 100), Vec2f(5, 10), toRadians(40.0), true, false);
 
         // Path * c2 = doc.createCircle(Vec2f(0, 0), 50);
         // c2->setFill("blue");

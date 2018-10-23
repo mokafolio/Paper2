@@ -172,10 +172,10 @@ const Suite spec[] =
         EXPECT(grp->fill().get<ColorRGBA>() == ColorRGBA(0.34f, 0.25f, 1.0f, 0.5f));
         EXPECT(child->fill().get<ColorRGBA>() == ColorRGBA(0.34f, 0.25f, 1.0f, 0.5f));
         child->removeFill();
-        EXPECT(!child->hasFill());
+        EXPECT(child->hasFill() && child->fill().is<NoPaint>());
         grp->removeFill();
         EXPECT(!child->hasFill());
-        EXPECT(!grp->hasFill());
+        EXPECT(grp->hasFill() && grp->fill().is<NoPaint>());
     },
     SUITE("Path Length Tests")
     {

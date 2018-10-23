@@ -242,6 +242,7 @@ class STICK_API Item
     bool hasfillPaintTransform() const;
 
     bool hasStrokePaintTransform() const;
+    
 
     virtual Item * clone() const = 0;
 
@@ -262,6 +263,11 @@ class STICK_API Item
     bool cleanDirtyfillPaintTransform();
 
     bool cleanDirtystrokePaintTransform();
+
+
+    //@TODO: debug functions to print the hierarchy
+    void hierarchyString(String & _outputString, Size _indent = 0) const;
+
 
   protected:
     struct Decomposed

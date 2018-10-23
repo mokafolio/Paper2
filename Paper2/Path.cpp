@@ -10,101 +10,6 @@ namespace paper
 {
 using namespace stick;
 
-namespace detail
-{
-
-// void addPoint(SegmentData & _segments, const Vec2f & _to)
-// {
-//     _segments.append({_to, _to, _to});
-// }
-
-// void cubicCurveTo(SegmentData & _segments,
-//                   const Vec2f & _handleOneAbs,
-//                   const Vec2f & _handleTwoAbs,
-//                   const Vec2f & _to)
-// {
-//     STICK_ASSERT(_segments.count());
-//     SegmentData & current = _segments.last();
-
-//     // make relative
-//     current.handleOut = _handleOneAbs;
-//     _segments.append({_handleTwoAbs, _to, _to});
-// }
-
-// void quadraticCurveTo(SegmentData & _segments, const Vec2f & _handleAbs, const Vec2f & _to)
-// {
-//     STICK_ASSERT(_segments.count());
-//     SegmentData & current = _segments.last();
-
-//     auto fact = 2.0 / 3.0
-//     cubicCurveTo(_segments, current.position + fact * (_handleAbs - current.position), _to + fact
-//     * (_handleAbs - _to), _to);
-// }
-
-// void curveTo(SegmentData & _segments,
-//              const Vec2f & _through,
-//              const Vec2f & _to,
-//              Float _parameter = 0.5)
-// {
-//     STICK_ASSERT(_segments.count());
-//     SegmentData & current = _segments.last();
-
-//     Float t1 = 1 - _parameter;
-//     Float tt = _parameter * _parameter;
-//     Vec2f handle = (_through - current.position * tt - _to * tt) / (2 * _parameter * t1);
-
-//     quadraticCurveTo(_segments, handle, _to);
-// }
-
-// Error arcTo(SegmentData & _segments, const Vec2f & _through, const Vec2f & _to)
-// {
-
-// }
-
-// Error arcTo(SegmentData & _segments, const Vec2f & _to, bool _bClockwise)
-// {
-
-// }
-
-// Error arcTo(SegmentData & _segments,
-//             const Vec2f & _to,
-//             const Vec2f & _radii,
-//             Float _rotation,
-//             bool _bClockwise,
-//             bool _bLarge)
-// {
-
-// }
-
-// void cubicCurveBy(SegmentData & _segments, const Vec2f & _handleOne, const Vec2f & _handleTwo,
-// const Vec2f & _by)
-// {
-
-// }
-
-// void quadraticCurveBy(SegmentData & _segments, const Vec2f & _handle, const Vec2f & _by)
-// {
-
-// }
-
-// void curveBy(SegmentData & _segments, const Vec2f & _through, const Vec2f & _by, Float
-// _parameter)
-// {
-
-// }
-
-// Error arcBy(SegmentData & _segments, const Vec2f & _through, const Vec2f & _by)
-// {
-
-// }
-
-// Error arcBy(SegmentData & _segments, const Vec2f & _to, bool _bClockwise)
-// {
-
-// }
-
-} // namespace detail
-
 CurveLocation::CurveLocation()
 {
 }
@@ -332,7 +237,7 @@ Error arcTo(SegmentDataArray & _segs,
     Vec2f pt = crunch::rotate(from - middle, -_rotation);
     Float rx = crunch::abs(_radii.x);
     Float ry = crunch::abs(_radii.y);
-    // printf("RX, RY %f %f\n", rx, ry);
+    printf("RX, RY %f %f\n", rx, ry);
     Float rxSq = rx * rx;
     Float rySq = ry * ry;
     Float xSq = pt.x * pt.x;
@@ -340,18 +245,18 @@ Error arcTo(SegmentDataArray & _segs,
     Float factor = std::sqrt(xSq / rxSq + ySq / rySq);
     if (factor > 1)
     {
-        // printf("APPLY FACTOR\n");
+        printf("APPLY FACTOR\n");
         rx *= factor;
         ry *= factor;
         rxSq = rx * rx;
         rySq = ry * ry;
     }
-    // printf("RX2, RY2 %f %f\n", rx, ry);
+    printf("RX2, RY2 %f %f\n", rx, ry);
 
     factor = (rxSq * rySq - rxSq * ySq - rySq * xSq) / (rxSq * ySq + rySq * xSq);
     if (crunch::abs(factor) < detail::PaperConstants::trigonometricEpsilon())
     {
-        // printf("SET FACTOR TO 0\n");
+        printf("SET FACTOR TO 0\n");
         factor = 0;
     }
 
@@ -369,13 +274,16 @@ Error arcTo(SegmentDataArray & _segs,
              middle;
     // Now create a matrix that maps the unit circle to the ellipse,
     // for easier construction below.
-    Mat32f matrix = Mat32f::translation(center);
+
+    printf("CENTER %f %f\n", center.x, center.y);
+    Mat32f matrix = Mat32f::scaling(_radii);
     matrix.rotate(_rotation);
-    matrix.scale(_radii);
+    matrix.translate(center);
+    printf("ROT %f\n", _rotation);
     Mat32f inv = crunch::inverse(matrix);
     Vec2f vect = inv * from;
     Float extent = crunch::directedAngle(vect, inv * _to);
-
+    printf("EXt %f %f %f\n", extent, vect.x, vect.y);
     if (!_bClockwise && extent > 0)
         extent -= crunch::Constants<Float>::twoPi();
     else if (_bClockwise && extent < 0)
@@ -408,6 +316,7 @@ Error arcHelper(SegmentDataArray & _segs,
         {
             if (_transform)
             {
+                printf("transFORMING CUNT\n");
                 pt = *_transform * dir;
                 out = (*_transform * (dir + out)) - pt;
             }
@@ -425,14 +334,17 @@ Error arcHelper(SegmentDataArray & _segs,
         {
             // Add new Segment
             Vec2f in(dir.y * z, -dir.x * z);
+            printf("NEW SEG BROOOO\n");
             if (!_transform)
             {
-                _segs.append({ pt, pt + in, i < count ? pt + out : pt });
+                printf("NEW SEG UNTRANS\n");
+                _segs.append({pt + in, pt, i < count ? pt + out : pt });
             }
             else
             {
-                // createSegment(pt, (*_transform * (dir + in)) - pt, i < count ? out : Vec2f(0.0));
-                _segs.append({ pt, *_transform * (dir + in), i < count ? pt + out : pt });
+                printf("NEW SEG TRANS\n");
+                _segs.append({*_transform * (dir + in), pt, i < count ? pt + out : pt });
+                // _segs.append({pt, pt, pt});
             }
         }
         dir = crunch::rotate(dir, crunch::toRadians(inc));

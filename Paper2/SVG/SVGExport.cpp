@@ -300,7 +300,7 @@ static void addStyle(const Item * _item,
         _node.addChild("id", _item.name(), ValueHint::XMLAttribute);
     }*/
 
-    if (_bIsClipPath || _item->hasFill() || _item->children().count())
+    if (_bIsClipPath || !_item->fill().is<NoPaint>() || _item->children().count())
     {
         if (_item->windingRule() == WindingRule::NonZero)
             _node.append_attribute("fill-rule") = "nonzero";
@@ -315,7 +315,7 @@ static void addStyle(const Item * _item,
         _node.append_attribute("visibility") = "hidden";
 
     // fill related things
-    if (!_item->hasFill())
+    if (_item->hasFill() && _item->fill().is<NoPaint>())
         _node.append_attribute("fill") = "none";
     else
         addPaintToStyle(&Item::fill,

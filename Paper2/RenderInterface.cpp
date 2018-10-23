@@ -87,7 +87,6 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform)
             Mat32f tmp2;
             if (_transform)
             {
-                printf("TRANSFORM\n");
                 tmp2 = *_transform * transformItem->transform();
             }
             ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform());

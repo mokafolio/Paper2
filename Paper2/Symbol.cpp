@@ -37,10 +37,9 @@ const Mat32f & Symbol::absoluteTransform() const
     if (!m_absoluteTransform)
     {
         if (isTransformed())
-            m_absoluteTransform =
-                m_parent->absoluteTransform() * transform() * m_item->absoluteTransform();
+            m_absoluteTransform = m_parent->absoluteTransform() * transform() * m_item->transform();
         else
-            m_absoluteTransform = m_item->absoluteTransform();
+            m_absoluteTransform = m_item->transform();
     }
 
     // printf("TRANS %f %f\n", (*m_absoluteTransform)[2].x, (*m_absoluteTransform)[2].y);

@@ -50,7 +50,7 @@ Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, boo
     return err;
 }
 
-Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform)
+Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol * _symbol)
 {
     Error ret;
 
@@ -73,11 +73,9 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform)
             }
             else if (c2.first()->itemType() == ItemType::Symbol)
             {
-                printf("GOT SYMBOL MASK\n");
                 Symbol * s = static_cast<Symbol *>(c2.first());
                 if (s->item()->itemType() == ItemType::Path)
                 {
-                    printf("GOT SYMBOL MASK2\n");
                     mask = static_cast<Path *>(s->item());
                     transformItem = s;
                 }
@@ -93,7 +91,9 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform)
             if (ret)
                 return ret;
 
-            drawChildren(grp, _transform, true);
+            ret = drawChildren(grp, _transform, true);
+            
+            if(ret) return ret;
 
             ret = endClipping();
         }
@@ -104,12 +104,12 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform)
     {
         Path * p = static_cast<Path *>(_item);
         if (p->segmentData().count() > 1)
-            ret = drawPath(p, _transform ? *_transform : p->absoluteTransform());
+            ret = drawPath(p, _transform ? *_transform : p->absoluteTransform(), _symbol);
     }
     else if (_item->itemType() == ItemType::Symbol)
     {
         Symbol * s = static_cast<Symbol *>(_item);
-        drawItem(s->item(), _transform ? _transform : &s->absoluteTransform());
+        ret = drawItem(s->item(), _transform ? _transform : &s->absoluteTransform(), s);
     }
     return ret;
 }

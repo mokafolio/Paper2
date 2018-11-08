@@ -30,7 +30,7 @@ class STICK_API RenderInterface
 
   protected:
     // these have to be implemented
-    virtual Error drawPath(Path * _path, const Mat32f & _transform) = 0;
+    virtual Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol = nullptr) = 0;
     virtual Error beginClipping(Path * _clippingPath, const Mat32f & _transform) = 0;
     virtual Error endClipping() = 0;
 
@@ -45,7 +45,7 @@ class STICK_API RenderInterface
     }
 
     Error drawChildren(Item * _item, const Mat32f * _transform, bool _bSkipFirst);
-    Error drawItem(Item * _item, const Mat32f * _transform);
+    Error drawItem(Item * _item, const Mat32f * _transform, Symbol * _symbol = nullptr);
 
     Document * m_document;
 };

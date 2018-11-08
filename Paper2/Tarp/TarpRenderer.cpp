@@ -1,6 +1,7 @@
 #include <Paper2/Document.hpp>
 #include <Paper2/Group.hpp>
 #include <Paper2/Path.hpp>
+#include <Paper2/Symbol.hpp>
 #include <Paper2/Tarp/TarpRenderer.hpp>
 
 #include <GL/gl3w.h>
@@ -25,13 +26,13 @@ struct TarpStuff
     tpSegmentArray tmpSegmentBuffer;
 };
 
-struct TarpRenderData : public RenderData
+struct TarpPathData : public RenderData
 {
-    TarpRenderData(tpPath _path = tpPathInvalidHandle()) : path(_path)
+    TarpPathData(tpPath _path = tpPathInvalidHandle()) : path(_path)
     {
     }
 
-    ~TarpRenderData()
+    ~TarpPathData()
     {
         tpPathDestroy(path);
     }
@@ -39,10 +40,30 @@ struct TarpRenderData : public RenderData
     RenderDataUniquePtr clone() const
     {
         //@TODO: Proper allocator
-        return makeUnique<TarpRenderData>(defaultAllocator(), tpPathClone(path));
+        return makeUnique<TarpPathData>(defaultAllocator(), tpPathClone(path));
     }
 
     tpPath path;
+};
+
+struct TarpSymbolData : public RenderData
+{
+    TarpSymbolData(tpRenderCache _cache = tpRenderCacheInvalidHandle()) : cache(_cache)
+    {
+    }
+
+    ~TarpSymbolData()
+    {
+        tpRenderCacheDestroy(cache);
+    }
+
+    RenderDataUniquePtr clone() const
+    {
+        //@TODO: not cloning is the right thing to do here?
+        return RenderDataUniquePtr();
+    }
+
+    tpRenderCache cache;
 };
 
 struct TarpGradientData : public RenderData
@@ -133,12 +154,18 @@ void TarpRenderer::setProjection(const Mat4f & _projection)
     tpSetProjection(m_tarp->ctx, (const tpMat4 *)&_projection);
 }
 
-static detail::TarpRenderData & ensureRenderData(Path * _path)
+static detail::TarpPathData & ensureRenderData(Path * _path)
 {
     if (!_path->renderData())
-        _path->setRenderData(
-            makeUnique<detail::TarpRenderData>(defaultAllocator(), tpPathCreate()));
-    return *static_cast<detail::TarpRenderData *>(_path->renderData());
+        _path->setRenderData(makeUnique<detail::TarpPathData>(defaultAllocator(), tpPathCreate()));
+    return *static_cast<detail::TarpPathData *>(_path->renderData());
+}
+
+static detail::TarpSymbolData & ensureRenderData(Symbol * _symbol)
+{
+    if (!_symbol->renderData())
+        _symbol->setRenderData(makeUnique<detail::TarpSymbolData>(defaultAllocator(), tpRenderCacheCreate()));
+    return *static_cast<detail::TarpSymbolData *>(_symbol->renderData());
 }
 
 static detail::TarpGradientData & ensureRenderData(LinearGradientPtr _gradient)
@@ -159,8 +186,8 @@ static void toTarpSegments(tpSegmentArray & _tmpData, Path * _path, const Mat32f
             ConstSegment seg = _path->segment(i);
             Vec2f hi = seg.handleInAbsolute();
             Vec2f ho = seg.handleOutAbsolute();
-            _tmpData.append(
-                (tpSegment){{hi.x, hi.y}, {seg.position().x, seg.position().y}, {ho.x, ho.y}});
+            _tmpData.append((tpSegment){
+                { hi.x, hi.y }, { seg.position().x, seg.position().y }, { ho.x, ho.y } });
         }
     }
     else
@@ -173,7 +200,7 @@ static void toTarpSegments(tpSegmentArray & _tmpData, Path * _path, const Mat32f
             Vec2f hi = *_transform * seg.handleInAbsolute();
             Vec2f pos = *_transform * seg.position();
             Vec2f ho = *_transform * seg.handleOutAbsolute();
-            _tmpData.append((tpSegment){{hi.x, hi.y}, {pos.x, pos.y}, {ho.x, ho.y}});
+            _tmpData.append((tpSegment){ { hi.x, hi.y }, { pos.x, pos.y }, { ho.x, ho.y } });
         }
     }
 }
@@ -230,10 +257,10 @@ static void updateTarpPath(tpSegmentArray & _tmpData,
     }
 
     // potentially update the stroke/fill transforms
-    if (_path->hasfillPaintTransform() && _path->cleanDirtyfillPaintTransform())
+    if (_path->hasfillPaintTransform() && _path->cleanDirtyFillPaintTransform())
         tpPathSetFillPaintTransform(_tarpPath, (tpTransform *)&_path->fillPaintTransform());
 
-    if (_path->hasStrokePaintTransform() && _path->cleanDirtystrokePaintTransform())
+    if (_path->hasStrokePaintTransform() && _path->cleanDirtyStrokePaintTransform())
         tpPathSetStrokePaintTransform(_tarpPath, (tpTransform *)&_path->strokePaintTransform());
 }
 
@@ -279,21 +306,21 @@ static detail::TarpGradientData & updateTarpGradient(BaseGradient & _grad)
 // ugly template helper using pointer to member
 // so we don't have to write the code for setting stroke and fill twice
 template <class M, class M2>
-static void setPaint(tpStyle * _style, M _styleMember, Path * _path, M2 _pathMember)
+static void setPaint(tpStyle * _style, M _styleMember, Item * _item, M2 _pathMember)
 {
-    if ((_path->*_pathMember)().template is<ColorRGBA>())
+    if ((_item->*_pathMember)().template is<ColorRGBA>())
     {
-        ColorRGBA & col = (_path->*_pathMember)().template get<ColorRGBA>();
+        ColorRGBA & col = (_item->*_pathMember)().template get<ColorRGBA>();
         _style->*_styleMember = tpPaintMakeColor(col.r, col.g, col.b, col.a);
     }
-    else if ((_path->*_pathMember)().template is<LinearGradientPtr>() ||
-             (_path->*_pathMember)().template is<RadialGradientPtr>())
+    else if ((_item->*_pathMember)().template is<LinearGradientPtr>() ||
+             (_item->*_pathMember)().template is<RadialGradientPtr>())
     {
         SharedPtr<BaseGradient> ptr;
-        if ((_path->*_pathMember)().template is<LinearGradientPtr>())
-            ptr = (_path->*_pathMember)().template get<LinearGradientPtr>();
+        if ((_item->*_pathMember)().template is<LinearGradientPtr>())
+            ptr = (_item->*_pathMember)().template get<LinearGradientPtr>();
         else
-            ptr = (_path->*_pathMember)().template get<RadialGradientPtr>();
+            ptr = (_item->*_pathMember)().template get<RadialGradientPtr>();
 
         if (ptr)
         {
@@ -307,23 +334,39 @@ static void setPaint(tpStyle * _style, M _styleMember, Path * _path, M2 _pathMem
     }
 }
 
-Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform)
+//helper to pick the correct style between a potential symbol and its path
+template<class Ret>
+Ret property(Path * _path, Symbol * _symbol, bool (Item::*_haser)() const, Ret (Item::*_getter)() const)
 {
-    detail::TarpRenderData & rd = ensureRenderData(_path);
-    tpStyle style = tpStyleMake();
-    style.fillRule =
-        _path->windingRule() == WindingRule::NonZero ? kTpFillRuleNonZero : kTpFillRuleEvenOdd;
+    if(_symbol && (_symbol->*_haser)())
+        return (_symbol->*_getter)();
+    return (_path->*_getter)();
+}
 
-    setPaint(&style, &tpStyle::fill, _path, &Path::fill);
-    setPaint(&style, &tpStyle::stroke, _path, &Path::stroke);
+static tpStyle makeStyle(Path * _path, Symbol * _symbol)
+{
+    tpStyle style = tpStyleMake();
+    style.fillRule = property(_path, _symbol, &Item::hasWindingRule, &Item::windingRule) == WindingRule::NonZero
+                         ? kTpFillRuleNonZero
+                         : kTpFillRuleEvenOdd;
+
+    if(_symbol && _symbol->hasFill())
+        setPaint(&style, &tpStyle::fill, _symbol, &Item::fill);
+    else
+        setPaint(&style, &tpStyle::fill, _path, &Item::fill);
+
+    if(_symbol && _symbol->hasStroke())
+        setPaint(&style, &tpStyle::stroke, _symbol, &Item::stroke);
+    else
+        setPaint(&style, &tpStyle::stroke, _path, &Item::stroke);
 
     if (style.stroke.type != kTpPaintTypeNone && _path->strokeWidth())
     {
-        style.strokeWidth = _path->strokeWidth();
-        style.miterLimit = _path->miterLimit();
-        style.scaleStroke = (tpBool)_path->scaleStroke();
+        style.strokeWidth = property(_path, _symbol, &Item::hasStrokeWidth, &Item::strokeWidth);
+        style.miterLimit = property(_path, _symbol, &Item::hasMiterLimit, &Item::miterLimit);
+        style.scaleStroke = (tpBool)property(_path, _symbol, &Item::hasScaleStroke, &Item::scaleStroke);
 
-        switch (_path->strokeJoin())
+        switch (property(_path, _symbol, &Item::hasStrokeJoin, &Item::strokeJoin))
         {
         case StrokeJoin::Round:
             style.strokeJoin = kTpStrokeJoinRound;
@@ -337,7 +380,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform)
             break;
         }
 
-        switch (_path->strokeCap())
+        switch (property(_path, _symbol, &Item::hasStrokeCap, &Item::strokeCap))
         {
         case StrokeCap::Round:
             style.strokeCap = kTpStrokeCapRound;
@@ -351,28 +394,106 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform)
             break;
         }
 
-        auto & da = _path->dashArray();
+        auto & da = _symbol && _symbol->hasDashArray() ? _symbol->dashArray() : _path->dashArray();
         if (da.count())
         {
             style.dashArray = &da[0];
             style.dashCount = da.count();
-            style.dashOffset = _path->dashOffset();
+            style.dashOffset = property(_path, _symbol, &Item::hasDashOffset, &Item::dashOffset);
         }
     }
+
+    return style;
+}
+
+Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol)
+{
+    detail::TarpPathData & rd = ensureRenderData(_path);
+    // tpStyle style = tpStyleMake();
+    // style.fillRule =
+    //     _path->windingRule() == WindingRule::NonZero ? kTpFillRuleNonZero : kTpFillRuleEvenOdd;
+
+    // setPaint(&style, &tpStyle::fill, _path, &Path::fill);
+    // setPaint(&style, &tpStyle::stroke, _path, &Path::stroke);
+
+    // if (style.stroke.type != kTpPaintTypeNone && _path->strokeWidth())
+    // {
+    //     style.strokeWidth = _path->strokeWidth();
+    //     style.miterLimit = _path->miterLimit();
+    //     style.scaleStroke = (tpBool)_path->scaleStroke();
+
+    //     switch (_path->strokeJoin())
+    //     {
+    //     case StrokeJoin::Round:
+    //         style.strokeJoin = kTpStrokeJoinRound;
+    //         break;
+    //     case StrokeJoin::Miter:
+    //         style.strokeJoin = kTpStrokeJoinMiter;
+    //         break;
+    //     case StrokeJoin::Bevel:
+    //     default:
+    //         style.strokeJoin = kTpStrokeJoinBevel;
+    //         break;
+    //     }
+
+    //     switch (_path->strokeCap())
+    //     {
+    //     case StrokeCap::Round:
+    //         style.strokeCap = kTpStrokeCapRound;
+    //         break;
+    //     case StrokeCap::Square:
+    //         style.strokeCap = kTpStrokeCapSquare;
+    //         break;
+    //     case StrokeCap::Butt:
+    //     default:
+    //         style.strokeCap = kTpStrokeCapButt;
+    //         break;
+    //     }
+
+    //     auto & da = _path->dashArray();
+    //     if (da.count())
+    //     {
+    //         style.dashArray = &da[0];
+    //         style.dashCount = da.count();
+    //         style.dashOffset = _path->dashOffset();
+    //     }
+    // }
+
+    tpStyle style = makeStyle(_path, _symbol);
 
     updateTarpPath(m_tarp->tmpSegmentBuffer, _path, rd.path, nullptr);
     tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
 
-    tpBool err = tpDrawPath(m_tarp->ctx, rd.path, &style);
+    tpBool err = tpFalse;
+    //@TODO: Draw the path if there is no other style on the symbol and if the path is only translated
+    if(!_symbol)
+    {
+        // printf("DRAWING PATH\n");
+        err = tpDrawPath(m_tarp->ctx, rd.path, &style);
+    }
+    else
+    {
+        // printf("DRAWING SYMBOL\n");
+        detail::TarpSymbolData & sd = ensureRenderData(_symbol);
+        if(_symbol->cleanDirtySymbol())
+        {
+            // printf("UPDATING SYMBOL CACHE\n");
+            err = tpCachePath(m_tarp->ctx, rd.path, &style, sd.cache);
+        }
+        if (err)
+            return Error(ec::InvalidOperation, "Failed to cache tarp path for symbol", STICK_FILE, STICK_LINE);
+        err = tpDrawRenderCache(m_tarp->ctx, sd.cache);
+    }
 
     if (err)
         return Error(ec::InvalidOperation, "Failed to draw tarp path", STICK_FILE, STICK_LINE);
+
     return Error();
 }
 
 Error TarpRenderer::beginClipping(Path * _clippingPath, const Mat32f & _transform)
 {
-    detail::TarpRenderData & rd = ensureRenderData(_clippingPath);
+    detail::TarpPathData & rd = ensureRenderData(_clippingPath);
 
     updateTarpPath(m_tarp->tmpSegmentBuffer, _clippingPath, rd.path, nullptr);
 
@@ -408,5 +529,6 @@ Error TarpRenderer::finishDrawing()
     tpFinishDrawing(m_tarp->ctx);
     return Error();
 }
+
 } // namespace tarp
 } // namespace paper

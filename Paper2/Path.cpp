@@ -338,12 +338,12 @@ Error arcHelper(SegmentDataArray & _segs,
             if (!_transform)
             {
                 printf("NEW SEG UNTRANS\n");
-                _segs.append({pt + in, pt, i < count ? pt + out : pt });
+                _segs.append({ pt + in, pt, i < count ? pt + out : pt });
             }
             else
             {
                 printf("NEW SEG TRANS\n");
-                _segs.append({*_transform * (dir + in), pt, i < count ? pt + out : pt });
+                _segs.append({ *_transform * (dir + in), pt, i < count ? pt + out : pt });
                 // _segs.append({pt, pt, pt});
             }
         }
@@ -926,7 +926,7 @@ void Path::simplify(Float _tolerance)
 void Path::addSegment(const Vec2f & _point, const Vec2f & _handleIn, const Vec2f & _handleOut)
 {
     // createSegment(_point, _handleIn, _handleOut);
-    m_segmentData.append({_point + _handleIn, _point, _point + _handleOut});
+    m_segmentData.append({ _point + _handleIn, _point, _point + _handleOut });
     appendedSegment();
 }
 
@@ -1022,7 +1022,7 @@ Segment Path::createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const V
 
 void Path::appendedSegment()
 {
-    if(m_segmentData.count() > 1)
+    if (m_segmentData.count() > 1)
         m_curveData.append(CurveData{});
     markGeometryDirty(true);
 }
@@ -1765,6 +1765,7 @@ void Path::markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDir
     if (_bMarkLengthDirty)
         m_length.reset();
     m_monoCurves.clear();
+    Item::markSymbolsDirty();
 }
 
 void Path::transformChanged(bool _bCalledFromParent)
@@ -1781,6 +1782,7 @@ bool Path::canAddChild(Item * _e) const
 void Path::addedChild(Item * _e)
 {
     // for non zero winding rule we adjust the direction of the added path if needed
+    // @TODO?????
     // if (windingRule() == WindingRule::NonZero)
     //     static_cast<Path *>(_e)->setClockwise(!isClockwise());
 }

@@ -28,7 +28,8 @@ class STICK_API TarpRenderer : public RenderInterface
 
     void setProjection(const Mat4f & _projection) final;
 
-    Error drawPath(Path * _path, const Mat32f & _transform) final;
+  private:
+    Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol = nullptr) final;
 
     Error beginClipping(Path * _clippingPath, const Mat32f & _transform) final;
 
@@ -38,7 +39,6 @@ class STICK_API TarpRenderer : public RenderInterface
 
     Error finishDrawing() final;
 
-  private:
     stick::UniquePtr<detail::TarpStuff> m_tarp;
     Rect m_viewport;
 };

@@ -25,6 +25,7 @@
     do                                                                                             \
     {                                                                                              \
         m_##name = val;                                                                            \
+        m_bStyleDirty = true;                                                                      \
         for (Item * child : m_children)                                                            \
             child->recursivelyResetProperty(&Item::m_##name);                                      \
     } while (false)
@@ -43,7 +44,8 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     // m_stroke(NoPaint()),
     m_name(_alloc),
     m_fillPaintTransformDirty(false),
-    m_strokePaintTransformDirty(false)
+    m_strokePaintTransformDirty(false),
+    m_bStyleDirty(false)
 {
     m_name.append(_name);
 }
@@ -935,38 +937,33 @@ Error Item::saveSVG(const String & _uri) const
     return saveTextFile(res.get(), _uri);
 }
 
-bool Item::cleanDirtyfillPaintTransform()
+bool Item::cleanDirtyFillPaintTransform()
 {
     bool ret = m_fillPaintTransformDirty;
     m_fillPaintTransformDirty = false;
     return ret;
 }
 
-bool Item::cleanDirtystrokePaintTransform()
+bool Item::cleanDirtyStrokePaintTransform()
 {
     bool ret = m_strokePaintTransformDirty;
     m_strokePaintTransformDirty = false;
     return ret;
 }
 
-// String Item::hierarchyString(Size _indent) const
-// {
-//     String ret;
+bool Item::cleanDirtyStyle()
+{
+    bool ret = m_bStyleDirty;
+    m_bStyleDirty = false;
+    return ret;
+}
 
-//     switch(itemType())
-//     {
-//         case ItemType::Document:
-//             ret.append(AppendVariadicFlag(), "Document:\n");
-//         case ItemType::Group:
-//             ret.append(AppendVariadicFlag(), "Group:\n");
-//         case ItemType::Path:
-//             ret.append(AppendVariadicFlag(), "Path:\n");
-//         case ItemType::Symbol:
-//             ret.append(AppendVariadicFlag(), "Symbol:\n");
-//     }
+void Item::markSymbolsDirty() const
+{
+    for (Symbol * s : m_symbols)
+        s->m_bReferencedItemChanged = true;
+}
 
-//     return ret;
-// }
 void Item::hierarchyString(String & _outputString, Size _indent) const
 {
     String indent;
@@ -991,7 +988,7 @@ void Item::hierarchyString(String & _outputString, Size _indent) const
         break;
     }
 
-    for(auto * child : children())
+    for (auto * child : children())
         child->hierarchyString(_outputString, _indent + 1);
 }
 

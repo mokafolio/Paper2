@@ -21,6 +21,9 @@ class STICK_API Symbol : public Item
 
     Symbol * clone() const;
 
+    // called from Renderer
+    bool cleanDirtySymbol();
+
   private:
     stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
 
@@ -28,6 +31,7 @@ class STICK_API Symbol : public Item
     void setItem(Item * _item);
 
     Item * m_item;
+    bool m_bReferencedItemChanged;
 };
 } // namespace paper
 

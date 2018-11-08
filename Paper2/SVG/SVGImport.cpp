@@ -1,4 +1,5 @@
 #include <Stick/DynamicArray.hpp>
+#include <Stick/FixedArray.hpp>
 #include <Stick/HashMap.hpp>
 #include <Stick/Result.hpp>
 #include <Stick/URI.hpp>
@@ -364,6 +365,7 @@ static Vec2f reflect(const Vec2f & _position, const Vec2f & _around)
 {
     return _around + (_around - _position);
 }
+
 } // namespace detail
 
 enum class SVGUnits
@@ -428,6 +430,7 @@ class SVGImportSession
         m_document = &_doc;
         m_dpi = _dpi;
         m_namedItems.clear();
+        m_viewportStack.clear();
         m_rootNode = pugi::xml_node();
 
         pugi::xml_document doc;
@@ -435,17 +438,10 @@ class SVGImportSession
 
         if (result)
         {
-            Float x, y, w, h;
-            if (auto val = doc.attribute("x"))
-                x = val.as_float();
-            if (auto val = doc.attribute("y"))
-                y = val.as_float();
-            if (auto val = doc.attribute("width"))
-                w = val.as_float();
-            if (auto val = doc.attribute("height"))
-                h = val.as_float();
-
             m_rootNode = doc.first_child();
+            m_viewportStack.append({ 0, 0, _doc.width(), _doc.height() });
+            auto vp = parseViewport(m_rootNode, { SVGUnits::Percent, 100 });
+
             Error err;
             Group * ret = m_document->createGroup();
             m_hiddenGroup = m_document->createGroup("HiddenSVGGroup");
@@ -453,25 +449,8 @@ class SVGImportSession
             ret->addChild(m_hiddenGroup);
             Group * grp = static_cast<Group *>(recursivelyImportNode(doc.first_child(), err));
 
-            printf("SVG GROUP CHILDREN: %lu\n", grp->children().count());
-
-            for (auto * child : grp->children())
-            {
-                if (child->itemType() == ItemType::Group)
-                    printf("GROUP\n");
-                else if (child->itemType() == ItemType::Path)
-                    printf("Path\n");
-                else if (child->itemType() == ItemType::Symbol)
-                    printf("Symbol\n");
-            }
-            // remove all tmp items
-            // for (auto & item : m_tmpItems)
-            //     item->remove();
-            // m_tmpItems.clear();
-
-            printf("SUCCESS? %p\n", grp);
             ret->addChild(grp);
-            return SVGImportResult(ret, w, h, err);
+            return SVGImportResult(ret, vp[1], vp[2], err);
         }
         else
         {
@@ -648,6 +627,25 @@ class SVGImportSession
         return item;
     }
 
+    FixedArray<Float, 4> parseViewport(pugi::xml_node _node, SVGCoordinate _defaultHW)
+    {
+        auto mx = _node.attribute("x");
+        auto my = _node.attribute("y");
+        auto mw = _node.attribute("width");
+        auto mh = _node.attribute("height");
+
+        Float x, y, w, h;
+        Vec2f cvv = currentViewVertical();
+        Vec2f cvh = currentViewHorizontal();
+
+        w = coordinatePixels(mw ? mw.value() : "auto", cvh.x, cvh.y, _defaultHW);
+        h = coordinatePixels(mh ? mh.value() : "auto", cvv.x, cvv.y, _defaultHW);
+        x = mx ? coordinatePixels(mx.value(), cvh.x, cvh.y) : 0;
+        y = my ? coordinatePixels(my.value(), cvv.x, cvv.y) : 0;
+
+        return { x, y, w, h };
+    }
+
     void parseViewBox(pugi::xml_node _node, Item * _item, Path * _mask)
     {
         // parse the attributes that need to be parsed in a certain order first...
@@ -673,7 +671,7 @@ class SVGImportSession
                    pair.first.string().cString(),
                    pair.second.string().cString());
 
-            const Rect & r = m_viewStack.last();
+            const Rect & r = m_viewportStack.last();
             Rect r2(numbers[0], numbers[1], numbers[0] + numbers[2], numbers[1] + numbers[3]);
             Mat32f viewTransform = Mat32f::identity();
 
@@ -763,12 +761,12 @@ class SVGImportSession
             viewTransform = viewTransform * translation;
             _it->transform(viewTransform);
 
-            if(_mask)
+            if (_mask)
             {
                 _mask->transform(inverse(viewTransform));
             }
 
-            m_viewStack.append(r2);
+            m_viewportStack.append(r2);
         });
     }
 
@@ -781,33 +779,12 @@ class SVGImportSession
         // calculation)
         if (_type == SVGGroupType::SVG || _type == SVGGroupType::Symbol)
         {
-            Float x, y, w, h;
-            auto mx = _node.attribute("x");
-            auto my = _node.attribute("y");
-            auto mw = _node.attribute("width");
-            auto mh = _node.attribute("height");
-            if (mw && mh)
-            {
-                w = mw.as_float();
-                h = mh.as_float();
-                x = mx ? mx.as_float() : 0;
-                y = my ? my.as_float() : 0;
-                m_viewStack.append(Rect(x, y, x + w, y + h));
-
-                mask = m_document->createRectangle(Vec2f(x, y), Vec2f(x + w, y + h), "SVG Viewport Mask");
-                grp->addChild(mask);
-                grp->setClipped(true);
-                mask->setStroke("green");
-
-                // childGrp = m_document->createGroup();
-                // grp->addChild(childGrp);
-
-                printf("MASK %f %f %f %f\n", x, y, w, h);
-            }
-            else
-            {
-                m_viewStack.append(Rect(0, 0, m_document->width(), m_document->height()));
-            }
+            auto vp = parseViewport(_node, SVGCoordinate{ SVGUnits::Percent, 100 });
+            m_viewportStack.append(Rect(vp[0], vp[1], vp[0] + vp[2], vp[1] + vp[3]));
+            mask = m_document->createRectangle(
+                Vec2f(vp[0], vp[1]), Vec2f(vp[0] + vp[2], vp[1] + vp[3]), "SVG Viewport Mask");
+            grp->addChild(mask);
+            grp->setClipped(true);
             parseViewBox(_node, grp, mask);
         }
         pushAttributes(_node, grp);
@@ -828,6 +805,10 @@ class SVGImportSession
             m_hiddenGroup->addChild(grp);
             return nullptr;
         }
+
+        if (_type == SVGGroupType::SVG || _type == SVGGroupType::Symbol)
+            m_viewportStack.removeLast();
+
         return grp;
     }
 
@@ -911,11 +892,21 @@ class SVGImportSession
         {
             Vec2f hStartAndLength = currentViewHorizontal();
             Vec2f vStartAndLength = currentViewVertical();
-            Float x = mcx ? coordinatePixels(mcx.value(), hStartAndLength.x, hStartAndLength.y) : 0;
-            Float y = mcy ? coordinatePixels(mcy.value(), vStartAndLength.x, vStartAndLength.y) : 0;
+            Float x = mcx ? coordinatePixels(mcx.value(),
+                                             hStartAndLength.x,
+                                             hStartAndLength.y,
+                                             SVGCoordinate{ SVGUnits::PX, 0.0 })
+                          : 0;
+            Float y = mcy ? coordinatePixels(mcy.value(),
+                                             vStartAndLength.x,
+                                             vStartAndLength.y,
+                                             SVGCoordinate{ SVGUnits::PX, 0.0 })
+                          : 0;
             printf("IMPORT CIRCLE %f %f %f\n", x, y, mr.as_float());
             Path * ret = m_document->createCircle(
-                Vec2f(x, y), coordinatePixels(mr.value(), 0, currentViewLength()));
+                Vec2f(x, y),
+                coordinatePixels(
+                    mr.value(), 0, currentViewLength(), SVGCoordinate{ SVGUnits::PX, 0.0 }));
             pushAttributes(_node, ret);
             popAttributes();
             return ret;
@@ -938,12 +929,24 @@ class SVGImportSession
         {
             Vec2f hStartAndLength = currentViewHorizontal();
             Vec2f vStartAndLength = currentViewVertical();
-            Float x = mcx ? coordinatePixels(mcx.value(), hStartAndLength.x, hStartAndLength.y) : 0;
-            Float y = mcy ? coordinatePixels(mcy.value(), vStartAndLength.x, vStartAndLength.y) : 0;
+            Float x = mcx ? coordinatePixels(mcx.value(),
+                                             hStartAndLength.x,
+                                             hStartAndLength.y,
+                                             SVGCoordinate{ SVGUnits::PX, 0.0 })
+                          : 0;
+            Float y = mcy ? coordinatePixels(mcy.value(),
+                                             vStartAndLength.x,
+                                             vStartAndLength.y,
+                                             SVGCoordinate{ SVGUnits::PX, 0.0 })
+                          : 0;
             Path * ret = m_document->createEllipse(
                 Vec2f(x, y),
-                Vec2f(coordinatePixels(mrx.value(), 0, currentViewLength()) * 2,
-                      coordinatePixels(mry.value(), 0, currentViewLength()) * 2));
+                Vec2f(coordinatePixels(
+                          mrx.value(), 0, currentViewLength(), SVGCoordinate{ SVGUnits::PX, 0.0 }) *
+                          2,
+                      coordinatePixels(
+                          mry.value(), 0, currentViewLength(), SVGCoordinate{ SVGUnits::PX, 0.0 }) *
+                          2));
             pushAttributes(_node, ret);
             popAttributes();
             return ret;
@@ -972,18 +975,38 @@ class SVGImportSession
 
             Vec2f hStartAndLength = currentViewHorizontal();
             Vec2f vStartAndLength = currentViewVertical();
-            Float x = coordinatePixels(mx.value(), hStartAndLength.x, hStartAndLength.y);
-            Float y = coordinatePixels(my.value(), vStartAndLength.x, vStartAndLength.y);
-            Float w = coordinatePixels(mw.value(), hStartAndLength.x, hStartAndLength.y);
-            Float h = coordinatePixels(mh.value(), vStartAndLength.x, vStartAndLength.y);
+            Float x = coordinatePixels(mx.value(),
+                                       hStartAndLength.x,
+                                       hStartAndLength.y,
+                                       SVGCoordinate{ SVGUnits::PX, 0.0 });
+            Float y = coordinatePixels(my.value(),
+                                       vStartAndLength.x,
+                                       vStartAndLength.y,
+                                       SVGCoordinate{ SVGUnits::PX, 0.0 });
+            Float w = coordinatePixels(mw.value(),
+                                       hStartAndLength.x,
+                                       hStartAndLength.y,
+                                       SVGCoordinate{ SVGUnits::Percent, 100.0 });
+            Float h = coordinatePixels(mh.value(),
+                                       vStartAndLength.x,
+                                       vStartAndLength.y,
+                                       SVGCoordinate{ SVGUnits::Percent, 100.0 });
             Path * ret;
             if (mrx || mry)
             {
-                Float rx =
-                    mrx ? coordinatePixels(mrx.value(), hStartAndLength.x, hStartAndLength.y)
-                        : coordinatePixels(mry.value(), vStartAndLength.x, vStartAndLength.y);
-                Float ry =
-                    mry ? coordinatePixels(mry.value(), vStartAndLength.x, vStartAndLength.y) : rx;
+                Float rx = mrx ? coordinatePixels(mrx.value(),
+                                                  hStartAndLength.x,
+                                                  hStartAndLength.y,
+                                                  SVGCoordinate{ SVGUnits::PX, 0.0 })
+                               : coordinatePixels(mry.value(),
+                                                  vStartAndLength.x,
+                                                  vStartAndLength.y,
+                                                  SVGCoordinate{ SVGUnits::PX, 0.0 });
+                Float ry = mry ? coordinatePixels(mry.value(),
+                                                  vStartAndLength.x,
+                                                  vStartAndLength.y,
+                                                  SVGCoordinate{ SVGUnits::PX, 0.0 })
+                               : rx;
                 ret = m_document->createRoundedRectangle(
                     Vec2f(x, y), Vec2f(x, y) + Vec2f(w, h), Vec2f(rx, ry));
             }
@@ -1017,10 +1040,22 @@ class SVGImportSession
             Vec2f hStartAndLength = currentViewHorizontal();
             Vec2f vStartAndLength = currentViewVertical();
 
-            Float x1 = coordinatePixels(mx1.value(), hStartAndLength.x, hStartAndLength.y);
-            Float y1 = coordinatePixels(my1.value(), vStartAndLength.x, vStartAndLength.y);
-            Float x2 = coordinatePixels(mx2.value(), hStartAndLength.x, hStartAndLength.y);
-            Float y2 = coordinatePixels(my2.value(), vStartAndLength.x, vStartAndLength.y);
+            Float x1 = coordinatePixels(mx1.value(),
+                                        hStartAndLength.x,
+                                        hStartAndLength.y,
+                                        SVGCoordinate{ SVGUnits::PX, 0.0 });
+            Float y1 = coordinatePixels(my1.value(),
+                                        vStartAndLength.x,
+                                        vStartAndLength.y,
+                                        SVGCoordinate{ SVGUnits::PX, 0.0 });
+            Float x2 = coordinatePixels(mx2.value(),
+                                        hStartAndLength.x,
+                                        hStartAndLength.y,
+                                        SVGCoordinate{ SVGUnits::PX, 0.0 });
+            Float y2 = coordinatePixels(my2.value(),
+                                        vStartAndLength.x,
+                                        vStartAndLength.y,
+                                        SVGCoordinate{ SVGUnits::PX, 0.0 });
 
             SegmentDataArray segs(m_document->allocator());
             segs.reserve(2);
@@ -1076,17 +1111,31 @@ class SVGImportSession
         Vec2f vStartAndLength = currentViewVertical();
         if (wa || ha)
         {
-            Float w = wa ? coordinatePixels(wa.value(), hStartAndLength.x, hStartAndLength.y)
+            Float w = wa ? coordinatePixels(wa.value(),
+                                            hStartAndLength.x,
+                                            hStartAndLength.y,
+                                            SVGCoordinate{ SVGUnits::PX, 0.0 })
                          : item->bounds().width();
-            Float h = ha ? coordinatePixels(ha.value(), vStartAndLength.x, vStartAndLength.y)
+            Float h = ha ? coordinatePixels(ha.value(),
+                                            vStartAndLength.x,
+                                            vStartAndLength.y,
+                                            SVGCoordinate{ SVGUnits::PX, 0.0 })
                          : item->bounds().height();
             transform = Mat32f::scaling(w / item->bounds().width(), h / item->bounds().height());
         }
         if (xa || ya)
         {
             printf("SETTING POSITION\n");
-            Float x = xa ? coordinatePixels(xa.value(), hStartAndLength.x, hStartAndLength.y) : 0;
-            Float y = ya ? coordinatePixels(ya.value(), vStartAndLength.x, vStartAndLength.y) : 0;
+            Float x = xa ? coordinatePixels(xa.value(),
+                                            hStartAndLength.x,
+                                            hStartAndLength.y,
+                                            SVGCoordinate{ SVGUnits::PX, 0.0 })
+                         : 0;
+            Float y = ya ? coordinatePixels(ya.value(),
+                                            vStartAndLength.x,
+                                            vStartAndLength.y,
+                                            SVGCoordinate{ SVGUnits::PX, 0.0 })
+                         : 0;
             printf("X Y %f %f\n", x, y);
             if (transform)
                 (*transform).translate(x, y);
@@ -1400,8 +1449,17 @@ class SVGImportSession
         return ret;
     }
 
-    Float coordinatePixels(const char * _str, Float _start = 0, Float _length = 1)
+    Float coordinatePixels(
+        const char * _str,
+        Float _start,
+        Float _length,
+        stick::Maybe<SVGCoordinate> _defaultValue = stick::Maybe<SVGCoordinate>())
     {
+        if (std::strcmp(_str, "auto") == 0)
+        {
+            STICK_ASSERT(_defaultValue);
+            return toPixels((*_defaultValue).value, (*_defaultValue).units, _start, _length);
+        }
         auto coord = parseCoordinate(_str);
         printf("coord.value %f %f %f\n", coord.value, _start, _length);
         return toPixels(coord.value, coord.units, _start, _length);
@@ -1409,28 +1467,28 @@ class SVGImportSession
 
     Vec2f currentViewVertical() const
     {
-        if (!m_viewStack.count())
+        if (!m_viewportStack.count())
             return (Vec2f(0, 1));
 
-        return Vec2f(m_viewStack.last().min().y, m_viewStack.last().height());
+        return Vec2f(m_viewportStack.last().min().y, m_viewportStack.last().height());
     }
 
     Vec2f currentViewHorizontal() const
     {
-        if (!m_viewStack.count())
+        if (!m_viewportStack.count())
             return (Vec2f(0, 1));
 
-        return Vec2f(m_viewStack.last().min().x, m_viewStack.last().width());
+        return Vec2f(m_viewportStack.last().min().x, m_viewportStack.last().width());
     }
 
     Float currentViewLength() const
     {
-        if (!m_viewStack.count())
+        if (!m_viewportStack.count())
             return 1.0;
 
-        Float w = m_viewStack.last().width();
-        Float h = m_viewStack.last().height();
-        printf("DA FOOOOCKING %lu %f %f\n", m_viewStack.count(), w, h);
+        Float w = m_viewportStack.last().width();
+        Float h = m_viewportStack.last().height();
+        printf("DA FOOOOCKING %lu %f %f\n", m_viewportStack.count(), w, h);
         return std::sqrtf(w * w + h * h) / std::sqrtf(2.0f);
     }
 
@@ -1508,7 +1566,8 @@ class SVGImportSession
         }
         else if (_name == "stroke-width")
         {
-            _attributes.strokeWidth = coordinatePixels(_value.cString(), 0, currentViewLength());
+            _attributes.strokeWidth = coordinatePixels(
+                _value.cString(), 0, currentViewLength(), SVGCoordinate{ SVGUnits::PX, 1.0 });
             printf("dAAAAHAHAHA STROKE WIDTH: %f\n", _attributes.strokeWidth);
             _item->setStrokeWidth(_attributes.strokeWidth);
         }
@@ -1536,7 +1595,7 @@ class SVGImportSession
         }
         else if (_name == "stroke-miterlimit")
         {
-            _attributes.miterLimit = coordinatePixels(_value.cString(), 0, currentViewLength());
+            _attributes.miterLimit = std::max(1.0, std::atof(_value.cString()));
             _item->setMiterLimit(_attributes.miterLimit);
         }
         else if (_name == "vector-effect")
@@ -1569,12 +1628,13 @@ class SVGImportSession
         }
         else if (_name == "stroke-dashoffset")
         {
-            _attributes.dashOffset = coordinatePixels(_value.cString(), currentViewLength());
+            _attributes.dashOffset = coordinatePixels(
+                _value.cString(), 0, currentViewLength(), SVGCoordinate{ SVGUnits::PX, 0.0 });
             _item->setDashOffset(_attributes.dashOffset);
         }
         else if (_name == "font-size")
         {
-            _attributes.fontSize = coordinatePixels(_value.cString(), currentViewLength());
+            _attributes.fontSize = coordinatePixels(_value.cString(), 0, currentViewLength());
             printf("GOT FONT SIZE %f\n", _attributes.fontSize);
         }
         else if (_name == "transform")
@@ -1642,7 +1702,7 @@ class SVGImportSession
     pugi::xml_node m_rootNode;
     Size m_dpi;
     DynamicArray<SVGAttributes> m_attributeStack;
-    DynamicArray<Rect> m_viewStack;
+    DynamicArray<Rect> m_viewportStack;
     // for items that are only temporary in the dom and should
     // be removed at the end of the import (i.e. clipping masks, defs nodes etc.)
     DynamicArray<Item *> m_tmpItems;

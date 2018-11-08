@@ -7,7 +7,8 @@ using namespace stick;
 
 Symbol::Symbol(Allocator & _alloc, Document * _document, const char * _name) :
     Item(_alloc, _document, ItemType::Symbol, _name),
-    m_item(nullptr)
+    m_item(nullptr),
+    m_bReferencedItemChanged(true)
 {
 }
 
@@ -68,4 +69,12 @@ Maybe<Rect> Symbol::computeBounds(const Mat32f * _transform, BoundsType _type) c
         return Maybe<Rect>();
     }
 }
+
+bool Symbol::cleanDirtySymbol()
+{
+    bool ret = m_bReferencedItemChanged;
+    m_bReferencedItemChanged = false;
+    return ret;
+}
+
 } // namespace paper

@@ -260,9 +260,11 @@ class STICK_API Item
 
     void setRenderData(RenderDataUniquePtr _ptr);
 
-    bool cleanDirtyfillPaintTransform();
+    bool cleanDirtyFillPaintTransform();
 
-    bool cleanDirtystrokePaintTransform();
+    bool cleanDirtyStrokePaintTransform();
+
+    bool cleanDirtyStyle();
 
 
     //@TODO: debug functions to print the hierarchy
@@ -316,11 +318,14 @@ class STICK_API Item
     Decomposed & decomposeIfNeeded(stick::Maybe<Decomposed> & _dec,
                                    const Mat32f & _transform) const;
 
+    void markSymbolsDirty() const;
+
     // helper to recursively reset a property Maybe (using pointer to member)
     template <class Member>
     void recursivelyResetProperty(Member _member)
     {
         (this->*_member).reset();
+        m_bStyleDirty = true;
         for (Item * c : m_children)
             c->recursivelyResetProperty(_member);
     }
@@ -344,6 +349,7 @@ class STICK_API Item
     stick::Maybe<Mat32f> m_strokePaintTransform;
     mutable bool m_fillPaintTransformDirty;
     mutable bool m_strokePaintTransformDirty;
+    mutable bool m_bStyleDirty;
 
     // style
     stick::Maybe<Paint> m_fill;

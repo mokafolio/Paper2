@@ -34,10 +34,12 @@ int main(int _argc, const char * _args[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // create the window
-    GLFWwindow * window = glfwCreateWindow(800, 600, "Hello Paper Example", NULL, NULL);
+    GLFWwindow * window = glfwCreateWindow(800, 600, "Nested Clipping", NULL, NULL);
     if (window)
     {
         glfwMakeContextCurrent(window);
@@ -55,70 +57,23 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        // auto res = doc.loadSVG("../../Playground/Assets/symbol.svg");
-        auto res = doc.loadSVG("../../Playground/Assets/preserveAspectRatio.svg");
-        if (res.error())
-        {
-            printf("ERROR: %s\n", res.error().message().cString());
-            return EXIT_FAILURE;
-        }
+        Group * grp = doc.createGroup("Outer");
+        grp->addChild(doc.createRectangle(Vec2f(100, 100), Vec2f(200, 200)));
+        grp->setClipped(true);
 
-        // printf("RES C C %lu\n", res.group()->children().count());
-        // printf("SVG POS: %f %f\n", res.group()->position().x, res.group()->position().y);
+        Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 200));
+        bg->setFill("yellow");
+        bg->setStroke("red");
+        bg->setStrokeWidth(10);
+        grp->addChild(bg);
 
-        // String hierarchy;
-        // res.group()->hierarchyString(hierarchy);
-        // printf("%s\n", hierarchy.cString());
-        // res.group()->translateTransform(300, 300);
-
-        // Path * b = doc.createRectangle(res.group()->bounds().min(), res.group()->bounds().max());
-        // b->setFill(ColorRGBA(1, 1, 0, 0.2));
-        // b->removeStroke();
-        // res.group()->removeTransform();
-        // res.group()->setFill("red");
-        // res.group()->setVisible(true);
-        // res.group()->setClipped(false);
-        // res.group()->setStroke("green");
-        // res.group()->setStrokeWidth(5);
-        // for (Item * child : res.group()->children())
-        // {
-        //     // child->removeTransform();
-        //     if (child->itemType() == ItemType::Path)
-        //     {
-        //         for (Segment seg : static_cast<Path *>(child)->segments())
-        //             printf("SEG %f %f\n", seg.position().x, seg.position().y);
-
-        //         if (child->fill().is<ColorRGBA>())
-        //             printf("FILL %f %f %f %f\n",
-        //                    child->fill().get<ColorRGBA>().r,
-        //                    child->fill().get<ColorRGBA>().g,
-        //                    child->fill().get<ColorRGBA>().b,
-        //                    child->fill().get<ColorRGBA>().a);
-
-        //         printf("PATH CC %lu\n", child->children().count());
-        //         printf("CURVE COUNT %lu\n", static_cast<Path *>(child)->curves().count());
-        //         printf("IS CLOSED %i\n", static_cast<Path *>(child)->isClosed());
-        //     }
-        // }
-
-        // Group * grp = doc.createGroup("Outer");
-        // grp->addChild(doc.createRectangle(Vec2f(100, 100), Vec2f(200, 200)));
-        // grp->setClipped(true);
-
-        // Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 300));
-        // bg->setFill("yellow");
-        // grp->addChild(bg);
-
-        // Group * hidden = doc.createGroup("hidden");
-        // hidden->setVisible(false);
-        // Group * inner = doc.createGroup("Inner");
-        // inner->addChild(doc.createRectangle(Vec2f(0, 0), Vec2f(30, 30)));
-        // inner->setClipped(true);
-        // Path * c = doc.createCircle(Vec2f(0, 0), 20);
-        // c->setFill("red");
-        // inner->addChild(c);
-
-        // hidden->addChild(inner);
+        Group * inner = doc.createGroup("Inner");
+        inner->addChild(doc.createRectangle(Vec2f(150, 150), Vec2f(30, 30)));
+        inner->setClipped(true);
+        Path * c = doc.createCircle(Vec2f(160, 160), 20);
+        c->setFill("red");
+        inner->addChild(c);
+        grp->addChild(inner);
 
         // Symbol * grps = doc.createSymbol(inner);
         // grps->translateTransform(150, 150);

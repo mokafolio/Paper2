@@ -164,7 +164,8 @@ static detail::TarpPathData & ensureRenderData(Path * _path)
 static detail::TarpSymbolData & ensureRenderData(Symbol * _symbol)
 {
     if (!_symbol->renderData())
-        _symbol->setRenderData(makeUnique<detail::TarpSymbolData>(defaultAllocator(), tpRenderCacheCreate()));
+        _symbol->setRenderData(
+            makeUnique<detail::TarpSymbolData>(defaultAllocator(), tpRenderCacheCreate()));
     return *static_cast<detail::TarpSymbolData *>(_symbol->renderData());
 }
 
@@ -334,39 +335,74 @@ static void setPaint(tpStyle * _style, M _styleMember, Item * _item, M2 _pathMem
     }
 }
 
-//helper to pick the correct style between a potential symbol and its path
-template<class Ret>
-Ret property(Path * _path, Symbol * _symbol, bool (Item::*_haser)() const, Ret (Item::*_getter)() const)
+// helper to pick the correct style between a potential symbol and its path
+template <class Ret>
+Ret property(Item * _prio,
+             Item * _other,
+             bool (Item::*_haser)() const,
+             Ret (Item::*_getter)() const)
 {
-    if(_symbol && (_symbol->*_haser)())
-        return (_symbol->*_getter)();
-    return (_path->*_getter)();
+    // Item * prio, *other;
+    // if(_bPrioritizeSymbol)
+    // {
+    //     prio = _symbol;
+    //     other = _path;
+    // }
+    // else
+    // {
+    //     prio = _path;
+    //     other = _symbol;
+    // }
+    // STICK_ASSERT(prio || other);
+    // if(_symbol == prio)
+    //     printf("_SYMB\n");
+    if (!_other || (_prio && (_prio->*_haser)()))
+        return (_prio->*_getter)();
+
+    return (_other->*_getter)();
 }
 
-static tpStyle makeStyle(Path * _path, Symbol * _symbol)
+static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol = false)
 {
-    tpStyle style = tpStyleMake();
-    style.fillRule = property(_path, _symbol, &Item::hasWindingRule, &Item::windingRule) == WindingRule::NonZero
-                         ? kTpFillRuleNonZero
-                         : kTpFillRuleEvenOdd;
-
-    if(_symbol && _symbol->hasFill())
-        setPaint(&style, &tpStyle::fill, _symbol, &Item::fill);
-    else
-        setPaint(&style, &tpStyle::fill, _path, &Item::fill);
-
-    if(_symbol && _symbol->hasStroke())
-        setPaint(&style, &tpStyle::stroke, _symbol, &Item::stroke);
-    else
-        setPaint(&style, &tpStyle::stroke, _path, &Item::stroke);
-
-    if (style.stroke.type != kTpPaintTypeNone && _path->strokeWidth())
+    Item *prio, *other;
+    if (_bPrioritizeSymbol)
     {
-        style.strokeWidth = property(_path, _symbol, &Item::hasStrokeWidth, &Item::strokeWidth);
-        style.miterLimit = property(_path, _symbol, &Item::hasMiterLimit, &Item::miterLimit);
-        style.scaleStroke = (tpBool)property(_path, _symbol, &Item::hasScaleStroke, &Item::scaleStroke);
+        prio = _symbol;
+        other = _path;
+    }
+    else
+    {
+        prio = _path;
+        other = _symbol;
+    }
 
-        switch (property(_path, _symbol, &Item::hasStrokeJoin, &Item::strokeJoin))
+    STICK_ASSERT(prio || other);
+
+    tpStyle style = tpStyleMake();
+    style.fillRule =
+        property(prio, other, &Item::hasWindingRule, &Item::windingRule) == WindingRule::NonZero
+            ? kTpFillRuleNonZero
+            : kTpFillRuleEvenOdd;
+
+    if (!other || (prio && prio->hasFill()))
+        setPaint(&style, &tpStyle::fill, prio, &Item::fill);
+    else
+        setPaint(&style, &tpStyle::fill, other, &Item::fill);
+
+    if (!other || (prio && prio->hasStroke()))
+        setPaint(&style, &tpStyle::stroke, prio, &Item::stroke);
+    else
+        setPaint(&style, &tpStyle::stroke, other, &Item::stroke);
+
+    Float sw = property(prio, other, &Item::hasStrokeWidth, &Item::strokeWidth);
+    if (style.stroke.type != kTpPaintTypeNone && sw)
+    {
+        style.strokeWidth = sw;
+        style.miterLimit = property(prio, other, &Item::hasMiterLimit, &Item::miterLimit);
+        style.scaleStroke =
+            (tpBool)property(_path, _symbol, &Item::hasScaleStroke, &Item::scaleStroke);
+
+        switch (property(prio, other, &Item::hasStrokeJoin, &Item::strokeJoin))
         {
         case StrokeJoin::Round:
             style.strokeJoin = kTpStrokeJoinRound;
@@ -380,7 +416,7 @@ static tpStyle makeStyle(Path * _path, Symbol * _symbol)
             break;
         }
 
-        switch (property(_path, _symbol, &Item::hasStrokeCap, &Item::strokeCap))
+        switch (property(prio, other, &Item::hasStrokeCap, &Item::strokeCap))
         {
         case StrokeCap::Round:
             style.strokeCap = kTpStrokeCapRound;
@@ -394,12 +430,13 @@ static tpStyle makeStyle(Path * _path, Symbol * _symbol)
             break;
         }
 
-        auto & da = _symbol && _symbol->hasDashArray() ? _symbol->dashArray() : _path->dashArray();
+        auto & da =
+            !other || (prio && prio->hasDashArray()) ? prio->dashArray() : other->dashArray();
         if (da.count())
         {
             style.dashArray = &da[0];
             style.dashCount = da.count();
-            style.dashOffset = property(_path, _symbol, &Item::hasDashOffset, &Item::dashOffset);
+            style.dashOffset = property(prio, other, &Item::hasDashOffset, &Item::dashOffset);
         }
     }
 
@@ -460,28 +497,37 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     // }
 
     tpStyle style = makeStyle(_path, _symbol);
-
+    // style = makeStyle(_path, nullptr);
     updateTarpPath(m_tarp->tmpSegmentBuffer, _path, rd.path, nullptr);
     tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
 
     tpBool err = tpFalse;
-    //@TODO: Draw the path if there is no other style on the symbol and if the path is only translated
-    if(!_symbol)
+    //@TODO: Draw the path if there is no other style on the symbol and if the path is only
+    //translated
+    //@TODO: As of now we don't generate a separate rendercache if the symbol is a group (as then we
+    //know the path being drawn right now is part of that group). In that case we just draw the path
+    // instead (which will recache the internal tarp cache which is suboptimal) as it's an easy
+    // working solution for now. In the future we could have a symbol manage multiple renderCaches
+    // (one for each item in its sub hierarchy). But that will make things a lot more complex :(
+    if (!_symbol || _symbol->item()->itemType() == ItemType::Group)
     {
-        // printf("DRAWING PATH\n");
+        printf("DRAWING PATH\n");
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
     }
     else
     {
-        // printf("DRAWING SYMBOL\n");
+        printf("DRAWING SYMBOL\n");
         detail::TarpSymbolData & sd = ensureRenderData(_symbol);
-        if(_symbol->cleanDirtySymbol())
+        if (_symbol->cleanDirtySymbol())
         {
-            // printf("UPDATING SYMBOL CACHE\n");
+            printf("UPDATING SYMBOL CACHE\n");
             err = tpCachePath(m_tarp->ctx, rd.path, &style, sd.cache);
         }
         if (err)
-            return Error(ec::InvalidOperation, "Failed to cache tarp path for symbol", STICK_FILE, STICK_LINE);
+            return Error(ec::InvalidOperation,
+                         "Failed to cache tarp path for symbol",
+                         STICK_FILE,
+                         STICK_LINE);
         err = tpDrawRenderCache(m_tarp->ctx, sd.cache);
     }
 

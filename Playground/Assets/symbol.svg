@@ -6,10 +6,10 @@
     
 <!--   <use href="#daS" x="0" fill="blue" />
   <use href="#daS" x="10" fill="white" /> -->
-  <!-- <defs> -->
+  <defs>
       <g id="daSS" transform="translate(30,0) scale(2)">
         <circle cx="10" cy="5" r="5"/>
       </g>
-  <!-- </defs> -->
+  </defs>
   <use href="#daSS" x="30" fill="red"/>
 </svg>

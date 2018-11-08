@@ -57,27 +57,44 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        Group * grp = doc.createGroup("Outer");
-        grp->addChild(doc.createRectangle(Vec2f(100, 100), Vec2f(200, 200)));
-        grp->setClipped(true);
+        // Group * grp = doc.createGroup("Outer");
+        // grp->addChild(doc.createRectangle(Vec2f(100, 100), Vec2f(200, 200)));
+        // grp->setClipped(true);
 
-        Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 200));
-        bg->setFill("yellow");
-        bg->setStroke("red");
-        bg->setStrokeWidth(10);
-        grp->addChild(bg);
+        // Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 200));
+        // bg->setFill("yellow");
+        // bg->setStroke("red");
+        // bg->setStrokeWidth(10);
+        // grp->addChild(bg);
 
-        Group * inner = doc.createGroup("Inner");
-        inner->addChild(doc.createRectangle(Vec2f(150, 150), Vec2f(30, 30)));
-        inner->setClipped(true);
-        Path * c = doc.createCircle(Vec2f(160, 160), 20);
-        c->setFill("red");
-        inner->addChild(c);
-        grp->addChild(inner);
+        // Group * inner = doc.createGroup("Inner");
+        // inner->addChild(doc.createRectangle(Vec2f(150, 150), Vec2f(30, 30)));
+        // inner->setClipped(true);
+        // Path * c = doc.createCircle(Vec2f(160, 160), 20);
+        // c->setFill("red");
+        // inner->addChild(c);
+        // grp->addChild(inner);
 
-        // Symbol * grps = doc.createSymbol(inner);
-        // grps->translateTransform(150, 150);
-        // grp->addChild(grps);
+         Group * inner = doc.createGroup("Inner");
+         inner->translateTransform(100, 0);
+         Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 100), "BG");
+         bg->setFill("yellow");
+
+         Path * c = doc.createCircle(Vec2f(100, 0), 40, "DA CIRC");
+         c->setFill("green");
+         inner->addChild(bg);
+         inner->addChild(c);
+
+         Symbol * s = doc.createSymbol(inner, "SYASJH");
+         s->translateTransform(Vec2f(0, 200));
+         s->setFill("red");
+         s->setStroke("blue");
+         s->setStrokeWidth(10);
+
+        Symbol * s2 = doc.createSymbol(bg);
+        s2->setStroke("red");
+        s2->setStrokeWidth(5);
+        s2->translateTransform(350, 150);
 
         // Path * c2 = doc.createCircle(Vec2f(140, 130), 30);
         // c2->setFill("blue");

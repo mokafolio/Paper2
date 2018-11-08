@@ -850,6 +850,8 @@ void Item::markStrokeBoundsDirty(bool _bNotifyParent)
     m_strokeBounds.reset();
     if (_bNotifyParent && m_parent)
         m_parent->markStrokeBoundsDirty(true);
+    //@TODO: Can this be removed?
+    // markSymbolsDirty();
 }
 
 void Item::markFillBoundsDirty(bool _bNotifyParent)

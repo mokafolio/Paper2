@@ -27,14 +27,14 @@ Error RenderInterface::draw()
     Error ret = prepareDrawing();
     if (ret)
         return ret;
-    ret = drawChildren(m_document, nullptr, false);
+    ret = drawChildren(m_document, nullptr, false, nullptr);
     if (ret)
         return ret;
     ret = finishDrawing();
     return ret;
 }
 
-Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, bool _bSkipFirst)
+Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, bool _bSkipFirst, Symbol * _symbol)
 {
     Error err;
     Mat32f tmp;
@@ -43,7 +43,9 @@ Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, boo
     {
         if (_transform)
             tmp = *_transform * (*it)->transform();
-        err = drawItem((*it), _transform ? &tmp : nullptr);
+        
+        printf("CHILD NAME %s\n", (*it)->name().cString());
+        err = drawItem((*it), _transform ? &tmp : nullptr, _symbol);
         if (err)
             return err;
     }
@@ -91,14 +93,14 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol 
             if (ret)
                 return ret;
 
-            ret = drawChildren(grp, _transform, true);
+            ret = drawChildren(grp, _transform, true, _symbol);
             
             if(ret) return ret;
 
             ret = endClipping();
         }
         else
-            drawChildren(grp, _transform, false);
+            drawChildren(grp, _transform, false, _symbol);
     }
     else if (_item->itemType() == ItemType::Path)
     {

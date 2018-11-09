@@ -29,9 +29,9 @@ class STICK_API TarpRenderer : public RenderInterface
     void setProjection(const Mat4f & _projection) final;
 
   private:
-    Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol = nullptr) final;
+    Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth) final;
 
-    Error beginClipping(Path * _clippingPath, const Mat32f & _transform) final;
+    Error beginClipping(Path * _clippingPath, const Mat32f & _transform, Size _depth) final;
 
     Error endClipping() final;
 

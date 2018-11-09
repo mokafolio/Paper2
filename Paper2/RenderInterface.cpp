@@ -27,32 +27,33 @@ Error RenderInterface::draw()
     Error ret = prepareDrawing();
     if (ret)
         return ret;
-    ret = drawChildren(m_document, nullptr, false, nullptr);
+    ret = drawChildren(m_document, nullptr, false, nullptr, 0);
     if (ret)
         return ret;
     ret = finishDrawing();
     return ret;
 }
 
-Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, bool _bSkipFirst, Symbol * _symbol)
+Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, bool _bSkipFirst, Symbol * _symbol, Size _depth)
 {
     Error err;
     Mat32f tmp;
-    auto it = _item->children().begin() + _bSkipFirst;
+    auto start = _item->children().begin() + _bSkipFirst;
+    auto it = start;
     for (; it != _item->children().end(); ++it)
     {
         if (_transform)
             tmp = *_transform * (*it)->transform();
         
         printf("CHILD NAME %s\n", (*it)->name().cString());
-        err = drawItem((*it), _transform ? &tmp : nullptr, _symbol);
+        err = drawItem((*it), _transform ? &tmp : nullptr, _symbol, _depth + std::distance(start, it));
         if (err)
             return err;
     }
     return err;
 }
 
-Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol * _symbol)
+Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol * _symbol, Size _depth)
 {
     Error ret;
 
@@ -89,29 +90,29 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol 
             {
                 tmp2 = *_transform * transformItem->transform();
             }
-            ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform());
+            ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform(), _depth);
             if (ret)
                 return ret;
 
-            ret = drawChildren(grp, _transform, true, _symbol);
+            ret = drawChildren(grp, _transform, true, _symbol, _depth);
             
             if(ret) return ret;
 
             ret = endClipping();
         }
         else
-            drawChildren(grp, _transform, false, _symbol);
+            drawChildren(grp, _transform, false, _symbol, _depth);
     }
     else if (_item->itemType() == ItemType::Path)
     {
         Path * p = static_cast<Path *>(_item);
         if (p->segmentData().count() > 1)
-            ret = drawPath(p, _transform ? *_transform : p->absoluteTransform(), _symbol);
+            ret = drawPath(p, _transform ? *_transform : p->absoluteTransform(), _symbol, _depth);
     }
     else if (_item->itemType() == ItemType::Symbol)
     {
         Symbol * s = static_cast<Symbol *>(_item);
-        ret = drawItem(s->item(), _transform ? _transform : &s->absoluteTransform(), s);
+        ret = drawItem(s->item(), _transform ? _transform : &s->absoluteTransform(), s, 0);
     }
     return ret;
 }

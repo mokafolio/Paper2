@@ -48,13 +48,45 @@ struct TarpPathData : public RenderData
 
 struct TarpSymbolData : public RenderData
 {
-    TarpSymbolData(tpRenderCache _cache = tpRenderCacheInvalidHandle()) : cache(_cache)
+    struct RefItem
+    {
+        Item * lastItem;
+        Size lastSymbolVersion;
+        tpRenderCache cache;
+    };
+
+    TarpSymbolData()
     {
     }
 
     ~TarpSymbolData()
     {
-        tpRenderCacheDestroy(cache);
+        for (auto & ri : caches)
+            tpRenderCacheDestroy(ri.cache);
+    }
+
+    tpRenderCache addItem(Item * _item, Size _idx, Size _version)
+    {
+        Size lastSize = caches.count();
+        if (_idx >= lastSize)
+        {
+            printf("RESIZING\n");
+            caches.resize(_idx + 1);
+            for (Size i = lastSize ? lastSize - 1 : 0; i <= _idx; ++i)
+            {
+                printf("INITING %lu\n", i);
+                caches[i].lastSymbolVersion = -1;
+                caches[i].lastItem = nullptr;
+                caches[i].cache = tpRenderCacheCreate();
+            }
+        }
+
+        bool bNeedsUpdate =
+            _item != caches[_idx].lastItem || caches[_idx].lastSymbolVersion != _version;
+        caches[_idx].lastItem = _item;
+        caches[_idx].lastSymbolVersion = _version;
+
+        return bNeedsUpdate ? caches[_idx].cache : tpRenderCacheInvalidHandle();
     }
 
     RenderDataUniquePtr clone() const
@@ -63,7 +95,7 @@ struct TarpSymbolData : public RenderData
         return RenderDataUniquePtr();
     }
 
-    tpRenderCache cache;
+    DynamicArray<RefItem> caches;
 };
 
 struct TarpGradientData : public RenderData
@@ -164,8 +196,7 @@ static detail::TarpPathData & ensureRenderData(Path * _path)
 static detail::TarpSymbolData & ensureRenderData(Symbol * _symbol)
 {
     if (!_symbol->renderData())
-        _symbol->setRenderData(
-            makeUnique<detail::TarpSymbolData>(defaultAllocator(), tpRenderCacheCreate()));
+        _symbol->setRenderData(makeUnique<detail::TarpSymbolData>(defaultAllocator()));
     return *static_cast<detail::TarpSymbolData *>(_symbol->renderData());
 }
 
@@ -443,7 +474,10 @@ static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol
     return style;
 }
 
-Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol)
+Error TarpRenderer::drawPath(Path * _path,
+                             const Mat32f & _transform,
+                             Symbol * _symbol,
+                             Size _depth)
 {
     detail::TarpPathData & rd = ensureRenderData(_path);
     // tpStyle style = tpStyleMake();
@@ -503,32 +537,38 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
 
     tpBool err = tpFalse;
     //@TODO: Draw the path if there is no other style on the symbol and if the path is only
-    //translated
+    // translated
     //@TODO: As of now we don't generate a separate rendercache if the symbol is a group (as then we
-    //know the path being drawn right now is part of that group). In that case we just draw the path
+    // know the path being drawn right now is part of that group). In that case we just draw the
+    // path
     // instead (which will recache the internal tarp cache which is suboptimal) as it's an easy
     // working solution for now. In the future we could have a symbol manage multiple renderCaches
     // (one for each item in its sub hierarchy). But that will make things a lot more complex :(
-    if (!_symbol || _symbol->item()->itemType() == ItemType::Group)
+    if (!_symbol/* || _symbol->item()->itemType() == ItemType::Group*/)
     {
         printf("DRAWING PATH\n");
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
     }
     else
     {
-        printf("DRAWING SYMBOL\n");
+        printf("DRAWING SYMBOL %lu\n", _depth);
         detail::TarpSymbolData & sd = ensureRenderData(_symbol);
-        if (_symbol->cleanDirtySymbol())
+        printf("B\n");
+        tpRenderCache cache = sd.addItem(_path, _depth, _symbol->version());
+        printf("C\n");
+        if (tpRenderCacheIsValidHandle(cache))
         {
             printf("UPDATING SYMBOL CACHE\n");
-            err = tpCachePath(m_tarp->ctx, rd.path, &style, sd.cache);
+            err = tpCachePath(m_tarp->ctx, rd.path, &style, cache);
         }
         if (err)
             return Error(ec::InvalidOperation,
                          "Failed to cache tarp path for symbol",
                          STICK_FILE,
                          STICK_LINE);
-        err = tpDrawRenderCache(m_tarp->ctx, sd.cache);
+
+        printf("FOOCK\n");
+        err = tpDrawRenderCache(m_tarp->ctx, sd.caches[_depth].cache);
     }
 
     if (err)
@@ -537,7 +577,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     return Error();
 }
 
-Error TarpRenderer::beginClipping(Path * _clippingPath, const Mat32f & _transform)
+Error TarpRenderer::beginClipping(Path * _clippingPath, const Mat32f & _transform, Size _depth)
 {
     detail::TarpPathData & rd = ensureRenderData(_clippingPath);
 

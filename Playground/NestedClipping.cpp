@@ -75,21 +75,21 @@ int main(int _argc, const char * _args[])
         // inner->addChild(c);
         // grp->addChild(inner);
 
-         Group * inner = doc.createGroup("Inner");
-         inner->translateTransform(100, 0);
-         Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 100), "BG");
-         bg->setFill("yellow");
+        Group * inner = doc.createGroup("Inner");
+        inner->translateTransform(100, 0);
+        Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 100), "BG");
+        bg->setFill("yellow");
 
-         Path * c = doc.createCircle(Vec2f(100, 0), 40, "DA CIRC");
-         c->setFill("green");
-         inner->addChild(bg);
-         inner->addChild(c);
+        Path * c = doc.createCircle(Vec2f(100, 0), 40, "DA CIRC");
+        c->setFill("green");
+        inner->addChild(bg);
+        inner->addChild(c);
 
-         Symbol * s = doc.createSymbol(inner, "SYASJH");
-         s->translateTransform(Vec2f(0, 200));
-         s->setFill("red");
-         s->setStroke("blue");
-         s->setStrokeWidth(10);
+        Symbol * s = doc.createSymbol(inner, "SYASJH");
+        s->translateTransform(Vec2f(0, 200));
+        s->setFill("red");
+        s->setStroke("blue");
+        s->setStrokeWidth(10);
 
         Symbol * s2 = doc.createSymbol(bg);
         s2->setStroke("red");
@@ -99,7 +99,6 @@ int main(int _argc, const char * _args[])
         // Path * c2 = doc.createCircle(Vec2f(140, 130), 30);
         // c2->setFill("blue");
         // grp->addChild(c2);
-
 
         // Path * t = doc.createPath();
         // t->setFill("red");
@@ -114,7 +113,6 @@ int main(int _argc, const char * _args[])
         // Symbol * s = doc.createSymbol(c2);
         // s->translateTransform(100, 100);
 
-
         // Group * grp = doc.createGroup();
         // grp->addChild(s);
         // grp->setClipped(true);
@@ -128,7 +126,8 @@ int main(int _argc, const char * _args[])
         // grp->addChild(c2);
 
         // printf("SW: %f\n", c2->strokeWidth());
-        // printf("SC: %f %f %f\n", c2->stroke().get<ColorRGBA>().r, c2->stroke().get<ColorRGBA>().g, c2->stroke().get<ColorRGBA>().b);
+        // printf("SC: %f %f %f\n", c2->stroke().get<ColorRGBA>().r,
+        // c2->stroke().get<ColorRGBA>().g, c2->stroke().get<ColorRGBA>().b);
 
         // for(auto seg : c2->segments())
         // {

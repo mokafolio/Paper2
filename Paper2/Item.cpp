@@ -851,7 +851,7 @@ void Item::markStrokeBoundsDirty(bool _bNotifyParent)
     if (_bNotifyParent && m_parent)
         m_parent->markStrokeBoundsDirty(true);
     //@TODO: Can this be removed?
-    // markSymbolsDirty();
+    markSymbolsDirty();
 }
 
 void Item::markFillBoundsDirty(bool _bNotifyParent)
@@ -963,7 +963,7 @@ bool Item::cleanDirtyStyle()
 void Item::markSymbolsDirty() const
 {
     for (Symbol * s : m_symbols)
-        s->m_bReferencedItemChanged = true;
+        ++s->m_version;
 }
 
 void Item::hierarchyString(String & _outputString, Size _indent) const

@@ -57,6 +57,7 @@ struct TarpSymbolData : public RenderData
 
     TarpSymbolData()
     {
+        printf("TarpSymbolData()()()()\n");
     }
 
     ~TarpSymbolData()
@@ -72,7 +73,7 @@ struct TarpSymbolData : public RenderData
         {
             printf("RESIZING\n");
             caches.resize(_idx + 1);
-            for (Size i = lastSize ? lastSize - 1 : 0; i <= _idx; ++i)
+            for (Size i = lastSize; i <= _idx; ++i)
             {
                 printf("INITING %lu\n", i);
                 caches[i].lastSymbolVersion = -1;
@@ -551,11 +552,9 @@ Error TarpRenderer::drawPath(Path * _path,
     }
     else
     {
-        printf("DRAWING SYMBOL %lu\n", _depth);
+        printf("DRAWING SYMBOL %lu %lu %s\n", _depth, _symbol->version(), _path->name().cString());
         detail::TarpSymbolData & sd = ensureRenderData(_symbol);
-        printf("B\n");
         tpRenderCache cache = sd.addItem(_path, _depth, _symbol->version());
-        printf("C\n");
         if (tpRenderCacheIsValidHandle(cache))
         {
             printf("UPDATING SYMBOL CACHE\n");
@@ -567,7 +566,7 @@ Error TarpRenderer::drawPath(Path * _path,
                          STICK_FILE,
                          STICK_LINE);
 
-        printf("FOOCK\n");
+        printf("=============\n");
         err = tpDrawRenderCache(m_tarp->ctx, sd.caches[_depth].cache);
     }
 

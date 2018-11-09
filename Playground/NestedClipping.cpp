@@ -91,10 +91,10 @@ int main(int _argc, const char * _args[])
         s->setStroke("blue");
         s->setStrokeWidth(10);
 
-        Symbol * s2 = doc.createSymbol(bg);
-        s2->setStroke("red");
-        s2->setStrokeWidth(5);
-        s2->translateTransform(350, 150);
+        // Symbol * s2 = doc.createSymbol(bg);
+        // s2->setStroke("red");
+        // s2->setStrokeWidth(5);
+        // s2->translateTransform(350, 150);
 
         // Path * c2 = doc.createCircle(Vec2f(140, 130), 30);
         // c2->setFill("blue");
@@ -144,10 +144,19 @@ int main(int _argc, const char * _args[])
         // }
 
         SystemClock clk;
+        Path * np = nullptr;
+        auto theStart = clk.now();
         // the main loop
         while (!glfwWindowShouldClose(window))
         {
             auto start = clk.now();
+
+            if((start - theStart).seconds() > 1 && !np)
+            {
+                np = doc.createCircle(Vec2f(100, 40), 20, "DA CIRC2");
+                np->setFill("pink");
+                np->insertBelow(c);
+            }
             // clear the background to black
             glClearColor(1, 1, 1, 1);
             glClear(GL_COLOR_BUFFER_BIT);

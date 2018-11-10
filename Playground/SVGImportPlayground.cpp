@@ -55,7 +55,7 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        auto res = doc.loadSVG("../../Playground/Assets/symbol.svg");
+        auto res = doc.loadSVG("../../Playground/Assets/basura.svg");
         // auto res = doc.loadSVG("../../Playground/Assets/preserveAspectRatio.svg");
         if (res.error())
         {

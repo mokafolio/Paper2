@@ -740,6 +740,24 @@ bool Item::hasFill() const
     return (bool)m_fill;
 }
 
+bool Item::isAffectedByFill() const
+{
+    if (hasFill())
+        return true;
+    if (m_parent)
+        return m_parent->isAffectedByFill();
+    return false;
+}
+
+bool Item::isAffectedByStroke() const
+{
+    if (hasStroke())
+        return true;
+    if (m_parent)
+        return m_parent->isAffectedByStroke();
+    return false;
+}
+
 bool Item::hasScaleStroke() const
 {
     return (bool)m_scaleStroke;

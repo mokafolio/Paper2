@@ -219,6 +219,10 @@ class STICK_API Item
 
     Paint stroke() const;
 
+    bool isAffectedByFill() const;
+
+    bool isAffectedByStroke() const;
+
     bool hasStroke() const;
 
     bool hasFill() const;

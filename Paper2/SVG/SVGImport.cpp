@@ -449,6 +449,8 @@ class SVGImportSession
             ret->addChild(m_hiddenGroup);
             Group * grp = static_cast<Group *>(recursivelyImportNode(doc.first_child(), err));
 
+            recursivelySetDefaultFill(grp);
+
             ret->addChild(grp);
             return SVGImportResult(ret, vp[1], vp[2], err);
         }
@@ -461,6 +463,25 @@ class SVGImportSession
                       STICK_LINE));
         }
         printf("END PARSE\n");
+    }
+
+    void recursivelySetDefaultFill(Item * _item)
+    {
+        for (Item * child : _item->children())
+        {
+            if (child->itemType() == ItemType::Path)
+            {
+                // set the default fill if there is none directly set on the child
+                if (!child->hasFill())
+                    child->setFill(ColorRGBA(0, 0, 0, 1));
+            }
+            else if(child->itemType() == ItemType::Group)
+            {
+                // only recurse into the group if there is no fill set on it
+                if(!child->hasFill())
+                    recursivelySetDefaultFill(child);
+            }
+        }
     }
 
     Item * recursivelyImportNode(pugi::xml_node _node, Error & _error)
@@ -548,11 +569,6 @@ class SVGImportSession
             {
                 if (!item->hasWindingRule())
                     item->setWindingRule(WindingRule::NonZero);
-
-                // set the default fill if none is inherited
-                //@TODO: Is this the right place to do this?
-                if (!item->hasFill())
-                    item->setFill(ColorRGBA(0, 0, 0, 1));
             }
 
             // // we take care of the clip-path / viewBox (as it might induce clipping, too)

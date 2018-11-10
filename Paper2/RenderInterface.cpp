@@ -38,14 +38,13 @@ Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, boo
 {
     Error err;
     Mat32f tmp;
-    auto start = _item->children().begin() + _bSkipFirst;
-    auto it = start;
+    auto start = _item->children().begin();
+    auto it = start + _bSkipFirst;
     for (; it != _item->children().end(); ++it)
     {
         if (_transform)
             tmp = *_transform * (*it)->transform();
         
-        printf("CHILD NAME %s\n", (*it)->name().cString());
         err = drawItem((*it), _transform ? &tmp : nullptr, _symbol, _depth + std::distance(start, it));
         if (err)
             return err;
@@ -90,7 +89,7 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol 
             {
                 tmp2 = *_transform * transformItem->transform();
             }
-            ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform(), _depth);
+            ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform(), _symbol, _depth);
             if (ret)
                 return ret;
 

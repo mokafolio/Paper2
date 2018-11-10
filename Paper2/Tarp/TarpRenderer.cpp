@@ -57,7 +57,7 @@ struct TarpSymbolData : public RenderData
 
     TarpSymbolData()
     {
-        printf("TarpSymbolData()()()()\n");
+
     }
 
     ~TarpSymbolData()
@@ -71,11 +71,9 @@ struct TarpSymbolData : public RenderData
         Size lastSize = caches.count();
         if (_idx >= lastSize)
         {
-            printf("RESIZING\n");
             caches.resize(_idx + 1);
             for (Size i = lastSize; i <= _idx; ++i)
             {
-                printf("INITING %lu\n", i);
                 caches[i].lastSymbolVersion = -1;
                 caches[i].lastItem = nullptr;
                 caches[i].cache = tpRenderCacheCreate();
@@ -374,20 +372,6 @@ Ret property(Item * _prio,
              bool (Item::*_haser)() const,
              Ret (Item::*_getter)() const)
 {
-    // Item * prio, *other;
-    // if(_bPrioritizeSymbol)
-    // {
-    //     prio = _symbol;
-    //     other = _path;
-    // }
-    // else
-    // {
-    //     prio = _path;
-    //     other = _symbol;
-    // }
-    // STICK_ASSERT(prio || other);
-    // if(_symbol == prio)
-    //     printf("_SYMB\n");
     if (!_other || (_prio && (_prio->*_haser)()))
         return (_prio->*_getter)();
 
@@ -475,10 +459,7 @@ static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol
     return style;
 }
 
-Error TarpRenderer::drawPath(Path * _path,
-                             const Mat32f & _transform,
-                             Symbol * _symbol,
-                             Size _depth)
+Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth)
 {
     detail::TarpPathData & rd = ensureRenderData(_path);
     // tpStyle style = tpStyleMake();
@@ -534,7 +515,6 @@ Error TarpRenderer::drawPath(Path * _path,
     tpStyle style = makeStyle(_path, _symbol);
     // style = makeStyle(_path, nullptr);
     updateTarpPath(m_tarp->tmpSegmentBuffer, _path, rd.path, nullptr);
-    tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
 
     tpBool err = tpFalse;
     //@TODO: Draw the path if there is no other style on the symbol and if the path is only
@@ -545,19 +525,18 @@ Error TarpRenderer::drawPath(Path * _path,
     // instead (which will recache the internal tarp cache which is suboptimal) as it's an easy
     // working solution for now. In the future we could have a symbol manage multiple renderCaches
     // (one for each item in its sub hierarchy). But that will make things a lot more complex :(
-    if (!_symbol/* || _symbol->item()->itemType() == ItemType::Group*/)
+    if (!_symbol /* || _symbol->item()->itemType() == ItemType::Group*/)
     {
-        printf("DRAWING PATH\n");
+        tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
     }
     else
     {
-        printf("DRAWING SYMBOL %lu %lu %s\n", _depth, _symbol->version(), _path->name().cString());
         detail::TarpSymbolData & sd = ensureRenderData(_symbol);
         tpRenderCache cache = sd.addItem(_path, _depth, _symbol->version());
         if (tpRenderCacheIsValidHandle(cache))
         {
-            printf("UPDATING SYMBOL CACHE\n");
+            tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
             err = tpCachePath(m_tarp->ctx, rd.path, &style, cache);
         }
         if (err)
@@ -566,7 +545,6 @@ Error TarpRenderer::drawPath(Path * _path,
                          STICK_FILE,
                          STICK_LINE);
 
-        printf("=============\n");
         err = tpDrawRenderCache(m_tarp->ctx, sd.caches[_depth].cache);
     }
 
@@ -576,18 +554,49 @@ Error TarpRenderer::drawPath(Path * _path,
     return Error();
 }
 
-Error TarpRenderer::beginClipping(Path * _clippingPath, const Mat32f & _transform, Size _depth)
+Error TarpRenderer::beginClipping(Path * _clippingPath,
+                                  const Mat32f & _transform,
+                                  Symbol * _symbol,
+                                  Size _depth)
 {
     detail::TarpPathData & rd = ensureRenderData(_clippingPath);
 
     updateTarpPath(m_tarp->tmpSegmentBuffer, _clippingPath, rd.path, nullptr);
 
-    tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
-    tpBool err = tpBeginClippingWithFillRule(m_tarp->ctx,
-                                             rd.path,
-                                             _clippingPath->windingRule() == WindingRule::NonZero
-                                                 ? kTpFillRuleNonZero
-                                                 : kTpFillRuleEvenOdd);
+    tpBool err = tpFalse;
+    if (!_symbol)
+    {
+        tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
+        err = tpBeginClippingWithFillRule(m_tarp->ctx,
+                                          rd.path,
+                                          _clippingPath->windingRule() == WindingRule::NonZero
+                                              ? kTpFillRuleNonZero
+                                              : kTpFillRuleEvenOdd);
+    }
+    else
+    {
+        detail::TarpSymbolData & sd = ensureRenderData(_symbol);
+        tpRenderCache cache = sd.addItem(_clippingPath, _depth, _symbol->version());
+        if (tpRenderCacheIsValidHandle(cache))
+        {
+            tpStyle clippingStyle = tpStyleMake();
+            clippingStyle.stroke.type = kTpPaintTypeNone;
+            clippingStyle.fillRule = _clippingPath->windingRule() == WindingRule::NonZero
+                                              ? kTpFillRuleNonZero
+                                              : kTpFillRuleEvenOdd;
+
+            tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
+            err = tpCachePath(m_tarp->ctx, rd.path, &clippingStyle, cache);
+        }
+        if (err)
+            return Error(ec::InvalidOperation,
+                         "Failed to cache tarp clipping path for symbol",
+                         STICK_FILE,
+                         STICK_LINE);
+
+        err = tpBeginClippingFromRenderCache(m_tarp->ctx, sd.caches[_depth].cache);
+    }
+
     if (err)
         return Error(ec::InvalidOperation, "Failed to draw tarp clip path", STICK_FILE, STICK_LINE);
     return Error();

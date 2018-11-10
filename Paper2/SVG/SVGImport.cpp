@@ -551,8 +551,8 @@ class SVGImportSession
 
                 // set the default fill if none is inherited
                 //@TODO: Is this the right place to do this?
-                // if (!item->hasFill())
-                //     item->setFill(ColorRGBA(0, 0, 0, 1));
+                if (!item->hasFill())
+                    item->setFill(ColorRGBA(0, 0, 0, 1));
             }
 
             // // we take care of the clip-path / viewBox (as it might induce clipping, too)

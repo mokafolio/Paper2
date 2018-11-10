@@ -30,8 +30,8 @@ class STICK_API RenderInterface
 
   protected:
     // these have to be implemented
-    virtual Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _childIndex) = 0;
-    virtual Error beginClipping(Path * _clippingPath, const Mat32f & _transform, Size _depth) = 0;
+    virtual Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth) = 0;
+    virtual Error beginClipping(Path * _clippingPath, const Mat32f & _transform, Symbol * _symbol, Size _depth) = 0;
     virtual Error endClipping() = 0;
 
     // these can be implemented

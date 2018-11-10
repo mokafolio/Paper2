@@ -79,11 +79,20 @@ int main(int _argc, const char * _args[])
         inner->translateTransform(100, 0);
         Path * bg = doc.createRectangle(Vec2f(0, 0), Vec2f(300, 100), "BG");
         bg->setFill("yellow");
+        Path * cp = doc.createRectangle(Vec2f(30, 10), Vec2f(270, 90), "CM");
+        cp->setFill("red");
 
         Path * c = doc.createCircle(Vec2f(100, 0), 40, "DA CIRC");
         c->setFill("green");
+        inner->addChild(cp);
         inner->addChild(bg);
         inner->addChild(c);
+        inner->setClipped(true);
+
+        // Group * inner2 = inner->clone();
+        // inner2->scaleTransform(0.5);
+        // inner2->rotateTransform(0.1);
+        // inner->addChild(inner2);
 
         Symbol * s = doc.createSymbol(inner, "SYASJH");
         s->translateTransform(Vec2f(0, 200));
@@ -95,7 +104,7 @@ int main(int _argc, const char * _args[])
         // s2->setStroke("red");
         // s2->setStrokeWidth(5);
         // s2->translateTransform(350, 150);
-
+        // inner->addChild(s2);
         // Path * c2 = doc.createCircle(Vec2f(140, 130), 30);
         // c2->setFill("blue");
         // grp->addChild(c2);
@@ -151,12 +160,13 @@ int main(int _argc, const char * _args[])
         {
             auto start = clk.now();
 
-            if((start - theStart).seconds() > 1 && !np)
-            {
-                np = doc.createCircle(Vec2f(100, 40), 20, "DA CIRC2");
-                np->setFill("pink");
-                np->insertBelow(c);
-            }
+            // if((start - theStart).seconds() > 1 && !np)
+            // {
+            //     np = doc.createCircle(Vec2f(100, 40), 20, "DA CIRC2");
+            //     np->setFill("pink");
+            //     np->insertBelow(c);
+            // }
+
             // clear the background to black
             glClearColor(1, 1, 1, 1);
             glClear(GL_COLOR_BUFFER_BIT);

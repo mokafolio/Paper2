@@ -39,10 +39,10 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     m_type(_type),
     m_parent(nullptr),
     m_children(_alloc),
-    m_bVisible(true),
     // m_fill(NoPaint()),
     // m_stroke(NoPaint()),
     m_name(_alloc),
+    m_bVisible(true),
     m_fillPaintTransformDirty(false),
     m_strokePaintTransformDirty(false),
     m_bStyleDirty(false)

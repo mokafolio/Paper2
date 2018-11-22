@@ -398,8 +398,8 @@ Path::Path(stick::Allocator & _alloc, Document * _document, const char * _name) 
     Item(_alloc, _document, ItemType::Path, _name),
     m_segmentData(_alloc),
     m_curveData(_alloc),
-    m_bGeometryDirty(false),
-    m_bIsClosed(false)
+    m_bIsClosed(false),
+    m_bGeometryDirty(false)
 {
 }
 
@@ -972,9 +972,6 @@ void Path::insertSegments(Size _index, const SegmentData * _segments, Size _coun
     // insert case
     else
     {
-        auto sit =
-            m_segmentData.insert(m_segmentData.begin() + _index, _segments, _segments + _count);
-
         // insert new curves and reset all affected ones
         //@TODO: technically we should be able to use an end index, too no?
         m_curveData.resize(m_curveData.count() + _count);
@@ -1932,8 +1929,6 @@ Maybe<Rect> Path::computeStrokeBounds(const Mat32f * _transform) const
     // if there is no bounds, we are done
     if (!result)
         return result;
-
-    Size segmentCount = isClosed() ? m_segmentData.count() : m_segmentData.count() - 1;
 
     Mat32f ismat = crunch::inverse(smat);
 

@@ -313,7 +313,6 @@ static stick::Maybe<ColorRGB> parseColor(String::ConstIter _begin, String::Const
     {
         // is this a named svg color?
         //@TODO: Check if it actually is an svg color
-        auto col = crunch::svgColor<ColorRGB>(String(_begin, _end));
         return crunch::svgColor<ColorRGB>(String(_begin, _end));
     }
 

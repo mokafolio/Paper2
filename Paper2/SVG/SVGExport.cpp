@@ -416,7 +416,6 @@ static pugi::xml_node addDocument(const Document * _doc,
     svg.append_attribute("height") = _doc->height();
     // _session.defsNode = svg.append_child("defs");
     _session.rootNode = svg;
-    Size clipID = 0;
 
     pugi::xml_node parent = svg;
     if (_doc->hasTransform())

@@ -148,8 +148,8 @@ class ContainerView
 
     ContainerView(PathType * _path, InternalIter _begin, ContainerType * _container) :
         m_path(_path),
-        m_begin(_begin),
-        m_container(_container)
+        m_container(_container),
+        m_begin(_begin)
     {
     }
 

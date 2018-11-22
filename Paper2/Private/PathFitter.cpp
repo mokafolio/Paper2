@@ -46,9 +46,9 @@ void PathFitter::fit()
     {
         m_newSegments.append({Vec2f(0), m_positions[0], Vec2f(0)});
 
-        Size i = 0;
-        Size count = m_newSegments.count();
-        bool bReclose = false;
+        // Size i = 0;
+        // Size count = m_newSegments.count();
+        // bool bReclose = false;
 
         if (m_positions.count() > 1)
         {
@@ -314,8 +314,6 @@ bool PathFitter::reparameterize(Size _first,
 
 Float64 PathFitter::findRoot(const Bezier & _curve, const Vec2f & _point, Float64 _u)
 {
-    static Float64 s_tolerance = detail::PaperConstants::tolerance();
-
     Bezier curve1;
     Bezier curve2;
 

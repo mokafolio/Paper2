@@ -199,13 +199,13 @@ static detail::TarpSymbolData & ensureRenderData(Symbol * _symbol)
     return *static_cast<detail::TarpSymbolData *>(_symbol->renderData());
 }
 
-static detail::TarpGradientData & ensureRenderData(LinearGradientPtr _gradient)
-{
-    if (!_gradient->renderData())
-        _gradient->setRenderData(makeUnique<detail::TarpGradientData>(
-            defaultAllocator(), tpGradientCreateLinear(0, 0, 0, 0)));
-    return *static_cast<detail::TarpGradientData *>(_gradient->renderData());
-}
+// static detail::TarpGradientData & ensureRenderData(LinearGradientPtr _gradient)
+// {
+//     if (!_gradient->renderData())
+//         _gradient->setRenderData(makeUnique<detail::TarpGradientData>(
+//             defaultAllocator(), tpGradientCreateLinear(0, 0, 0, 0)));
+//     return *static_cast<detail::TarpGradientData *>(_gradient->renderData());
+// }
 
 static void toTarpSegments(tpSegmentArray & _tmpData, Path * _path, const Mat32f * _transform)
 {

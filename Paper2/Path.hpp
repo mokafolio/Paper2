@@ -329,7 +329,7 @@ class STICK_API Path : public Item
     template <class T>
     friend class CurveT;
     friend class RenderInterface;
-    friend class detail::BooleanOperations;
+    friend struct detail::BooleanOperations;
 
   public:
     Path(stick::Allocator & _alloc, Document * _document, const char * _name);

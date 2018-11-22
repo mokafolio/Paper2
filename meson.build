@@ -5,6 +5,10 @@ if meson.is_subproject() == false
     add_global_arguments('-Wno-missing-braces', '-fno-exceptions', language: 'cpp')
 endif
 
+if host_machine.system() == 'darwin'
+    add_global_arguments('-DGL_SILENCE_DEPRECATION', language: 'cpp')
+endif
+
 paperInc = [
     'Paper2/BasicTypes.hpp',
     'Paper2/Constants.hpp',
@@ -68,12 +72,13 @@ paperSrc = [
 ]
 
 cc = meson.get_compiler('cpp')
+glDep = dependency('GL')
 if get_option('buildSubmodules') == false
     stickDep = cc.find_library('Stick')
-    paperDeps = [stickDep, dependency('threads')]
+    paperDeps = [stickDep, dependency('threads'), glDep]
 else
     stickProj = subproject('Stick')
-    paperDeps = [stickProj.get_variable('stickDep')]
+    paperDeps = [stickProj.get_variable('stickDep'), glDep]
 endif
 
 incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
@@ -81,13 +86,13 @@ incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 add_project_arguments('-DPUGIXML_NO_EXCEPTIONS', language: 'cpp')
 if get_option('static')
     paper = static_library('Paper2', 
-        paperSrc, 
+        paperSrc,
         dependencies: paperDeps, 
         include_directories : incDirs, 
         install: true)
 else
     paper = shared_library('Paper2', 
-        paperSrc, 
+        paperSrc,
         dependencies: paperDeps, 
         include_directories : incDirs, 
         install: true)
@@ -96,6 +101,8 @@ endif
 paperDep = declare_dependency(link_with : paper, 
     dependencies: paperDeps, 
     include_directories: incDirs)
+
+subdir('Playground')
 
 # only build tests if not build as a subproject.
 # Otherwise it seems like the test meson function uses the wrong tests???

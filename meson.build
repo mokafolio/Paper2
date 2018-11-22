@@ -83,18 +83,19 @@ endif
 
 incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 
-add_project_arguments('-DPUGIXML_NO_EXCEPTIONS', language: 'cpp')
 if get_option('static')
     paper = static_library('Paper2', 
         paperSrc,
         dependencies: paperDeps, 
-        include_directories : incDirs, 
+        include_directories : incDirs,
+        cpp_args: '-DPUGIXML_NO_EXCEPTIONS',
         install: true)
 else
     paper = shared_library('Paper2', 
         paperSrc,
         dependencies: paperDeps, 
         include_directories : incDirs, 
+        cpp_args: '-DPUGIXML_NO_EXCEPTIONS',
         install: true)
 endif
 

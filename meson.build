@@ -3,6 +3,8 @@ project('Paper2', 'cpp', 'c', default_options : ['cpp_std=c++14', 'c_std=c99'])
 if meson.is_subproject() == false
     # disable this bogus warning (should be deprecated in newer clang versions)
     add_global_arguments('-Wno-missing-braces', '-fno-exceptions', language: 'cpp')
+else
+    message('Building Paper as subproject.')
 endif
 
 cppArgs = ['-DPUGIXML_NO_EXCEPTIONS']

@@ -1,0 +1,3 @@
+[submodule "subprojects/Stick"]
+	path = subprojects/Stick
+	url = https://github.com/mokafolio/Stick.git

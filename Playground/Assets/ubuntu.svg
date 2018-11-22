@@ -14,13 +14,11 @@
     <use xlink:href="#b" transform="rotate(-90)"/>
   </g>
 
-  <a xlink:href="http://www.ubuntu.com/">
     <use xlink:href="#h" fill="#d00" transform="rotate(30)"/>
     <use xlink:href="#b" fill="#f40" transform="rotate(30)"/>
     <use xlink:href="#h" fill="#f80" transform="rotate(150)"/>
     <use xlink:href="#b" fill="#d00" transform="rotate(150)"/>
     <use xlink:href="#h" fill="#f40" transform="rotate(-90)"/>
     <use xlink:href="#b" fill="#f80" transform="rotate(-90)"/>
-  </a>
 
 </svg>

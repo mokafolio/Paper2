@@ -1,0 +1,2 @@
+option('static', type : 'boolean', value : false)
+option('buildSubmodules', type : 'boolean', value : false)

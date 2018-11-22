@@ -5,8 +5,9 @@ if meson.is_subproject() == false
     add_global_arguments('-Wno-missing-braces', '-fno-exceptions', language: 'cpp')
 endif
 
+cppArgs = ['-DPUGIXML_NO_EXCEPTIONS']
 if host_machine.system() == 'darwin'
-    add_global_arguments('-DGL_SILENCE_DEPRECATION', language: 'cpp')
+    cppArgs += '-DGL_SILENCE_DEPRECATION'
 endif
 
 paperInc = [
@@ -88,14 +89,14 @@ if get_option('static')
         paperSrc,
         dependencies: paperDeps, 
         include_directories : incDirs,
-        cpp_args: '-DPUGIXML_NO_EXCEPTIONS',
+        cpp_args: cppArgs,
         install: true)
 else
     paper = shared_library('Paper2', 
         paperSrc,
         dependencies: paperDeps, 
         include_directories : incDirs, 
-        cpp_args: '-DPUGIXML_NO_EXCEPTIONS',
+        cpp_args: cppArgs,
         install: true)
 endif
 

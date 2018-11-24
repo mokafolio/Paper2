@@ -86,21 +86,12 @@ endif
 
 incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 
-if get_option('static')
-    paper = static_library('Paper2', 
-        paperSrc,
-        dependencies: paperDeps, 
-        include_directories : incDirs,
-        cpp_args: cppArgs,
-        install: true)
-else
-    paper = shared_library('Paper2', 
+paper = library('Paper2', 
         paperSrc,
         dependencies: paperDeps, 
         include_directories : incDirs, 
         cpp_args: cppArgs,
         install: true)
-endif
 
 paperDep = declare_dependency(link_with : paper, 
     dependencies: paperDeps, 

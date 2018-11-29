@@ -52,7 +52,7 @@ static void handleCurve(const Bezier & _c, MonoCurveLoop & _target)
     y2 = _c.handleTwo().y;
     y3 = _c.positionTwo().y;
 
-    if (_c.isStraight() || (y0 >= y1 == y1 >= y2 && y1 >= y2 == y2 >= y3))
+    if (_c.isStraight() || ((y0 >= y1) == (y1 >= y2) && (y1 >= y2) == (y2 >= y3)))
     {
         // Straight curves and curves with end and control points sorted
         // in y direction are guaranteed to be monotonic in y direction.

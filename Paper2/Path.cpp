@@ -784,41 +784,41 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
     // that use this algorithm: continuous and asymmetric. asymmetric
     // was the only approach available in v0.9.25 & below.
 
-    _from = smoothIndex(_from, m_segmentData.count(), isClosed());
-    _to = smoothIndex(_to, m_segmentData.count(), isClosed());
-    if (_from > _to)
+    Size from = smoothIndex(_from, m_segmentData.count(), isClosed());
+    Size to = smoothIndex(_to, m_segmentData.count(), isClosed());
+    if (from > to)
     {
         if (isClosed())
         {
-            _from -= m_segmentData.count();
+            from -= m_segmentData.count();
         }
         else
         {
             Size tmp = _from;
-            _from = _to;
-            _to = tmp;
+            from = _to;
+            to = tmp;
         }
     }
 
     if (_type == Smoothing::Asymmetric || _type == Smoothing::Continuous)
     {
         bool bAsymmetric = _type == Smoothing::Asymmetric;
-        Int64 amount = _to - _from + 1;
-        Int64 n = amount - 1;
-        bool bLoop = isClosed() && _from == 0 && _to == m_segmentData.count() - 1;
+        Size amount = to - from + 1;
+        Size n = amount - 1;
+        bool bLoop = isClosed() && _from == 0 && to == m_segmentData.count() - 1;
 
         // Overlap by up to 4 points on closed paths since a current
         // segment is affected by its 4 neighbors on both sides (?).
-        Int64 padding = bLoop ? min(amount, (Int64)4) : 1;
-        Int64 paddingLeft = padding;
-        Int64 paddingRight = padding;
+        Size padding = bLoop ? min(amount, (Size)4) : 1;
+        Size paddingLeft = padding;
+        Size paddingRight = padding;
 
         if (!isClosed())
         {
             // If the path is open and a range is defined, try using a
             // padding of 1 on either side.
-            paddingLeft = min((Int64)1, _from);
-            paddingRight = min((Int64)1, (Int64)m_segmentData.count() - _to - 1);
+            paddingLeft = min((Size)1, from);
+            paddingRight = min((Size)1, (Size)m_segmentData.count() - to - 1);
         }
 
         n += paddingLeft + paddingRight;
@@ -972,6 +972,8 @@ void Path::insertSegments(Size _index, const SegmentData * _segments, Size _coun
     // insert case
     else
     {
+        m_segmentData.insert(m_segmentData.begin() + _index, _segments, _segments + _count);
+
         // insert new curves and reset all affected ones
         //@TODO: technically we should be able to use an end index, too no?
         m_curveData.resize(m_curveData.count() + _count);

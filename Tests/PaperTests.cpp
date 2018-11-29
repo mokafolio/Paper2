@@ -119,9 +119,13 @@ const Suite spec[] =
 
         // test insertion
         p->insertSegment(1, SegmentData{Vec2f(100, 75.0), Vec2f(100, 75.0), Vec2f(100, 75.0)});
+        EXPECT(p->segmentData().count() == 4);
         EXPECT(p->segmentData()[0].position == Vec2f(100.0f, 30.0f));
         EXPECT(p->segmentData()[1].position == Vec2f(100.0f, 75.0f));
         EXPECT(p->segmentData()[2].position == Vec2f(200.0f, 30.0f));
+
+        for(auto seg : p->segmentData())
+            printf("SEG %f %f\n", seg.position.x, seg.position.y);
 
         EXPECT(p->curves().count() == 4);
         stick::DynamicArray<Vec2f> expectedCurves2 =

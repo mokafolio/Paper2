@@ -987,7 +987,7 @@ void Item::markSymbolsDirty() const
 void Item::hierarchyString(String & _outputString, Size _indent) const
 {
     String indent;
-    for (int i = 0; i < _indent; ++i)
+    for (Size i = 0; i < _indent; ++i)
         indent.append("    ");
 
     switch (itemType())

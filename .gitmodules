@@ -4,3 +4,6 @@
 [submodule "subprojects/Crunch"]
 	path = subprojects/Crunch
 	url = https://github.com/mokafolio/Crunch
+[submodule "subprojects/Tarp"]
+	path = subprojects/Tarp
+	url = https://github.com/mokafolio/Tarp

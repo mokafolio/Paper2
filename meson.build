@@ -82,10 +82,13 @@ if get_option('buildSubmodules') == false
 else
     stickProj = subproject('Stick')
     crunchProj = subproject('Crunch')
-    paperDeps = [stickProj.get_variable('stickDep'), crunchProj.get_variable('crunchDep'), glDep]
+    tarpProj = subproject('Tarp')
+    paperDeps = [stickProj.get_variable('stickDep'), 
+        crunchProj.get_variable('crunchDep'), 
+        tarpProj.get_variable('tarpDep'), glDep]
 endif
 
-incDirs = include_directories('.', 'Paper2', 'Paper2/Libs', 'Paper2/Libs/pugixml')
+incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 
 paper = library('Paper2', 
         paperSrc,

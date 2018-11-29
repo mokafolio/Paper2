@@ -21,6 +21,6 @@ endif
 foreach p : playgrounds
     pg = executable(p, p + '.cpp', 
             dependencies: deps, 
-            cpp_args : '-fsanitize=address',
+            cpp_args : cppArgs + ['-fsanitize=address'],
             link_args : '-fsanitize=address')
 endforeach

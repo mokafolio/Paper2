@@ -60,7 +60,7 @@ class StringViewT
 
     bool operator==(const char * _str) const
     {
-        auto len = std::distance(m_begin, m_end);
+        Size len = std::distance(m_begin, m_end);
         if (len != std::strlen(_str))
             return false;
         return std::strncmp(m_begin, _str, len) == 0;
@@ -420,7 +420,7 @@ enum class SVGGroupType
     Defs
 };
 
-class SVGImportSession
+class STICK_API SVGImportSession
 {
   public:
     SVGImportResult parse(Document & _doc, const String & _svg, Size _dpi)
@@ -1235,7 +1235,7 @@ class SVGImportSession
                 finishCurrentContour(true);
 
                 bool bRelative = cmd == 'm';
-                for (int i = 0; i < numbers.count(); i += 2)
+                for (Size i = 0; i < numbers.count(); i += 2)
                 {
                     if (bRelative)
                         last = last + Vec2f(numbers[i], numbers[i + 1]);
@@ -1248,7 +1248,7 @@ class SVGImportSession
             else if (cmd == 'L' || cmd == 'l')
             {
                 bool bRelative = cmd == 'l';
-                for (int i = 0; i < numbers.count(); i += 2)
+                for (Size i = 0; i < numbers.count(); i += 2)
                 {
                     if (bRelative)
                         last = last + Vec2f(numbers[i], numbers[i + 1]);
@@ -1262,7 +1262,7 @@ class SVGImportSession
             {
                 bool bRelative = cmd == 'h' || cmd == 'v';
                 bool bVert = cmd == 'V' || cmd == 'v';
-                for (int i = 0; i < numbers.count(); ++i)
+                for (Size i = 0; i < numbers.count(); ++i)
                 {
                     if (bVert)
                     {
@@ -1286,7 +1286,7 @@ class SVGImportSession
             {
                 bool bRelative = cmd == 'c';
                 Vec2f start = last;
-                for (int i = 0; i < numbers.count(); i += 6)
+                for (Size i = 0; i < numbers.count(); i += 6)
                 {
                     if (!bRelative)
                     {
@@ -1311,7 +1311,7 @@ class SVGImportSession
             {
                 bool bRelative = cmd == 's';
                 Vec2f start = last;
-                for (int i = 0; i < numbers.count(); i += 4)
+                for (Size i = 0; i < numbers.count(); i += 4)
                 {
 
                     Vec2f nextLast, nextHandle;
@@ -1335,7 +1335,7 @@ class SVGImportSession
             {
                 bool bRelative = cmd == 'q';
                 Vec2f start = last;
-                for (int i = 0; i < numbers.count(); i += 4)
+                for (Size i = 0; i < numbers.count(); i += 4)
                 {
                     if (!bRelative)
                     {
@@ -1354,7 +1354,7 @@ class SVGImportSession
             {
                 bool bRelative = cmd == 't';
                 Vec2f start = last;
-                for (int i = 0; i < numbers.count(); i += 2)
+                for (Size i = 0; i < numbers.count(); i += 2)
                 {
                     Vec2f nextLast = !bRelative ? Vec2f(numbers[i], numbers[i + 1])
                                                 : start + Vec2f(numbers[i], numbers[i + 1]);

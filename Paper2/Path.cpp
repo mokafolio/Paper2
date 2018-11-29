@@ -827,7 +827,7 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
 
         DynamicArray<Vec2f> knots(n + 1);
 
-        for (Int64 i = 0, j = _from - paddingLeft; i <= n; i++, j++)
+        for (Size i = 0, j = _from - paddingLeft; i <= n; i++, j++)
         {
             knots[i] =
                 m_segmentData[(j < 0 ? j + m_segmentData.count() : j) % m_segmentData.count()]
@@ -896,7 +896,7 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
         py[n] = (3 * knots[n].y - py[n1]) / 2;
 
         // Now update the segments
-        for (Int64 i = paddingLeft, max = n - paddingRight, j = _from; i <= max; i++, j++)
+        for (Size i = paddingLeft, max = n - paddingRight, j = _from; i <= max; i++, j++)
         {
             Int64 index = j < 0 ? j + m_segmentData.count() : j;
             SegmentData & segment = m_segmentData[index];

@@ -1504,7 +1504,7 @@ class SVGImportSession
         Float w = m_viewportStack.last().width();
         Float h = m_viewportStack.last().height();
         printf("DA FOOOOCKING %lu %f %f\n", m_viewportStack.count(), w, h);
-        return std::sqrtf(w * w + h * h) / std::sqrtf(2.0f);
+        return std::sqrt(w * w + h * h) / std::sqrt(2.0f);
     }
 
     template <class SVA, class SVB>

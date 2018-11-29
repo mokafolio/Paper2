@@ -1,3 +1,6 @@
 [submodule "subprojects/Stick"]
 	path = subprojects/Stick
 	url = https://github.com/mokafolio/Stick.git
+[submodule "Crunch"]
+	path = Crunch
+	url = https://github.com/mokafolio/Crunch

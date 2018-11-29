@@ -85,7 +85,7 @@ else
     paperDeps = [stickProj.get_variable('stickDep'), crunchProj.get_variable('crunchDep'), glDep]
 endif
 
-incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
+incDirs = include_directories('.', 'Paper2', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 
 paper = library('Paper2', 
         paperSrc,

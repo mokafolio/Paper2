@@ -1367,7 +1367,7 @@ class STICK_API SVGImportSession
             {
                 bool bRelative = cmd == 'a';
                 printf("DO DA ARC %lu\n", numbers.count());
-                for (int i = 0; i < numbers.count(); i += 7)
+                for (Size i = 0; i < numbers.count(); i += 7)
                 {
                     last = !bRelative ? Vec2f(numbers[i + 5], numbers[i + 6])
                                       : last + Vec2f(numbers[i + 5], numbers[i + 6]);

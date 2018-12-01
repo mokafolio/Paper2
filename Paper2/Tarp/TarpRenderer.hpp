@@ -11,7 +11,7 @@ namespace tarp
 namespace detail
 {
 struct TarpStuff;
-};
+}
 
 class STICK_API TarpRenderer : public RenderInterface
 {
@@ -31,7 +31,10 @@ class STICK_API TarpRenderer : public RenderInterface
   private:
     Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth) final;
 
-    Error beginClipping(Path * _clippingPath, const Mat32f & _transform, Symbol * _symbol, Size _depth) final;
+    Error beginClipping(Path * _clippingPath,
+                        const Mat32f & _transform,
+                        Symbol * _symbol,
+                        Size _depth) final;
 
     Error endClipping() final;
 

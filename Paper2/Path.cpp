@@ -900,8 +900,8 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
         {
             Int64 index = j < 0 ? j + m_segmentData.count() : j;
             SegmentData & segment = m_segmentData[index];
-            Float hx = px[i] - segment.position.x;
-            Float hy = py[i] - segment.position.y;
+            Float hx = px[i];
+            Float hy = py[i];
             if (bLoop || i < max)
             {
                 segment.handleOut = Vec2f(hx, hy);

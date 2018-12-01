@@ -19,6 +19,19 @@ using namespace paper;  // paper namespace
 using namespace crunch; // crunch namespace for math
 using namespace stick;  // stick namespace for core data structures/containers etc.
 
+Path * path;
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+
+        path->addPoint(Vec2f(xpos, ypos));
+    }
+}
+
 int main(int _argc, const char * _args[])
 {
     // initialize glfw
@@ -36,6 +49,7 @@ int main(int _argc, const char * _args[])
     GLFWwindow * window = glfwCreateWindow(800, 600, "Hello Paper Example", NULL, NULL);
     if (window)
     {
+        glfwSetMouseButtonCallback(window, mouse_button_callback);
         glfwMakeContextCurrent(window);
 
         // create the document.
@@ -54,18 +68,18 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        Path * path = doc.createPath();
-        path->addPoint(Vec2f(100, 100));
-        path->addPoint(Vec2f(150, 110));
-        path->addPoint(Vec2f(150, 130));
-        path->addPoint(Vec2f(135, 200));
-        path->closePath();
+        path = doc.createPath();
+        // path->addPoint(Vec2f(100, 100));
+        // path->addPoint(Vec2f(150, 110));
+        // path->addPoint(Vec2f(150, 130));
+        // path->addPoint(Vec2f(135, 200));
+        // path->closePath();
         // path->smooth();
         path->setStroke("red");
 
-        Path * clone = path->clone();
-        clone->setStroke("yellow");
-        clone->simplify();
+        // Path * clone = path->clone();
+        // clone->setStroke("yellow");
+        // clone->simplify();
 
         int counter = 0;
 

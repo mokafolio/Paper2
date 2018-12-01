@@ -44,7 +44,7 @@ void PathFitter::fit()
 {
     if (m_positions.count() > 0)
     {
-        m_newSegments.append({Vec2f(0), m_positions[0], Vec2f(0)});
+        m_newSegments.append({m_positions[0], m_positions[0], m_positions[0]});
 
         // Size i = 0;
         // Size count = m_newSegments.count();
@@ -162,8 +162,8 @@ void PathFitter::addCurve(const Vec2f & _pointOne,
                           const Vec2f & _handleTwo,
                           const Vec2f & _pointTwo)
 {
-    m_newSegments.last().handleOut = _handleOne - _pointOne;
-    m_newSegments.append({_handleTwo - _pointTwo, _pointTwo, Vec2f(0)});
+    m_newSegments.last().handleOut = _handleOne;
+    m_newSegments.append({_handleTwo, _pointTwo, _pointTwo});
 }
 
 Bezier PathFitter::generateBezier(Size _first,

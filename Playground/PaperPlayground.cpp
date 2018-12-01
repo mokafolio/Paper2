@@ -19,39 +19,8 @@ using namespace paper;  // paper namespace
 using namespace crunch; // crunch namespace for math
 using namespace stick;  // stick namespace for core data structures/containers etc.
 
-Maybe<Paint> bla;
-Paint bla2;
-
-void fu(RadialGradientPtr _grad)
-{
-    static_assert(stick::detail::Traits<decltype(_grad),
-                                        NoPaint,
-                                        ColorRGBA,
-                                        LinearGradientPtr,
-                                        RadialGradientPtr>::bIsDirect,
-                  "DAFUQ");
-    static_assert(
-        TypeInfoT<
-            stick::detail::
-                Traits<decltype(_grad), NoPaint, ColorRGBA, LinearGradientPtr, RadialGradientPtr>::
-                    TargetType>::typeID() == TypeInfoT<RadialGradientPtr>::typeID(),
-        "FUUUUCK");
-
-    // bla = _grad;
-    printf("TYPE %s\n", typeid(decltype(_grad)).name());
-    Paint bla2 = _grad;
-}
-
 int main(int _argc, const char * _args[])
 {
-    RadialGradientPtr b = makeShared<RadialGradient>(Vec2f(0), Vec2f(0));
-
-    Variant<NoPaint, ColorRGBA, LinearGradientPtr, RadialGradientPtr> blubb(std::move(b));
-
-    // fu(createRadialGradient(Vec2f(0), Vec2f(0)));
-    // bla = ColorRGBA(1.0, 1.0, 1.0, 1.0);
-    // bla = makeShared<RadialGradient>(Vec2f(100, 100), Vec2f(200, 200));
-
     // initialize glfw
     if (!glfwInit())
         return EXIT_FAILURE;
@@ -92,23 +61,11 @@ int main(int _argc, const char * _args[])
         path->addPoint(Vec2f(135, 200));
         path->closePath();
         // path->smooth();
-        path->setFill("red");
+        path->setStroke("red");
 
-        Curve longest;
-        Float32 maxLen = 0;
-        Size idx = 0;
-        for (Curve curve : path->curves())
-        {
-            printf("IDX %lu\n", idx);
-            if (curve.length() > maxLen)
-            {
-                longest = curve;
-                maxLen = curve.length();
-                printf("GOT LONGEST %f\n", maxLen);
-            }
-            printf("lidx %i\n", longest.index());
-            idx++;
-        }
+        Path * clone = path->clone();
+        clone->setStroke("yellow");
+        clone->simplify();
 
         int counter = 0;
 

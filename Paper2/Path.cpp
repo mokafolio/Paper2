@@ -900,15 +900,15 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
         {
             Int64 index = j < 0 ? j + m_segmentData.count() : j;
             SegmentData & segment = m_segmentData[index];
-            Float hx = px[i];
-            Float hy = py[i];
+            Float hx = px[i] - segment.position.x;
+            Float hy = py[i] - segment.position.y;
             if (bLoop || i < max)
             {
-                segment.handleOut = Vec2f(hx, hy);
+                segment.handleOut = segment.position + Vec2f(hx, hy);
             }
             if (bLoop || i > paddingLeft)
             {
-                segment.handleIn = Vec2f(-hx, -hy);
+                segment.handleIn = segment.position - Vec2f(hx, hy);
             }
         }
 
@@ -919,13 +919,13 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
 
 void Path::simplify(Float _tolerance)
 {
-    detail::PathFitter fitter(this, _tolerance, true);
+    detail::PathFitter fitter(this, _tolerance, false);
     fitter.fit();
 }
 
 void Path::addSegment(const Vec2f & _point, const Vec2f & _handleIn, const Vec2f & _handleOut)
 {
-    // createSegment(_point, _handleIn, _handleOut);
+    // createSegment(_point, _handleIn, _handleOut)
     m_segmentData.append({ _point + _handleIn, _point, _point + _handleOut });
     appendedSegment();
 }

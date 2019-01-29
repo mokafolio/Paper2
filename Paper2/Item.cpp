@@ -82,6 +82,14 @@ Item * Item::findChild(const String & _name) const
     return nullptr;
 }
 
+Item * Item::child(Size _idx) const
+{
+    if(_idx > m_children.count() - 1)
+        return nullptr;
+
+    return m_children[_idx];
+}
+
 bool Item::insertAbove(const Item * _e)
 {
     return insertHelper(_e, true);

@@ -51,6 +51,8 @@ class STICK_API Item
 
     Item * findChild(const String & _name) const;
 
+    Item * child(Size _idx) const;
+
     const ItemPtrArray & children() const;
 
     const String & name() const;

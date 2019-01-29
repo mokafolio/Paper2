@@ -474,10 +474,10 @@ class STICK_API SVGImportSession
                 if (!child->hasFill())
                     child->setFill(ColorRGBA(0, 0, 0, 1));
             }
-            else if(child->itemType() == ItemType::Group)
+            else if (child->itemType() == ItemType::Group)
             {
                 // only recurse into the group if there is no fill set on it
-                if(!child->hasFill())
+                if (!child->hasFill())
                     recursivelySetDefaultFill(child);
             }
         }

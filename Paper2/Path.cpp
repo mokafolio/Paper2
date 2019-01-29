@@ -737,7 +737,8 @@ void Path::closePath()
 
         if (crunch::isClose(first.position(), last.position(), detail::PaperConstants::tolerance()))
         {
-            first.setHandleIn(last.handleIn());
+            printf("WE CLOSE BABY\n");
+            first.setHandleIn(last.handleInAbsolute());
             m_segmentData.removeLast();
             m_curveData.last() = CurveData{};
         }
@@ -761,7 +762,7 @@ void Path::smooth(Smoothing _type, bool _bSmoothChildren)
     }
 }
 
-static Size smoothIndex(Int64 _idx, Int64 _length, bool _bClosed)
+static Int64 smoothIndex(Int64 _idx, Int64 _length, bool _bClosed)
 {
     // Handle negative values based on whether a path is open or not:
     // Ranges on closed paths are allowed to wrapped around the
@@ -784,8 +785,8 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
     // that use this algorithm: continuous and asymmetric. asymmetric
     // was the only approach available in v0.9.25 & below.
 
-    Size from = smoothIndex(_from, m_segmentData.count(), isClosed());
-    Size to = smoothIndex(_to, m_segmentData.count(), isClosed());
+    Int64 from = smoothIndex(_from, m_segmentData.count(), isClosed());
+    Int64 to = smoothIndex(_to, m_segmentData.count(), isClosed());
     if (from > to)
     {
         if (isClosed())
@@ -794,7 +795,7 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
         }
         else
         {
-            Size tmp = _from;
+            Int64 tmp = _from;
             from = _to;
             to = tmp;
         }
@@ -803,22 +804,22 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
     if (_type == Smoothing::Asymmetric || _type == Smoothing::Continuous)
     {
         bool bAsymmetric = _type == Smoothing::Asymmetric;
-        Size amount = to - from + 1;
-        Size n = amount - 1;
+        Int64 amount = to - from + 1;
+        Int64 n = amount - 1;
         bool bLoop = isClosed() && _from == 0 && to == m_segmentData.count() - 1;
 
         // Overlap by up to 4 points on closed paths since a current
         // segment is affected by its 4 neighbors on both sides (?).
-        Size padding = bLoop ? min(amount, (Size)4) : 1;
-        Size paddingLeft = padding;
-        Size paddingRight = padding;
+        Int64 padding = bLoop ? min(amount, (Int64)4) : 1;
+        Int64 paddingLeft = padding;
+        Int64 paddingRight = padding;
 
         if (!isClosed())
         {
             // If the path is open and a range is defined, try using a
             // padding of 1 on either side.
-            paddingLeft = min((Size)1, from);
-            paddingRight = min((Size)1, (Size)m_segmentData.count() - to - 1);
+            paddingLeft = min((Int64)1, from);
+            paddingRight = min((Int64)1, (Int64)m_segmentData.count() - to - 1);
         }
 
         n += paddingLeft + paddingRight;
@@ -827,7 +828,7 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
 
         DynamicArray<Vec2f> knots(n + 1);
 
-        for (Size i = 0, j = _from - paddingLeft; i <= n; i++, j++)
+        for (Int64 i = 0, j = _from - paddingLeft; i <= n; i++, j++)
         {
             knots[i] =
                 m_segmentData[(j < 0 ? j + m_segmentData.count() : j) % m_segmentData.count()]
@@ -871,7 +872,7 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
         DynamicArray<Float> py(n + 1);
 
         // Solve with the Thomas algorithm
-        for (Size i = 1; i < n; i++)
+        for (Int64 i = 1; i < n; i++)
         {
             bool bInternal = i < n1;
             // internal--(I)  asymmetric--(R) (R)--continuous
@@ -896,7 +897,7 @@ void Path::smooth(Int64 _from, Int64 _to, Smoothing _type)
         py[n] = (3 * knots[n].y - py[n1]) / 2;
 
         // Now update the segments
-        for (Size i = paddingLeft, max = n - paddingRight, j = _from; i <= max; i++, j++)
+        for (Int64 i = paddingLeft, max = n - paddingRight, j = _from; i <= max; i++, j++)
         {
             Int64 index = j < 0 ? j + m_segmentData.count() : j;
             SegmentData & segment = m_segmentData[index];
@@ -1091,14 +1092,19 @@ void Path::flattenRegular(Float _maxDistance, bool _bFlattenChildren)
 
     Float len = length();
     Float off = 0;
+    Vec2f pos;
     while (off < len)
     {
-        segs.append({ Vec2f(0), positionAt(std::min(off, len)), Vec2f(0) });
+        pos = positionAt(std::min(off, len));
+        segs.append({ pos, pos, pos });
         off += _maxDistance;
     }
 
     if (off - len > 0)
-        segs.append({ Vec2f(0), positionAt(len), Vec2f(0) });
+    {
+        pos = positionAt(len);
+        segs.append({ pos, pos, pos });
+    }
 
     swapSegments(segs, isClosed());
 
@@ -1251,7 +1257,7 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
     // add the last segment based on the end curve location
     tmp.append({ bez2.handleTwo() - bez2.positionTwo(), bez2.positionTwo(), Vec2f(0.0f) });
 
-    ret->swapSegments(tmp, false);
+    ret->swapSegments(tmp, isClosed());
 
     ret->insertAbove(this);
     return ret;

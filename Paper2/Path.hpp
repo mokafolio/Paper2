@@ -555,7 +555,10 @@ SegmentT<PT>::SegmentT(const SegmentT<OPT> & _other) :
 template <class PT>
 void SegmentT<PT>::setPosition(const Vec2f & _pos)
 {
+    auto delta = _pos - m_path->m_segmentData[m_index].position;
     m_path->m_segmentData[m_index].position = _pos;
+    m_path->m_segmentData[m_index].handleIn += delta;
+    m_path->m_segmentData[m_index].handleOut += delta;
     segmentChanged();
 }
 

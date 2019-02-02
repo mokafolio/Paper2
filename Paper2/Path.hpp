@@ -525,7 +525,7 @@ class STICK_API Path : public Item
 
     void markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDirty = true);
 
-    void appendedSegment();
+    void appendedSegments(Size _count);
 
     SegmentDataArray m_segmentData;
     mutable CurveDataArray m_curveData;

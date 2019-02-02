@@ -37,8 +37,7 @@ struct ExportSession
 
 struct StringWriter : pugi::xml_writer
 {
-    StringWriter(Allocator & _alloc)
-        : result(_alloc)
+    StringWriter(Allocator & _alloc) : result(_alloc)
     {
     }
 
@@ -168,7 +167,7 @@ static void recursivelyAddPathToPathData(const Path * _path, String & _currentDa
     {
         if (i > 0)
             _currentData.append(" ");
-        addPathToPathData(static_cast<const Path *>(_path->children()[i]), _currentData, true);
+        recursivelyAddPathToPathData(static_cast<const Path *>(_path->children()[i]), _currentData, false);
     }
 }
 
@@ -261,7 +260,7 @@ static void addPaintToStyle(Getter _getter,
 
             gradNode.append_attribute("gradientUnits") = "userSpaceOnUse";
 
-            UsedGradient ug = {grad, String::formatted("grad-%lu", _session.gradients.count())};
+            UsedGradient ug = { grad, String::formatted("grad-%lu", _session.gradients.count()) };
             gradNode.append_attribute("id") = ug.id.cString();
 
             for (const auto & stop : grad->stops())
@@ -472,8 +471,10 @@ static pugi::xml_node exportCurveData(const Path * _path, pugi::xml_node _parent
     return pugi::xml_node();
 }
 
-static pugi::xml_node
-addPath(const Path * _path, pugi::xml_node _node, bool _bMatchShapes, bool _bIsClippingPath = false)
+static pugi::xml_node addPath(const Path * _path,
+                              pugi::xml_node _node,
+                              bool _bMatchShapes,
+                              bool _bIsClippingPath = false)
 {
     pugi::xml_node ret;
     if (_path->children().count())
@@ -536,8 +537,10 @@ addPath(const Path * _path, pugi::xml_node _node, bool _bMatchShapes, bool _bIsC
     return ret;
 }
 
-static pugi::xml_node
-addGroup(const Group * _group, pugi::xml_node _parent, ExportSession & _session, bool _bMatchShapes)
+static pugi::xml_node addGroup(const Group * _group,
+                               pugi::xml_node _parent,
+                               ExportSession & _session,
+                               bool _bMatchShapes)
 {
     if (!_group->children().count())
         return pugi::xml_node();
@@ -597,7 +600,7 @@ TextResult exportItem(const Item * _item, Allocator & _alloc, bool _bMatchShapes
 {
     pugi::xml_document xml;
     StringWriter writer(_alloc);
-    ExportSession session{&_alloc, xml, pugi::xml_node(nullptr), UsedGradientArray(_alloc), 0};
+    ExportSession session{ &_alloc, xml, pugi::xml_node(nullptr), UsedGradientArray(_alloc), 0 };
     addItemToXml(_item, xml, session, _bMatchShapes);
     xml.print(writer);
     return writer.result;

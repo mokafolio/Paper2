@@ -34,7 +34,8 @@ Error RenderInterface::draw()
     return ret;
 }
 
-Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, bool _bSkipFirst, Symbol * _symbol, Size _depth)
+Error RenderInterface::drawChildren(
+    Item * _item, const Mat32f * _transform, bool _bSkipFirst, Symbol * _symbol, Size _depth)
 {
     Error err;
     Mat32f tmp;
@@ -44,15 +45,19 @@ Error RenderInterface::drawChildren(Item * _item, const Mat32f * _transform, boo
     {
         if (_transform)
             tmp = *_transform * (*it)->transform();
-        
-        err = drawItem((*it), _transform ? &tmp : nullptr, _symbol, _depth + std::distance(start, it));
+
+        err = drawItem(
+            (*it), _transform ? &tmp : nullptr, _symbol, _depth + std::distance(start, it));
         if (err)
             return err;
     }
     return err;
 }
 
-Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol * _symbol, Size _depth)
+Error RenderInterface::drawItem(Item * _item,
+                                const Mat32f * _transform,
+                                Symbol * _symbol,
+                                Size _depth)
 {
     Error ret;
 
@@ -66,7 +71,8 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol 
         if (grp->isClipped())
         {
             Path * mask = nullptr;
-            Item * transformItem = nullptr; //the item that provides the transform (i.e. needed for symbols)
+            Item * transformItem =
+                nullptr; // the item that provides the transform (i.e. needed for symbols)
             const auto & c2 = grp->children();
             if (c2.first()->itemType() == ItemType::Path)
             {
@@ -89,13 +95,15 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol 
             {
                 tmp2 = *_transform * transformItem->transform();
             }
-            ret = beginClipping(mask, _transform ? tmp2 : transformItem->absoluteTransform(), _symbol, _depth);
+            ret = beginClipping(
+                mask, _transform ? tmp2 : transformItem->absoluteTransform(), _symbol, _depth);
             if (ret)
                 return ret;
 
             ret = drawChildren(grp, _transform, true, _symbol, _depth);
-            
-            if(ret) return ret;
+
+            if (ret)
+                return ret;
 
             ret = endClipping();
         }
@@ -111,7 +119,7 @@ Error RenderInterface::drawItem(Item * _item, const Mat32f * _transform, Symbol 
     else if (_item->itemType() == ItemType::Symbol)
     {
         Symbol * s = static_cast<Symbol *>(_item);
-        ret = drawItem(s->item(), _transform ? _transform : &s->absoluteTransform(), s, 0);
+        ret = drawItem(s->item(), _transform ? _transform : &s->absoluteTransform(), _symbol ? _symbol : s, 0);
     }
     return ret;
 }

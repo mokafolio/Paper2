@@ -1,0 +1,1 @@
+- make sure masks for groups are always path items

@@ -43,7 +43,7 @@ const Mat32f & Symbol::absoluteTransform() const
             m_absoluteTransform = m_item->transform();
     }
 
-    // printf("TRANS %f %f\n", (*m_absoluteTransform)[2].x, (*m_absoluteTransform)[2].y);
+    printf("TRANS %f %f\n", (*m_absoluteTransform)[2].x, (*m_absoluteTransform)[2].y);
     return *m_absoluteTransform;
 }
 

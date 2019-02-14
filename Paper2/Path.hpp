@@ -863,14 +863,14 @@ stick::Maybe<CurveT<PT>> CurveT<PT>::divideAtParameter(Float _t)
     auto splitResult = bezier().subdivide(_t);
 
     // adjust the exiting segments of this curve
-    segmentOne().setHandleOut(splitResult.first.handleOne() - splitResult.first.positionOne());
-    segmentTwo().setHandleIn(splitResult.second.handleTwo() - splitResult.second.positionTwo());
+    segmentOne().setHandleOut(splitResult.first.handleOne());
+    segmentTwo().setHandleIn(splitResult.second.handleTwo());
     segmentTwo().setPosition(splitResult.second.positionTwo());
 
     // create the new segment
-    SegmentData seg = { splitResult.first.handleTwo() - splitResult.first.positionTwo(),
+    SegmentData seg = { splitResult.first.handleTwo(),
                         splitResult.first.positionTwo(),
-                        splitResult.second.handleOne() - splitResult.second.positionOne() };
+                        splitResult.second.handleOne()};
 
     m_path->insertSegment(m_index + 1, seg);
 

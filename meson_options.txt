@@ -1,1 +1,1 @@
-option('buildSubmodules', type : 'boolean', value : false)
+option('buildSubmodules', type : 'boolean', value : false, yield : true)

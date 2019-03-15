@@ -748,7 +748,7 @@ void Path::closePath()
     }
 }
 
-void Path::makeEllipse(const Vec2f & _center, const Vec2f & _size)
+Path & Path::makeEllipse(const Vec2f & _center, const Vec2f & _size)
 {
     static const Float s_kappa = detail::PaperConstants::kappa();
 
@@ -774,14 +774,15 @@ void Path::makeEllipse(const Vec2f & _center, const Vec2f & _size)
     }
     addSegments(segs, 4);
     closePath();
+    return *this;
 }
 
-void Path::makeCircle(const Vec2f & _center, Float _radius)
+Path & Path::makeCircle(const Vec2f & _center, Float _radius)
 {
-    makeEllipse(_center, Vec2f(_radius) * 2.0f);
+    return makeEllipse(_center, Vec2f(_radius) * 2.0f);
 }
 
-void Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
+Path & Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
 {
     removeSegments(); //allready sets geometry dirty
 
@@ -791,9 +792,10 @@ void Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
 
     addSegments(segs, 4);
     closePath();
+    return *this;
 }
 
-void Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius)
+Path & Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius)
 {
     removeSegments(); //allready sets geometry dirty
     static const Float s_kappa = detail::PaperConstants::kappa();
@@ -817,6 +819,7 @@ void Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Ve
 
     addSegments(segs, 8);
     closePath();
+    return *this;
 }
 
 void Path::smooth(Smoothing _type, bool _bSmoothChildren)

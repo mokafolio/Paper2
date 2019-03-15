@@ -365,13 +365,14 @@ class STICK_API Path : public Item
 
     // these functins will replace any existing segments with the respective shape
     // these functions mainly exist so that you can reuse an existing path instead of having to create a new one.
-    void makeEllipse(const Vec2f & _center, const Vec2f & _size);
+    // the functions return *this.
+    Path & makeEllipse(const Vec2f & _center, const Vec2f & _size);
 
-    void makeCircle(const Vec2f & _center, Float _radius);
+    Path & makeCircle(const Vec2f & _center, Float _radius);
 
-    void makeRectangle(const Vec2f & _from, const Vec2f & _to);
+    Path & makeRectangle(const Vec2f & _from, const Vec2f & _to);
 
-    void makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius);
+    Path & makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius);
 
     // TODO: Add the different smoothing versions / algorithms from more recent paper.js versions
     void smooth(Smoothing _type = Smoothing::Asymmetric, bool _bSmoothChildren = false);

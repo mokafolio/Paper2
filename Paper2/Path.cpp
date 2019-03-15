@@ -748,6 +748,77 @@ void Path::closePath()
     }
 }
 
+void Path::makeEllipse(const Vec2f & _center, const Vec2f & _size)
+{
+    static const Float s_kappa = detail::PaperConstants::kappa();
+
+    // NOTE: Last time I checked original paper.js build a circle differently.
+    // we are building it this way to be identical with SVG.
+    static SegmentData s_unitSegments[4] = {
+        { Vec2f(0, -s_kappa), Vec2f(1, 0), Vec2f(0, s_kappa) },
+        { Vec2f(s_kappa, 0), Vec2f(0, 1), Vec2f(-s_kappa, 0) },
+        { Vec2f(0, s_kappa), Vec2f(-1, 0), Vec2f(0, -s_kappa) },
+        { Vec2f(-s_kappa, 0), Vec2f(0, -1), Vec2f(s_kappa, 0) }
+    };
+
+    removeSegments(); // this allready marks the geometry dirty
+
+    Vec2f rad = _size * 0.5;
+    SegmentData segs[4];
+    for (Int32 i = 0; i < 4; ++i)
+    {
+        Vec2f pos = _center + s_unitSegments[i].position * rad;
+        segs[i] = { pos + s_unitSegments[i].handleIn * rad,
+                    pos,
+                    pos + s_unitSegments[i].handleOut * rad };
+    }
+    addSegments(segs, 4);
+    closePath();
+}
+
+void Path::makeCircle(const Vec2f & _center, Float _radius)
+{
+    makeEllipse(_center, Vec2f(_radius) * 2.0f);
+}
+
+void Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
+{
+    removeSegments(); //allready sets geometry dirty
+
+    Vec2f a(_to.x, _from.y);
+    Vec2f b(_from.x, _to.y);
+    SegmentData segs[4] = { { a, a, a }, { _to, _to, _to }, { b, b, b }, { _from, _from, _from } };
+
+    addSegments(segs, 4);
+    closePath();
+}
+
+void Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius)
+{
+    removeSegments(); //allready sets geometry dirty
+    static const Float s_kappa = detail::PaperConstants::kappa();
+    Vec2f delta = _max - _min;
+    Vec2f radius = crunch::min(_radius, delta / 2);
+    Float rx = radius.x;
+    Float ry = radius.y;
+    Float hx = rx * s_kappa;
+    Float hy = ry * s_kappa;
+    Float rh = delta.y;
+    Float rw = delta.x;
+    
+    SegmentData segs[8] = { { Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0) },
+                            { Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0) },
+                            { Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0) },
+                            { Vec2f(0), _max + Vec2f(0, -ry), Vec2f(0, hy) },
+                            { Vec2f(hx, 0), _max + Vec2f(-rx, 0), Vec2f(0) },
+                            { Vec2f(0), _min + Vec2f(rx, rh), Vec2f(-hx, 0) },
+                            { Vec2f(0, hy), _min + Vec2f(0, rh - ry), Vec2f(0) },
+                            { Vec2f(0), _min + Vec2f(0, ry), Vec2f(0, -hy) } };
+
+    addSegments(segs, 8);
+    closePath();
+}
+
 void Path::smooth(Smoothing _type, bool _bSmoothChildren)
 {
     smooth(0, m_segmentData.count() - 1, _type);

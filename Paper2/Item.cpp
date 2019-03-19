@@ -899,7 +899,7 @@ Rect Item::noBounds()
 
 Maybe<Rect> Item::computeBounds(const Mat32f * _transform, BoundsType _type) const
 {
-    return Maybe<Rect>();
+    return mergeWithChildrenBounds(Maybe<Rect>(), _transform, _type, false);
 }
 
 void Item::cloneItemTo(Item * _item) const

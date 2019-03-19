@@ -39,6 +39,7 @@ bool Group::canAddChild(Item * _e) const
 
 Maybe<Rect> Group::computeBounds(const Mat32f * _transform, BoundsType _type) const
 {
+    //@TODO: I am not sure if we actually need to do anything special for clipped groups....
     if (m_bIsClipped)
     {
         if (m_children.count())

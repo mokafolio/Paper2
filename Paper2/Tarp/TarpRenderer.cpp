@@ -180,9 +180,9 @@ void TarpRenderer::setViewport(Float _x, Float _y, Float _widthInPixels, Float _
     m_viewport = Rect(_x, _y, _x + _widthInPixels, _y + _heightInPixels);
 }
 
-void TarpRenderer::setProjection(const Mat4f & _projection)
+void TarpRenderer::setSize(Float _w, Float _h)
 {
-    tpSetProjection(m_tarp->ctx, (const tpMat4 *)&_projection);
+    tpSetSize(m_tarp->ctx, _w, _h);
 }
 
 static detail::TarpPathData & ensureRenderData(Path * _path)

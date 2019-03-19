@@ -151,7 +151,7 @@ int main(int _argc, const char * _args[])
             renderer.setViewport(0, 0, width, height);
 
             glfwGetWindowSize(window, &width, &height);
-            renderer.setProjection(Mat4f::ortho(0, width, height, 0, -1, 1));
+            renderer.setSize(width, height);
             // renderer.setTransform(Mat3f::identity());
 
             double xpos, ypos;

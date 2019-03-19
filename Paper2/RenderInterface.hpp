@@ -23,8 +23,9 @@ class STICK_API RenderInterface
     Error draw();
 
     virtual void setViewport(Float _x, Float _y, Float _widthInPixels, Float _heightInPixels) = 0;
-
-    virtual void setProjection(const Mat4f & _projection) = 0;
+    
+    // set the width and height of the render area in document units
+    virtual void setSize(Float _width, Float _height) = 0;
 
     Document * document();
 

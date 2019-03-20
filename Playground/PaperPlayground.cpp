@@ -97,7 +97,7 @@ int main(int _argc, const char * _args[])
             renderer.setViewport(0, 0, width, height);
 
             glfwGetWindowSize(window, &width, &height);
-            renderer.setSize(width, height);
+            renderer.setDefaultProjection();
             // renderer.setTransform(Mat3f::identity());
 
             auto err = renderer.draw();

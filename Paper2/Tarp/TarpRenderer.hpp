@@ -26,7 +26,9 @@ class STICK_API TarpRenderer : public RenderInterface
 
     void setViewport(Float _x, Float _y, Float _widthInPixels, Float _heightInPixels) final;
 
-    void setSize(Float _width, Float _height) final;
+    void setProjection(const Mat4f & _proj);
+    
+    void setDefaultProjection();
 
   private:
     Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth) final;

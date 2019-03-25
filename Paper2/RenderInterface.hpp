@@ -29,6 +29,8 @@ class STICK_API RenderInterface
     /* use to remove a custom set projection and return to the default behavior */
     virtual void setDefaultProjection() = 0;
 
+    virtual void flattenedPathVertices(Path * _path, Vec2f ** _outPtr, Size * _outCount, const Mat32f & _transform) = 0;
+
     Document * document();
 
   protected:

@@ -531,6 +531,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     // (one for each item in its sub hierarchy). But that will make things a lot more complex :(
     if (!_symbol /* || _symbol->item()->itemType() == ItemType::Group*/)
     {
+        /* @TODO: only set the transform if it actually changed compared to the last draw call */
         tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
     }
@@ -626,6 +627,39 @@ Error TarpRenderer::finishDrawing()
 {
     tpFinishDrawing(m_tarp->ctx);
     return Error();
+}
+
+static void recursivelyFindContourIdx(Path * _root, Path * _target, Size * _outIdx)
+{
+    for(auto * child : _root->children())
+    {
+        (*_outIdx)++;
+        if(child == _target)
+            return;
+        recursivelyFindContourIdx(static_cast<Path*>(child), _target, _outIdx);
+    }
+}
+
+void TarpRenderer::flattenedPathVertices(Path * _path, Vec2f ** _outPtr, Size * _outCount, const Mat32f & _transform)
+{
+    //as a path can be a contour of a tarp path (i.e. if it is the child of another path),
+    //we need to find the root path first.
+    Path * root = _path;
+    while(root->parent() && root->parent()->itemType() == ItemType::Path)
+        root = static_cast<Path*>(root->parent());
+
+    //hmm we should most likely cache the contour index somewhere...this seems kinda BS
+    Size cidx = 0;
+    if(root != _path)
+        recursivelyFindContourIdx(root, _path, &cidx);
+
+    detail::TarpPathData & rd = ensureRenderData(root);
+    updateTarpPath(m_tarp->tmpSegmentBuffer, root, rd.path, nullptr);
+
+    int outCount;
+    tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
+    tpPathFlattenedContour(m_tarp->ctx, rd.path, cidx, (tpVec2**)_outPtr, &outCount);
+    *_outCount = outCount;
 }
 
 } // namespace tarp

@@ -30,6 +30,8 @@ class STICK_API TarpRenderer : public RenderInterface
     
     void setDefaultProjection();
 
+    void flattenedPathVertices(Path * _path, Vec2f ** _outPtr, Size * _outCount, const Mat32f & _transform) final;
+
   private:
     Error drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth) final;
 

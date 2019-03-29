@@ -38,7 +38,11 @@ const Suite spec[] =
         grp3->insertBelow(grp2);
         EXPECT(grp->children().count() == 3);
         EXPECT(grp->children()[0] == grp3);
+        EXPECT(grp3->previousSibling() == nullptr);
+        EXPECT(grp3->nextSibling() == grp2);
         EXPECT(grp->children()[1] == grp2);
+        EXPECT(grp2->previousSibling() == grp3);
+        EXPECT(grp2->nextSibling() == grp4);
         EXPECT(grp->children()[2] == grp4);
         grp3->insertAbove(grp4);
         EXPECT(grp->children().count() == 3);

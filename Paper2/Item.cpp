@@ -84,7 +84,7 @@ Item * Item::findChild(const String & _name) const
 
 Item * Item::child(Size _idx) const
 {
-    if(_idx > m_children.count() - 1)
+    if (_idx > m_children.count() - 1)
         return nullptr;
 
     return m_children[_idx];
@@ -214,6 +214,28 @@ const String & Item::name() const
 Item * Item::parent() const
 {
     return m_parent;
+}
+
+Item * Item::nextSibling() const
+{
+    STICK_ASSERT(m_parent);
+    auto it = stick::find(m_parent->m_children.begin(), m_parent->m_children.end(), this);
+    STICK_ASSERT(it != m_parent->m_children.end());
+    ++it;
+    if (it != m_parent->m_children.end())
+        return *it;
+    return nullptr;
+}
+
+Item * Item::previousSibling() const
+{
+    STICK_ASSERT(m_parent);
+    auto it = stick::find(m_parent->m_children.rbegin(), m_parent->m_children.rend(), this);
+    STICK_ASSERT(it != m_parent->m_children.rend());
+    ++it;
+    if (it != m_parent->m_children.rend())
+        return *it;
+    return nullptr;
 }
 
 void Item::setPosition(const Vec2f & _position)

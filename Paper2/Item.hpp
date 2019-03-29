@@ -59,6 +59,10 @@ class STICK_API Item
 
     Item * parent() const;
 
+    Item * nextSibling() const;
+
+    Item * previousSibling() const;
+
     void setPosition(const Vec2f & _position);
 
     void setPivot(const Vec2f & _pivot);
@@ -248,7 +252,6 @@ class STICK_API Item
     bool hasfillPaintTransform() const;
 
     bool hasStrokePaintTransform() const;
-    
 
     virtual Item * clone() const = 0;
 
@@ -259,7 +262,6 @@ class STICK_API Item
     stick::TextResult exportSVG() const;
 
     Error saveSVG(const String & _uri) const;
-
 
     // mainly for internal/rendering use
     RenderData * renderData();
@@ -272,10 +274,8 @@ class STICK_API Item
 
     bool cleanDirtyStyle();
 
-
     //@TODO: debug functions to print the hierarchy
     void hierarchyString(String & _outputString, Size _indent = 0) const;
-
 
   protected:
     struct Decomposed

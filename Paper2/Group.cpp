@@ -63,4 +63,5 @@ Maybe<Rect> Group::computeBounds(const Mat32f * _transform, BoundsType _type) co
     }
     return mergeWithChildrenBounds(Maybe<Rect>(), _transform, _type);
 }
+
 } // namespace paper

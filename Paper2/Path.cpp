@@ -1858,6 +1858,29 @@ bool Path::canAddChild(Item * _e) const
     return _e->itemType() == ItemType::Path;
 }
 
+bool Path::performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const
+{
+    Size startCount = _outResults.count();
+    if(_settings.testCurves())
+    {
+        Float dist = 0;
+        closestCurveLocation(_pos, dist);
+        if(dist < _settings.curveTolerance)
+            _outResults.append({(Item*)this, HitTestCurves});
+
+        if(!_bMultiple && startCount < _outResults.count())
+            return true;
+    }
+
+    if(_settings.testFill())
+    {
+        if(contains(_pos))
+            _outResults.append({(Item*)this, HitTestFill});
+    }
+
+    return startCount < _outResults.count();
+}
+
 void Path::addedChild(Item * _e)
 {
     // for non zero winding rule we adjust the direction of the added path if needed
@@ -2131,6 +2154,7 @@ void Path::applyTransform(const Mat32f & _transform, bool _bMarkParentsBoundsDir
 }
 
 bool Path::cleanDirtyGeometry()
+
 {
     bool ret = m_bGeometryDirty;
     m_bGeometryDirty = false;

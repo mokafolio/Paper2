@@ -504,6 +504,8 @@ class STICK_API Path : public Item
   private:
     bool canAddChild(Item * _e) const final;
 
+    bool performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const final;
+
     void addedChild(Item * _e) final;
 
     Segment createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const Vec2f & _handleOut);

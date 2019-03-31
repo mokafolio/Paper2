@@ -1042,4 +1042,51 @@ void Item::hierarchyString(String & _outputString, Size _indent) const
         child->hierarchyString(_outputString, _indent + 1);
 }
 
+HitTestSettings::HitTestSettings() : curveTolerance(2.0f), mode(HitTestFill | HitTestCurves)
+{
+}
+
+bool HitTestSettings::testFill() const
+{
+    return (mode & HitTestFill) == HitTestFill;
+}
+
+bool HitTestSettings::testCurves() const
+{
+    return (mode & HitTestFill) == HitTestCurves;
+}
+
+Maybe<HitTestResult> Item::hitTest(const Vec2f & _pos, const HitTestSettings & _settings) const
+{
+    HitTestResultArray tmp(m_children.allocator());
+    performHitTest(_pos, _settings, false, tmp);
+    return tmp.count() ? tmp.first() : Maybe<HitTestResult>();
+}
+
+HitTestResultArray Item::hitTestAll(const Vec2f & _pos, const HitTestSettings & _settings) const
+{
+    HitTestResultArray tmp(m_children.allocator());
+    performHitTest(_pos, _settings, true, tmp);
+    return tmp;
+}
+
+bool Item::hitTestChildren(const Vec2f & _pos,
+                           const HitTestSettings & _settings,
+                           bool _bMultiple,
+                           HitTestResultArray & _outResults) const
+{
+    Size startCount = _outResults.count();
+    for(auto it = children().rbegin(); it != children().rend(); ++it)
+    {
+        if((*it)->performHitTest(_pos, _settings, _bMultiple, _outResults) && !_bMultiple)
+            return true;
+    }
+    return startCount < _outResults.count();
+}
+
+bool Item::performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const
+{
+    return this->hitTestChildren(_pos, _settings, _bMultiple, _outResults);
+}
+
 } // namespace paper

@@ -13,6 +13,34 @@ class Symbol;
 class Item;
 using ItemPtrArray = stick::DynamicArray<Item *>;
 
+class CurveLocation;
+
+enum HitTestMode
+{
+    HitTestFill = 1 << 0,
+    HitTestCurves = 1 << 1
+};
+
+struct STICK_API HitTestResult
+{
+    Item * item;
+    HitTestMode type;
+    // CurveLocation curveLocation; //only set when hit testing stroke
+};
+
+struct STICK_API HitTestSettings
+{
+    HitTestSettings();
+
+    bool testFill() const;
+    bool testCurves() const;
+
+    Float curveTolerance;
+    UInt32 mode; //HitTestMode mask
+};
+
+using HitTestResultArray = stick::DynamicArray<HitTestResult>;
+
 class STICK_API Item
 {
     friend class RenderInterface;
@@ -277,6 +305,11 @@ class STICK_API Item
     //@TODO: debug functions to print the hierarchy
     void hierarchyString(String & _outputString, Size _indent = 0) const;
 
+    // hit testing
+    stick::Maybe<HitTestResult> hitTest(const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
+    HitTestResultArray hitTestAll(const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
+
+
   protected:
     struct Decomposed
     {
@@ -288,6 +321,10 @@ class STICK_API Item
     bool insertHelper(const Item * _e, bool _bAbove);
 
     void removeHelper(bool _bRemoveFromParent);
+
+    bool hitTestChildren(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const;
+
+    virtual bool performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const;
 
     virtual void transformChanged(bool _bCalledFromParent);
 

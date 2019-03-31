@@ -1053,7 +1053,7 @@ bool HitTestSettings::testFill() const
 
 bool HitTestSettings::testCurves() const
 {
-    return (mode & HitTestFill) == HitTestCurves;
+    return (mode & HitTestCurves) == HitTestCurves;
 }
 
 Maybe<HitTestResult> Item::hitTest(const Vec2f & _pos, const HitTestSettings & _settings) const

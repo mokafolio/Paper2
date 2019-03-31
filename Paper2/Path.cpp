@@ -1356,10 +1356,7 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
         if (isTransformed())
         {
             trans = absoluteTransform();
-            tmp = Bezier(trans * (*it).positionOne(),
-                         trans * (*it).handleOneAbsolute(),
-                         trans * (*it).handleTwoAbsolute(),
-                         trans * (*it).positionTwo());
+            tmp = (*it).absoluteBezier();
             currentParameter = tmp.closestParameter(_point, currentDist, 0, 1, 0);
         }
         // otherwise we can just do it.
@@ -1739,7 +1736,7 @@ static inline void intersectPaths(const Path * _self,
         for (Size j = bSelf ? i + 1 : 0; j < _other->curveCount(); ++j)
         {
             ConstCurve b = _other->curve(j);
-            auto intersections = a.bezier().intersections(b.bezier());
+            auto intersections = a.absoluteBezier().intersections(b.absoluteBezier());
             for (Int32 z = 0; z < intersections.count; ++z)
             {
                 bool bAdd = true;
@@ -1903,14 +1900,21 @@ bool Path::performHitTest(const Vec2f & _pos,
 
 bool Path::performSelectionTest(const Rect & _rect) const
 {
+    //if the bounds are fully contained, add it to the selection
+    if(_rect.contains(bounds()))
+        return true;
+
+    //if the path contains one of the rectangle corners, it's also a bingo!
     if(contains(_rect.topLeft()) || contains(_rect.topRight()) ||
         contains(_rect.bottomLeft()) || contains(_rect.bottomRight()))
         return true;
 
+    //otherwise we do a full on intersection test
     Path * tmp = m_document->createRectangle(_rect.min(), _rect.max());
     tmp->removeFromParent(); //make sure the rectangle sits outside of the document
     bool ret = false;
-    if(intersections(tmp).count())
+    auto isec = intersections(tmp);
+    if(isec.count())
         ret = true;
 
     tmp->remove();

@@ -183,6 +183,8 @@ class STICK_API CurveT
 
     const Bezier & bezier() const;
 
+    Bezier absoluteBezier() const;
+
     Size index() const;
 
   private:
@@ -1129,6 +1131,15 @@ const Bezier & CurveT<PT>::bezier() const
     if (!cd.bezier)
         cd.bezier = Bezier(positionOne(), handleOneAbsolute(), handleTwoAbsolute(), positionTwo());
     return *cd.bezier;
+}
+
+template <class PT>
+Bezier CurveT<PT>::absoluteBezier() const
+{   
+    if(!m_path->isTransformed())
+        return bezier();
+    auto trans = m_path->absoluteTransform();
+    return Bezier(trans * positionOne(), trans * handleOneAbsolute(), trans * handleTwoAbsolute(), trans * positionTwo());
 }
 
 template <class PT>

@@ -1360,11 +1360,13 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
                          trans * (*it).handleOneAbsolute(),
                          trans * (*it).handleTwoAbsolute(),
                          trans * (*it).positionTwo());
-            currentParameter = tmp.closestParameter(_point, currentDist);
+            currentParameter = tmp.closestParameter(_point, currentDist, 0, 1, 0);
         }
         // otherwise we can just do it.
         else
+        {
             currentParameter = (*it).closestParameter(_point, currentDist);
+        }
 
         if (currentDist < minDist)
         {

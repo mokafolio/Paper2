@@ -1865,6 +1865,7 @@ bool Path::performHitTest(const Vec2f & _pos, const HitTestSettings & _settings,
     {
         Float dist = 0;
         closestCurveLocation(_pos, dist);
+        printf("DA DIST %f\n", dist, _settings.curveTolerance);
         if(dist < _settings.curveTolerance)
             _outResults.append({(Item*)this, HitTestCurves});
 

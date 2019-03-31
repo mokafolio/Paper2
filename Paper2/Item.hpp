@@ -309,6 +309,8 @@ class STICK_API Item
     stick::Maybe<HitTestResult> hitTest(const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
     HitTestResultArray hitTestAll(const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
 
+    //selection utilities
+    stick::DynamicArray<Item*> selectChildren(const Rect & _area);
 
   protected:
     struct Decomposed
@@ -325,6 +327,8 @@ class STICK_API Item
     bool hitTestChildren(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const;
 
     virtual bool performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const;
+
+    virtual bool performSelectionTest(const Rect & _rect) const;
 
     virtual void transformChanged(bool _bCalledFromParent);
 

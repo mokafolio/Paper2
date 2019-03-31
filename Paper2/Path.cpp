@@ -1885,7 +1885,6 @@ bool Path::performHitTest(const Vec2f & _pos,
     {
         Float dist = 0;
         closestCurveLocation(_pos, dist);
-        printf("DA DIST %f %f\n", dist, _settings.curveTolerance);
         if (dist < _settings.curveTolerance)
             _outResults.append({ (Item *)this, HitTestCurves });
 
@@ -1900,6 +1899,22 @@ bool Path::performHitTest(const Vec2f & _pos,
     }
 
     return startCount < _outResults.count();
+}
+
+bool Path::performSelectionTest(const Rect & _rect) const
+{
+    if(contains(_rect.topLeft()) || contains(_rect.topRight()) ||
+        contains(_rect.bottomLeft()) || contains(_rect.bottomRight()))
+        return true;
+
+    Path * tmp = m_document->createRectangle(_rect.min(), _rect.max());
+    tmp->removeFromParent(); //make sure the rectangle sits outside of the document
+    bool ret = false;
+    if(intersections(tmp).count())
+        ret = true;
+
+    tmp->remove();
+    return ret;
 }
 
 void Path::addedChild(Item * _e)

@@ -505,6 +505,8 @@ class STICK_API Path : public Item
     bool canAddChild(Item * _e) const final;
 
     bool performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const final;
+    
+    bool performSelectionTest(const Rect & _rect) const final;
 
     void addedChild(Item * _e) final;
 

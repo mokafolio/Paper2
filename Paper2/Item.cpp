@@ -1076,17 +1076,41 @@ bool Item::hitTestChildren(const Vec2f & _pos,
                            HitTestResultArray & _outResults) const
 {
     Size startCount = _outResults.count();
-    for(auto it = children().rbegin(); it != children().rend(); ++it)
+    for (auto it = children().rbegin(); it != children().rend(); ++it)
     {
-        if((*it)->performHitTest(_pos, _settings, _bMultiple, _outResults) && !_bMultiple)
+        if ((*it)->performHitTest(_pos, _settings, _bMultiple, _outResults) && !_bMultiple)
             return true;
     }
     return startCount < _outResults.count();
 }
 
-bool Item::performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const
+bool Item::performHitTest(const Vec2f & _pos,
+                          const HitTestSettings & _settings,
+                          bool _bMultiple,
+                          HitTestResultArray & _outResults) const
 {
     return this->hitTestChildren(_pos, _settings, _bMultiple, _outResults);
+}
+
+DynamicArray<Item *> Item::selectChildren(const Rect & _area)
+{
+    DynamicArray<Item*> ret(m_children.allocator());
+    for(Item * child : m_children)
+    {
+        if(child->performSelectionTest(_area))
+            ret.append(child);
+    }
+    return ret;
+}
+
+bool Item::performSelectionTest(const Rect & _rect) const
+{
+    for (auto it = children().rbegin(); it != children().rend(); ++it)
+    {
+        if((*it)->performSelectionTest(_rect))
+            return true;
+    }
+    return false;
 }
 
 } // namespace paper

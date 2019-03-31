@@ -784,7 +784,7 @@ Path & Path::makeCircle(const Vec2f & _center, Float _radius)
 
 Path & Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
 {
-    removeSegments(); //allready sets geometry dirty
+    removeSegments(); // allready sets geometry dirty
 
     Vec2f a(_to.x, _from.y);
     Vec2f b(_from.x, _to.y);
@@ -797,7 +797,7 @@ Path & Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
 
 Path & Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius)
 {
-    removeSegments(); //allready sets geometry dirty
+    removeSegments(); // allready sets geometry dirty
     static const Float s_kappa = detail::PaperConstants::kappa();
     Vec2f delta = _max - _min;
     Vec2f radius = crunch::min(_radius, delta / 2);
@@ -807,7 +807,7 @@ Path & Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const 
     Float hy = ry * s_kappa;
     Float rh = delta.y;
     Float rw = delta.x;
-    
+
     SegmentData segs[8] = { { Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0) },
                             { Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0) },
                             { Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0) },
@@ -1343,6 +1343,8 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
     Float currentDist;
     Float closestParameter;
     Float currentParameter;
+    Bezier tmp;
+    Mat32f trans;
 
     auto cv = curves();
     auto closestCurve = cv.end();
@@ -1350,7 +1352,20 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
     auto it = cv.begin();
     for (; it != cv.end(); ++it)
     {
-        currentParameter = (*it).closestParameter(_point, currentDist);
+        // if the path is transformed in any way, we need to recreate the transformed curve
+        if (isTransformed())
+        {
+            trans = absoluteTransform();
+            tmp = Bezier(trans * (*it).positionOne(),
+                         trans * (*it).handleOneAbsolute(),
+                         trans * (*it).handleTwoAbsolute(),
+                         trans * (*it).positionTwo());
+            currentParameter = tmp.closestParameter(_point, currentDist);
+        }
+        // otherwise we can just do it.
+        else
+            currentParameter = (*it).closestParameter(_point, currentDist);
+
         if (currentDist < minDist)
         {
             minDist = currentDist;
@@ -1858,25 +1873,28 @@ bool Path::canAddChild(Item * _e) const
     return _e->itemType() == ItemType::Path;
 }
 
-bool Path::performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const
+bool Path::performHitTest(const Vec2f & _pos,
+                          const HitTestSettings & _settings,
+                          bool _bMultiple,
+                          HitTestResultArray & _outResults) const
 {
     Size startCount = _outResults.count();
-    if(_settings.testCurves())
+    if (_settings.testCurves())
     {
         Float dist = 0;
         closestCurveLocation(_pos, dist);
         printf("DA DIST %f %f\n", dist, _settings.curveTolerance);
-        if(dist < _settings.curveTolerance)
-            _outResults.append({(Item*)this, HitTestCurves});
+        if (dist < _settings.curveTolerance)
+            _outResults.append({ (Item *)this, HitTestCurves });
 
-        if(!_bMultiple && startCount < _outResults.count())
+        if (!_bMultiple && startCount < _outResults.count())
             return true;
     }
 
-    if(_settings.testFill() && !fill().is<NoPaint>())
+    if (_settings.testFill() && !fill().is<NoPaint>())
     {
-        if(contains(_pos))
-            _outResults.append({(Item*)this, HitTestFill});
+        if (contains(_pos))
+            _outResults.append({ (Item *)this, HitTestFill });
     }
 
     return startCount < _outResults.count();

@@ -1872,7 +1872,7 @@ bool Path::performHitTest(const Vec2f & _pos, const HitTestSettings & _settings,
             return true;
     }
 
-    if(_settings.testFill())
+    if(_settings.testFill() && !fill().is<NoPaint>())
     {
         if(contains(_pos))
             _outResults.append({(Item*)this, HitTestFill});

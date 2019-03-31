@@ -19,6 +19,7 @@ using namespace paper;  // paper namespace
 using namespace crunch; // crunch namespace for math
 using namespace stick;  // stick namespace for core data structures/containers etc.
 
+Document * d;
 Path * path;
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -28,7 +29,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
 
-        path->addPoint(Vec2f(xpos, ypos));
+        printf("HIT TESTING\n");
+        auto res = d->hitTest(Vec2f(xpos, ypos));
+        if(res)
+            printf("WE GOT SOMETHING\n");
     }
 }
 
@@ -55,6 +59,7 @@ int main(int _argc, const char * _args[])
         // create the document.
         Document doc;
         doc.setSize(800, 600);
+        d = &doc;
 
         printf(
             "ITEM SIZE %i %i\n", sizeof(std::shared_ptr<float>), sizeof(stick::SharedPtr<float>));
@@ -68,14 +73,15 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        path = doc.createPath();
+        path = doc.createCircle(Vec2f(100, 100), 100);
         // path->addPoint(Vec2f(100, 100));
         // path->addPoint(Vec2f(150, 110));
         // path->addPoint(Vec2f(150, 130));
         // path->addPoint(Vec2f(135, 200));
         // path->closePath();
         // path->smooth();
-        path->setStroke("red");
+        path->setFill("red");
+        path->translateTransform(100, 100);
 
         // Path * clone = path->clone();
         // clone->setStroke("yellow");

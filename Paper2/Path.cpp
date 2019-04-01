@@ -1904,10 +1904,10 @@ bool Path::performSelectionTest(const Rect & _rect) const
     if(_rect.contains(bounds()))
         return true;
 
-    //if the path contains one of the rectangle corners, it's also a bingo!
-    if(contains(_rect.topLeft()) || contains(_rect.topRight()) ||
-        contains(_rect.bottomLeft()) || contains(_rect.bottomRight()))
-        return true;
+    // //if the path contains one of the rectangle corners, it's also a bingo!
+    // if(contains(_rect.topLeft()) || contains(_rect.topRight()) ||
+    //     contains(_rect.bottomLeft()) || contains(_rect.bottomRight()))
+    //     return true;
 
     //otherwise we do a full on intersection test
     Path * tmp = m_document->createRectangle(_rect.min(), _rect.max());

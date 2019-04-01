@@ -43,10 +43,10 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     // m_stroke(NoPaint()),
     m_name(_alloc),
     m_bVisible(true),
+    m_lastRenderTransformID(-1),
     m_fillPaintTransformDirty(false),
     m_strokePaintTransformDirty(false),
-    m_bStyleDirty(false),
-    m_lastRenderTransformID(-1)
+    m_bStyleDirty(false)
 {
     m_name.append(_name);
 }

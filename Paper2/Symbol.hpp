@@ -27,6 +27,8 @@ class STICK_API Symbol : public Item
   private:
     stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
 
+    //@TODO: Add proper implementations for performHitTest and -Select
+
     // called from Document
     void setItem(Item * _item);
 

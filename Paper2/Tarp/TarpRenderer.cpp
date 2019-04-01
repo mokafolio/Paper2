@@ -141,8 +141,8 @@ TarpRenderer::TarpRenderer()
 TarpRenderer::TarpRenderer(TarpRenderer && _other) :
     m_tarp(std::move(_other.m_tarp)),
     m_viewport(std::move(_other.m_viewport)),
-    m_transform(Mat32f::identity()),
-    m_transformID(0)
+    m_transform(std::move(_other.m_transform)),
+    m_transformID(std::move(_other.m_transformID))
 {
 }
 
@@ -172,6 +172,8 @@ Error TarpRenderer::init(Document & _doc)
     }
 
     this->m_document = &_doc;
+    m_transform = Mat32f::identity();
+    m_transformID = 0;
 
     return Error();
 }
@@ -540,9 +542,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     if (!_symbol /* || _symbol->item()->itemType() == ItemType::Group*/)
     {
         if(!_path->renderTransform() || _path->lastRenderTransformID() != m_transformID)
-        {
             _path->setRenderTransform(_transform * m_transform, m_transformID);
-        }
         /* @TODO: only set the transform if it actually changed compared to the last draw call */
         tpSetTransform(m_tarp->ctx, (tpTransform *)&(*_path->renderTransform()));
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);

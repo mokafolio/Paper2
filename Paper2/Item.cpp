@@ -1061,7 +1061,7 @@ void Item::hierarchyString(String & _outputString, Size _indent) const
         child->hierarchyString(_outputString, _indent + 1);
 }
 
-HitTestSettings::HitTestSettings() : curveTolerance(5.0f), mode(HitTestFill | HitTestCurves)
+HitTestSettings::HitTestSettings() : curveTolerance(2.5f), mode(HitTestFill | HitTestCurves)
 {
 }
 

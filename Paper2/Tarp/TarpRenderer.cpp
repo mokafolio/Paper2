@@ -542,16 +542,14 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     if (!_symbol /* || _symbol->item()->itemType() == ItemType::Group*/)
     {
         if(!_path->renderTransform() || _path->lastRenderTransformID() != m_transformID)
-        {
-            printf("UPATING RENDER TRANS\n");
             _path->setRenderTransform(m_transform * _transform, m_transformID);
-        }
         /* @TODO: only set the transform if it actually changed compared to the last draw call */
         tpSetTransform(m_tarp->ctx, (tpTransform *)&(*_path->renderTransform()));
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
     }
     else
     {
+        //@TODO: Make proper transform/render transform update for symbol.
         detail::TarpSymbolData & sd = ensureRenderData(_symbol);
         tpRenderCache cache = sd.addItem(_path, _depth, _symbol->version());
         if (tpRenderCacheIsValidHandle(cache))

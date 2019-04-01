@@ -541,7 +541,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     {
         if(!_path->renderTransform() || _path->lastRenderTransformID() != m_transformID)
         {
-            _path->setRenderTransform(m_transform * _transform, m_transformID);
+            _path->setRenderTransform(_transform * m_transform, m_transformID);
         }
         /* @TODO: only set the transform if it actually changed compared to the last draw call */
         tpSetTransform(m_tarp->ctx, (tpTransform *)&(*_path->renderTransform()));

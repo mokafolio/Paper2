@@ -45,7 +45,8 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     m_bVisible(true),
     m_fillPaintTransformDirty(false),
     m_strokePaintTransformDirty(false),
-    m_bStyleDirty(false)
+    m_bStyleDirty(false),
+    m_lastRenderTransformID(-1)
 {
     m_name.append(_name);
 }
@@ -279,6 +280,7 @@ void Item::transformChanged(bool _bCalledFromParent)
 {
     markBoundsDirty(!_bCalledFromParent);
     m_absoluteTransform.reset();
+    m_renderTransform.reset();
 
     for (Symbol * s : m_symbols)
         s->markAbsoluteTransformDirty();
@@ -451,6 +453,22 @@ const Mat32f & Item::absoluteTransform() const
             m_absoluteTransform = transform();
     }
     return *m_absoluteTransform;
+}
+
+void Item::setRenderTransform(const Mat32f & _trans, Size _lastRenderTransformID)
+{
+    m_renderTransform = _trans;
+    m_lastRenderTransformID = _lastRenderTransformID;
+}
+
+const Maybe<Mat32f> & Item::renderTransform() const
+{
+    return m_renderTransform;
+}
+
+Size Item::lastRenderTransformID() const
+{
+    return m_lastRenderTransformID;
 }
 
 Float Item::rotation() const
@@ -883,6 +901,7 @@ Maybe<Rect> Item::mergeWithChildrenBounds(const Maybe<Rect> & _bounds,
 void Item::markAbsoluteTransformDirty()
 {
     m_absoluteTransform.reset();
+    m_renderTransform.reset();
     for (Item * child : m_children)
         child->markAbsoluteTransformDirty();
 }
@@ -1094,10 +1113,10 @@ bool Item::performHitTest(const Vec2f & _pos,
 
 DynamicArray<Item *> Item::selectChildren(const Rect & _area)
 {
-    DynamicArray<Item*> ret(m_children.allocator());
-    for(Item * child : m_children)
+    DynamicArray<Item *> ret(m_children.allocator());
+    for (Item * child : m_children)
     {
-        if(child->performSelectionTest(_area))
+        if (child->performSelectionTest(_area))
             ret.append(child);
     }
     return ret;
@@ -1107,7 +1126,7 @@ bool Item::performSelectionTest(const Rect & _rect) const
 {
     for (auto it = children().rbegin(); it != children().rend(); ++it)
     {
-        if((*it)->performSelectionTest(_rect))
+        if ((*it)->performSelectionTest(_rect))
             return true;
     }
     return false;

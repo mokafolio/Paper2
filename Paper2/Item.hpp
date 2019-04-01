@@ -36,7 +36,7 @@ struct STICK_API HitTestSettings
     bool testCurves() const;
 
     Float curveTolerance;
-    UInt32 mode; //HitTestMode mask
+    UInt32 mode; // HitTestMode mask
 };
 
 using HitTestResultArray = stick::DynamicArray<HitTestResult>;
@@ -306,11 +306,18 @@ class STICK_API Item
     void hierarchyString(String & _outputString, Size _indent = 0) const;
 
     // hit testing
-    stick::Maybe<HitTestResult> hitTest(const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
-    HitTestResultArray hitTestAll(const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
+    stick::Maybe<HitTestResult> hitTest(
+        const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
+    HitTestResultArray hitTestAll(const Vec2f & _pos,
+                                  const HitTestSettings & _settings = HitTestSettings()) const;
 
-    //selection utilities
-    stick::DynamicArray<Item*> selectChildren(const Rect & _area);
+    // selection utilities
+    stick::DynamicArray<Item *> selectChildren(const Rect & _area);
+
+    //called from renderer
+    void setRenderTransform(const Mat32f & trans, Size _lastRenderTransformID);
+    const stick::Maybe<Mat32f> & renderTransform() const;
+    Size lastRenderTransformID() const;
 
   protected:
     struct Decomposed
@@ -324,9 +331,15 @@ class STICK_API Item
 
     void removeHelper(bool _bRemoveFromParent);
 
-    bool hitTestChildren(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const;
+    bool hitTestChildren(const Vec2f & _pos,
+                         const HitTestSettings & _settings,
+                         bool _bMultiple,
+                         HitTestResultArray & _outResults) const;
 
-    virtual bool performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const;
+    virtual bool performHitTest(const Vec2f & _pos,
+                                const HitTestSettings & _settings,
+                                bool _bMultiple,
+                                HitTestResultArray & _outResults) const;
 
     virtual bool performSelectionTest(const Rect & _rect) const;
 
@@ -390,6 +403,9 @@ class STICK_API Item
     mutable stick::Maybe<Mat32f> m_absoluteTransform;
     mutable stick::Maybe<Decomposed> m_decomposedTransform;
     mutable stick::Maybe<Decomposed> m_absoluteDecomposedTransform;
+    // to cache the absolute transform, including the renderer transformation
+    mutable stick::Maybe<Mat32f> m_renderTransform;
+    Size m_lastRenderTransformID;
     stick::Maybe<Vec2f> m_pivot;
     stick::DynamicArray<Symbol *> m_symbols;
     stick::Maybe<Mat32f> m_fillPaintTransform;

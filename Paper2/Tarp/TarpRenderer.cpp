@@ -140,7 +140,9 @@ TarpRenderer::TarpRenderer()
 
 TarpRenderer::TarpRenderer(TarpRenderer && _other) :
     m_tarp(std::move(_other.m_tarp)),
-    m_viewport(std::move(_other.m_viewport))
+    m_viewport(std::move(_other.m_viewport)),
+    m_transform(Mat32f::identity()),
+    m_transformID(0)
 {
 }
 
@@ -182,6 +184,12 @@ void TarpRenderer::setViewport(Float _x, Float _y, Float _widthInPixels, Float _
 void TarpRenderer::setProjection(const Mat4f & _proj)
 {
     tpSetProjection(m_tarp->ctx, (const tpMat4 *)_proj.ptr());
+}
+
+void TarpRenderer::setTransform(const Mat32f & _transform)
+{
+    m_transform = _transform;
+    ++m_transformID;
 }
 
 void TarpRenderer::setDefaultProjection()
@@ -531,8 +539,12 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     // (one for each item in its sub hierarchy). But that will make things a lot more complex :(
     if (!_symbol /* || _symbol->item()->itemType() == ItemType::Group*/)
     {
+        if(!_path->renderTransform() || _path->lastRenderTransformID() != m_transformID)
+        {
+            _path->setRenderTransform(m_transform * _transform, m_transformID);
+        }
         /* @TODO: only set the transform if it actually changed compared to the last draw call */
-        tpSetTransform(m_tarp->ctx, (tpTransform *)&_transform);
+        tpSetTransform(m_tarp->ctx, (tpTransform *)&(*_path->renderTransform()));
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
     }
     else

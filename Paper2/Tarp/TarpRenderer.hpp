@@ -26,8 +26,10 @@ class STICK_API TarpRenderer : public RenderInterface
 
     void setViewport(Float _x, Float _y, Float _widthInPixels, Float _heightInPixels) final;
 
-    void setProjection(const Mat4f & _proj);
+    void setProjection(const Mat4f & _proj) final;
     
+    void setTransform(const Mat32f & _transform) final;
+
     void setDefaultProjection();
 
     void flattenedPathVertices(Path * _path, Vec2f ** _outPtr, Size * _outCount, const Mat32f & _transform) final;
@@ -48,6 +50,8 @@ class STICK_API TarpRenderer : public RenderInterface
 
     stick::UniquePtr<detail::TarpStuff> m_tarp;
     Rect m_viewport;
+    Mat32f m_transform;
+    Size m_transformID; //true if the transform changed since last draw
 };
 } // namespace tarp
 } // namespace paper

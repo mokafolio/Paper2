@@ -67,8 +67,13 @@ int main(int _argc, const char * _args[])
         p2->translateTransform(0, 50);
         path->addChild(p2);
 
+        Path * p3 = doc.createRoundedRectangle(Vec2f(50, 50), Vec2f(200, 150), Vec2f(10));
+        p3->setFill(g);
+        Group * grp = doc.createGroup();
+        grp->addChild(path);
+        grp->addChild(p3);
         printf("PREV EXP\n");
-        auto data = path->exportBinary().ensure();
+        auto data = grp->exportBinary().ensure();
 
         printf("DA DATA COUNT %lu\n", data.count());
 

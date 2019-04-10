@@ -111,7 +111,6 @@ static Item * importItem(Document & _doc,
 
         if (isClosed)
             path->closePath();
-        path->setStroke("black");
         ret = path;
     }
     else if (type == ItemType::Symbol)

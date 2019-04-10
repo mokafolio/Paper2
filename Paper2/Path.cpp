@@ -795,6 +795,13 @@ Path & Path::makeRectangle(const Vec2f & _from, const Vec2f & _to)
     return *this;
 }
 
+SegmentData makeSegmentWithRelativeHandles(const Vec2f & _handleIn,
+                                           const Vec2f _pos,
+                                           const Vec2f & _handleOut)
+{
+    return { _pos + _handleIn, _pos, _pos + _handleOut };
+}
+
 Path & Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const Vec2f & _radius)
 {
     removeSegments(); // allready sets geometry dirty
@@ -808,14 +815,16 @@ Path & Path::makeRoundedRectangle(const Vec2f & _min, const Vec2f & _max, const 
     Float rh = delta.y;
     Float rw = delta.x;
 
-    SegmentData segs[8] = { { Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0) },
-                            { Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0) },
-                            { Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0) },
-                            { Vec2f(0), _max + Vec2f(0, -ry), Vec2f(0, hy) },
-                            { Vec2f(hx, 0), _max + Vec2f(-rx, 0), Vec2f(0) },
-                            { Vec2f(0), _min + Vec2f(rx, rh), Vec2f(-hx, 0) },
-                            { Vec2f(0, hy), _min + Vec2f(0, rh - ry), Vec2f(0) },
-                            { Vec2f(0), _min + Vec2f(0, ry), Vec2f(0, -hy) } };
+    SegmentData segs[8] = {
+        makeSegmentWithRelativeHandles(Vec2f(-hx, 0), _min + Vec2f(rx, 0), Vec2f(0)),
+        makeSegmentWithRelativeHandles(Vec2f(0), _min + Vec2f(rw - rx, 0), Vec2f(hx, 0)),
+        makeSegmentWithRelativeHandles(Vec2f(0, -hy), _min + Vec2f(rw, ry), Vec2f(0)),
+        makeSegmentWithRelativeHandles(Vec2f(0), _max + Vec2f(0, -ry), Vec2f(0, hy)),
+        makeSegmentWithRelativeHandles(Vec2f(hx, 0), _max + Vec2f(-rx, 0), Vec2f(0)),
+        makeSegmentWithRelativeHandles(Vec2f(0), _min + Vec2f(rx, rh), Vec2f(-hx, 0)),
+        makeSegmentWithRelativeHandles(Vec2f(0, hy), _min + Vec2f(0, rh - ry), Vec2f(0)),
+        makeSegmentWithRelativeHandles(Vec2f(0), _min + Vec2f(0, ry), Vec2f(0, -hy))
+    };
 
     addSegments(segs, 8);
     closePath();
@@ -1898,8 +1907,8 @@ bool Path::performHitTest(const Vec2f & _pos,
 
 bool Path::performSelectionTest(const Rect & _rect) const
 {
-    //if the bounds are fully contained, add it to the selection
-    if(_rect.contains(bounds()))
+    // if the bounds are fully contained, add it to the selection
+    if (_rect.contains(bounds()))
         return true;
 
     // //if the path contains one of the rectangle corners, it's also a bingo!
@@ -1907,12 +1916,12 @@ bool Path::performSelectionTest(const Rect & _rect) const
     //     contains(_rect.bottomLeft()) || contains(_rect.bottomRight()))
     //     return true;
 
-    //otherwise we do a full on intersection test
+    // otherwise we do a full on intersection test
     Path * tmp = m_document->createRectangle(_rect.min(), _rect.max());
-    tmp->removeFromParent(); //make sure the rectangle sits outside of the document
+    tmp->removeFromParent(); // make sure the rectangle sits outside of the document
     bool ret = false;
     auto isec = intersections(tmp);
-    if(isec.count())
+    if (isec.count())
         ret = true;
 
     tmp->remove();

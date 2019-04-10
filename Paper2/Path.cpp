@@ -1344,7 +1344,6 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
     Float closestParameter;
     Float currentParameter;
     Bezier tmp;
-    Mat32f trans;
 
     auto cv = curves();
     auto closestCurve = cv.end();
@@ -1355,7 +1354,6 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
         // if the path is transformed in any way, we need to recreate the transformed curve
         if (isTransformed())
         {
-            trans = absoluteTransform();
             tmp = (*it).absoluteBezier();
             currentParameter = tmp.closestParameter(_point, currentDist, 0, 1, 0);
         }

@@ -182,6 +182,8 @@ class STICK_API Item
     // checks if there is a transform active on this item
     bool hasTransform() const;
 
+    bool hasPivot() const;
+
     // checks if there is any transform in the document hierarchy that affects this item
     bool isTransformed() const;
 
@@ -288,6 +290,8 @@ class STICK_API Item
     ItemType itemType() const;
 
     stick::TextResult exportSVG() const;
+
+    stick::Result<stick::DynamicArray<stick::UInt8>> exportBinary() const;
 
     Error saveSVG(const String & _uri) const;
 

@@ -1,6 +1,7 @@
 #include <Crunch/MatrixFunc.hpp>
 #include <Paper2/Document.hpp>
 #include <Paper2/SVG/SVGExport.hpp>
+#include <Paper2/BinFormat/BinFormatExport.hpp>
 #include <Paper2/Symbol.hpp>
 #include <Stick/FileUtilities.hpp>
 
@@ -316,9 +317,9 @@ void Item::scaleTransform(const Vec2f & _scale)
 
 void Item::scaleTransform(const Vec2f & _scale, const Vec2f & _center)
 {
-    Mat32f mat = Mat32f::translation(-_center);
+    Mat32f mat = Mat32f::translation(_center);
     mat.scale(_scale);
-    mat.translate(_center);
+    mat.translate(-_center);
     transform(mat);
 }
 
@@ -329,9 +330,9 @@ void Item::rotateTransform(Float _radians)
 
 void Item::rotateTransform(Float _radians, const Vec2f & _point)
 {
-    Mat32f mat = Mat32f::translation(-_point);
+    Mat32f mat = Mat32f::translation(_point);
     mat.rotate(_radians);
-    mat.translate(_point);
+    mat.translate(-_point);
     transform(mat);
 }
 
@@ -342,9 +343,9 @@ void Item::skewTransform(const Vec2f & _angles)
 
 void Item::skewTransform(const Vec2f & _angles, const Vec2f & _center)
 {
-    Mat32f mat = Mat32f::translation(-_center);
+    Mat32f mat = Mat32f::translation(_center);
     mat.skew(_angles);
-    mat.translate(_center);
+    mat.translate(-_center);
     transform(mat);
 }
 
@@ -381,9 +382,9 @@ void Item::scale(const Vec2f & _scale)
 void Item::scale(const Vec2f & _scale, const Vec2f & _center)
 {
     auto center = _center - translation();
-    Mat32f mat = Mat32f::translation(-center);
+    Mat32f mat = Mat32f::translation(center);
     mat.scale(_scale);
-    mat.translate(center);
+    mat.translate(-center);
     applyTransform(mat, true);
 }
 
@@ -395,9 +396,9 @@ void Item::rotate(Float _radians)
 void Item::rotate(Float _radians, const Vec2f & _center)
 {
     auto center = _center - translation();
-    Mat32f mat = Mat32f::translation(-center);
+    Mat32f mat = Mat32f::translation(center);
     mat.rotate(_radians);
-    mat.translate(center);
+    mat.translate(-center);
     applyTransform(mat, true);
 }
 
@@ -409,9 +410,9 @@ void Item::skew(const Vec2f & _angles)
 void Item::skew(const Vec2f & _angles, const Vec2f & _center)
 {
     auto center = _center - translation();
-    Mat32f mat = Mat32f::translation(-center);
+    Mat32f mat = Mat32f::translation(center);
     mat.skew(_angles);
-    mat.translate(center);
+    mat.translate(-center);
     applyTransform(mat, true);
 }
 
@@ -565,6 +566,11 @@ bool Item::isVisible() const
 bool Item::hasTransform() const
 {
     return (bool)m_transform;
+}
+
+bool Item::hasPivot() const
+{
+    return (bool)m_pivot;
 }
 
 bool Item::isTransformed() const
@@ -996,6 +1002,15 @@ void Item::setRenderData(RenderDataUniquePtr _ptr)
 TextResult Item::exportSVG() const
 {
     return svg::exportItem(this, m_document->allocator(), true);
+}
+
+Result<DynamicArray<UInt8>> Item::exportBinary() const
+{
+    DynamicArray<UInt8> ret(document()->allocator());
+    Error err = binfmt::exportItem(this, ret);
+    if(err)
+        return err;
+    return ret;
 }
 
 Error Item::saveSVG(const String & _uri) const

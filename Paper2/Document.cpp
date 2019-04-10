@@ -4,6 +4,7 @@
 #include <Paper2/Symbol.hpp>
 
 #include <Paper2/SVG/SVGImport.hpp>
+#include <Paper2/BinFormat/BinFormatImport.hpp>
 
 #include <Stick/FileUtilities.hpp>
 
@@ -130,6 +131,11 @@ svg::SVGImportResult Document::loadSVG(const String & _uri, Size _dpi)
     if (!result)
         return result.error();
     return parseSVG(result.get(), _dpi);
+}
+
+Result<Item*> Document::parseBinary(const UInt8 * _data, Size _byteCount)
+{
+    return binfmt::import(*this, _data, _byteCount);
 }
 
 } // namespace paper

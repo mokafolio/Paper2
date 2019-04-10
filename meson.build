@@ -40,6 +40,11 @@ paperSVGInc = [
     'Paper2/SVG/SVGImportResult.hpp'
 ]
 
+paperBinFmtInc = [
+    'Paper2/BinFormat/BinFormatExport.hpp',
+    'Paper2/BinFormat/BinFormatImport.hpp'
+]
+
 paperPugiInc = [
     'Paper2/Libs/pugixml/pugixml.hpp',
     'Paper2/Libs/pugixml/pugiconfig.hpp'
@@ -49,6 +54,7 @@ if meson.is_subproject() == false
     install_headers(paperInc, subdir: 'Paper2')
     install_headers(paperPrivateInc, subdir: 'Paper2/Private')
     install_headers(paperSVGInc, subdir: 'Paper2/SVG')
+    install_headers(paperBinFmtInc, subdir: 'Paper2/BinFormat')
     install_headers(paperPugiInc, subdir: 'Paper2/Libs/pugixml')
     install_headers('Paper2/Libs/GL/gl3w.h', subdir: 'Paper2/Libs/GL')
     install_headers('Paper2/Tarp/TarpRenderer.hpp', subdir: 'Paper2/Tarp')
@@ -73,6 +79,8 @@ paperSrc = [
     'Paper2/SVG/SVGExport.cpp',
     'Paper2/SVG/SVGImport.cpp',
     'Paper2/SVG/SVGImportResult.cpp',
+    'Paper2/BinFormat/BinFormatExport.cpp',
+    'Paper2/BinFormat/BinFormatImport.cpp',
     'Paper2/Tarp/TarpRenderer.cpp'
 ]
 

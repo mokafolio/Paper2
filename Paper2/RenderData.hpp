@@ -14,6 +14,7 @@ class STICK_API RenderData
   public:
     virtual ~RenderData()
     {
+        
     }
 
     virtual RenderDataUniquePtr clone() const = 0;

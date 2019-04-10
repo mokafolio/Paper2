@@ -2,7 +2,8 @@ playgrounds = [
     'NestedClipping',
     'PaperPlayground',
     'SVGExportPlayground',
-    'SVGImportPlayground'
+    'SVGImportPlayground',
+    'BinaryFormatPlayground'
     ]
 
 deps = [paperDep, dependency('glfw3')]

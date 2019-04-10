@@ -51,6 +51,8 @@ class STICK_API Document : public Item
 
     svg::SVGImportResult parseSVG(const stick::String & _svg, stick::Size _dpi = 96);
 
+    stick::Result<Item*> parseBinary(const stick::UInt8 * _data, Size _byteCount);
+
     svg::SVGImportResult loadSVG(const stick::String & _uri, stick::Size _dpi = 96);
 
     stick::Allocator & allocator() const;

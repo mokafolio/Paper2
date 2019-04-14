@@ -1093,27 +1093,36 @@ bool HitTestSettings::testCurves() const
 Maybe<HitTestResult> Item::hitTest(const Vec2f & _pos, const HitTestSettings & _settings) const
 {
     HitTestResultArray tmp(m_children.allocator());
-    performHitTest(_pos, _settings, false, tmp);
+    performHitTest(_pos, _settings, false, nullptr, tmp);
     return tmp.count() ? tmp.first() : Maybe<HitTestResult>();
 }
 
 HitTestResultArray Item::hitTestAll(const Vec2f & _pos, const HitTestSettings & _settings) const
 {
     HitTestResultArray tmp(m_children.allocator());
-    performHitTest(_pos, _settings, true, tmp);
+    performHitTest(_pos, _settings, true, nullptr, tmp);
     return tmp;
 }
 
 bool Item::hitTestChildren(const Vec2f & _pos,
                            const HitTestSettings & _settings,
                            bool _bMultiple,
+                           const Mat32f * _transform,
                            HitTestResultArray & _outResults) const
 {
     Size startCount = _outResults.count();
+    Mat32f tmp;
     for (auto it = children().rbegin(); it != children().rend(); ++it)
     {
-        if ((*it)->performHitTest(_pos, _settings, _bMultiple, _outResults) && !_bMultiple)
+        if(_transform)
+        {
+            Mat32f tmp = *_transform * (*it)->transform();
+            if ((*it)->performHitTest(_pos, _settings, _bMultiple, &tmp, _outResults) && !_bMultiple)
+                return true;
+        }
+        else if ((*it)->performHitTest(_pos, _settings, _bMultiple, nullptr, _outResults) && !_bMultiple)
             return true;
+
     }
     return startCount < _outResults.count();
 }
@@ -1121,9 +1130,10 @@ bool Item::hitTestChildren(const Vec2f & _pos,
 bool Item::performHitTest(const Vec2f & _pos,
                           const HitTestSettings & _settings,
                           bool _bMultiple,
+                          const Mat32f * _transform,
                           HitTestResultArray & _outResults) const
 {
-    return this->hitTestChildren(_pos, _settings, _bMultiple, _outResults);
+    return this->hitTestChildren(_pos, _settings, _bMultiple, _transform, _outResults);
 }
 
 DynamicArray<Item *> Item::selectChildren(const Rect & _area)

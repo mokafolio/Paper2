@@ -158,7 +158,7 @@ class STICK_API CurveT
     void extrema(stick::DynamicArray<Float> & _extrema) const;
 
     //@TODO: Find consistent way to allow getting this in local path space/document space.
-    //Right now this ignores any transform.
+    // Right now this ignores any transform.
     CurveLocation closestCurveLocation(const Vec2f & _point) const;
 
     CurveLocation curveLocationAt(Float _offset) const;
@@ -186,6 +186,8 @@ class STICK_API CurveT
     const Bezier & bezier() const;
 
     Bezier absoluteBezier() const;
+
+    Bezier transformedBezier(const Mat32f & _trans) const;
 
     Size index() const;
 
@@ -217,6 +219,7 @@ struct STICK_API CurveData
 };
 
 using CurveDataArray = stick::DynamicArray<CurveData>;
+using BezierArray = stick::DynamicArray<Bezier>;
 using Curve = CurveT<Path>;
 using CurveView = detail::ContainerView<false, CurveDataArray, Curve>;
 using ConstCurve = CurveT<const Path>;
@@ -368,8 +371,8 @@ class STICK_API Path : public Item
     void closePath();
 
     // these functins will replace any existing segments with the respective shape
-    // these functions mainly exist so that you can reuse an existing path instead of having to create a new one.
-    // the functions return *this.
+    // these functions mainly exist so that you can reuse an existing path instead of having to
+    // create a new one. the functions return *this.
     Path & makeEllipse(const Vec2f & _center, const Vec2f & _size);
 
     Path & makeCircle(const Vec2f & _center, Float _radius);
@@ -460,9 +463,31 @@ class STICK_API Path : public Item
 
     Path * slice(CurveLocation _from, CurveLocation _to) const;
 
+    // computes the closest curve location in document space
     CurveLocation closestCurveLocation(const Vec2f & _point, Float & _outDistance) const;
-
     CurveLocation closestCurveLocation(const Vec2f & _point) const;
+
+    // closest location after transforming the path by the provided transform
+    CurveLocation closestCurveLocation(const Vec2f & _point,
+                                       const Mat32f & _transform,
+                                       Float & _outDistance) const;
+    CurveLocation closestCurveLocation(const Vec2f & _point, const Mat32f & _transform) const;
+
+    // computes the closest curve location in path space
+    CurveLocation closestCurveLocationLocal(const Vec2f & _point, Float & _outDistance) const;
+    CurveLocation closestCurveLocationLocal(const Vec2f & _point) const;
+
+    // closest point in document space
+    Vec2f closestPoint(const Vec2f & _point, Float & _outDistance) const;
+    Vec2f closestPoint(const Vec2f & _point) const;
+
+    // closest point after transforming the path by the provided transform
+    Vec2f closestPoint(const Vec2f & _point, const Mat32f & _transform, Float & _outDistance) const;
+    Vec2f closestPoint(const Vec2f & _point, const Mat32f & _transform) const;
+
+    // closest point in local path space
+    Vec2f closestPointLocal(const Vec2f & _point, Float & _outDistance) const;
+    Vec2f closestPointLocal(const Vec2f & _point) const;
 
     CurveLocation curveLocationAt(Float _offset) const;
 
@@ -482,6 +507,8 @@ class STICK_API Path : public Item
 
     bool isClockwise() const;
 
+    bool contains(const Vec2f & _p, const Mat32f & _transform) const;
+
     bool contains(const Vec2f & _p) const;
 
     Path * clone() const final;
@@ -496,20 +523,52 @@ class STICK_API Path : public Item
 
     const SegmentDataArray & segmentData() const;
 
+    SegmentDataArray segmentData(const Mat32f & _transform) const;
+
     const CurveDataArray & curveData() const;
 
+    // self intersections in document space
     IntersectionArray intersections() const;
+    // self intersections after transforming the path by the provided transform
+    IntersectionArray intersections(const Mat32f & _transform) const;
+    // self intersections in local path space
+    IntersectionArray intersectionsLocal() const;
 
+    // intersections between this path and the provided path in document space
     IntersectionArray intersections(const Path * _other) const;
+    // intersections between this path and the provided path after transfoming this path with the
+    // provided transform
+    IntersectionArray intersections(const Path * _other, const Mat32f & _transformSelf) const;
+    // intersections between this path and the provided path after transforming each path by the
+    // provided transforms
+    IntersectionArray intersections(const Path * _other,
+                                    const Mat32f & _transformSelf,
+                                    const Mat32f & _transformOther) const;
+
+    // low level intersection function:
+    // if _other is null, it will just check for self intersections.
+    // Paths will be transformed by the provided transforms and tested in local path space if a
+    // respective transform is not provided.
+    // i.e. intersections(nullptr, nullptr, nullptr) will check for self intersections of this path
+    // in local path space.
+    IntersectionArray intersections(const Path * _other,
+                                    const Mat32f * _transformSelf,
+                                    const Mat32f * _transformOther);
 
     // called from Renderer
     bool cleanDirtyGeometry();
 
   private:
+    bool containsImpl(const Vec2f & _p, const Mat32f * _transform) const;
+
     bool canAddChild(Item * _e) const final;
 
-    bool performHitTest(const Vec2f & _pos, const HitTestSettings & _settings, bool _bMultiple, HitTestResultArray & _outResults) const final;
-    
+    bool performHitTest(const Vec2f & _pos,
+                        const HitTestSettings & _settings,
+                        bool _bMultiple,
+                        const Mat32f * _transform,
+                        HitTestResultArray & _outResults) const final;
+
     bool performSelectionTest(const Rect & _rect) const final;
 
     void addedChild(Item * _e) final;
@@ -518,7 +577,10 @@ class STICK_API Path : public Item
 
     void transformChanged(bool _bCalledFromParent) final;
 
-    void intersectionsImpl(const Path * _other, IntersectionArray & _outIntersections) const;
+    void intersectionsImpl(const Path * _other,
+                           IntersectionArray & _outIntersections,
+                           const Mat32f * _transformSelf,
+                           const Mat32f * _transformOther) const;
 
     void rebuildCurves();
 
@@ -1137,11 +1199,19 @@ const Bezier & CurveT<PT>::bezier() const
 
 template <class PT>
 Bezier CurveT<PT>::absoluteBezier() const
-{   
-    if(!m_path->isTransformed())
+{
+    if (!m_path->isTransformed())
         return bezier();
-    auto trans = m_path->absoluteTransform();
-    return Bezier(trans * positionOne(), trans * handleOneAbsolute(), trans * handleTwoAbsolute(), trans * positionTwo());
+    return transformedBezier(m_path->absoluteTransform());
+}
+
+template <class PT>
+Bezier CurveT<PT>::transformedBezier(const Mat32f & _trans) const
+{
+    return Bezier(_trans * positionOne(),
+                  _trans * handleOneAbsolute(),
+                  _trans * handleTwoAbsolute(),
+                  _trans * positionTwo());
 }
 
 template <class PT>

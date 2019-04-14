@@ -72,12 +72,17 @@ int main(int _argc, const char * _args[])
         Group * grp = doc.createGroup();
         grp->addChild(path);
         grp->addChild(p3);
+
+
+        Path * p4 = doc.createCircle(Vec2f(0, 0), 50);
+        p4->setFill("red");
+
         printf("PREV EXP\n");
         auto data = grp->exportBinary().ensure();
 
         printf("DA DATA COUNT %lu\n", data.count());
 
-        path->remove();
+        grp->remove();
 
         Item * item = doc.parseBinary(&data[0], data.count()).ensure();
 

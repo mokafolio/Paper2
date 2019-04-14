@@ -25,7 +25,6 @@ struct STICK_API HitTestResult
 {
     Item * item;
     HitTestMode type;
-    // CurveLocation curveLocation; //only set when hit testing stroke
 };
 
 struct STICK_API HitTestSettings
@@ -310,6 +309,7 @@ class STICK_API Item
     void hierarchyString(String & _outputString, Size _indent = 0) const;
 
     // hit testing
+    // hit tests are performed in document space
     stick::Maybe<HitTestResult> hitTest(
         const Vec2f & _pos, const HitTestSettings & _settings = HitTestSettings()) const;
     HitTestResultArray hitTestAll(const Vec2f & _pos,
@@ -338,11 +338,13 @@ class STICK_API Item
     bool hitTestChildren(const Vec2f & _pos,
                          const HitTestSettings & _settings,
                          bool _bMultiple,
+                         const Mat32f * _transform,
                          HitTestResultArray & _outResults) const;
 
     virtual bool performHitTest(const Vec2f & _pos,
                                 const HitTestSettings & _settings,
                                 bool _bMultiple,
+                                const Mat32f * _transform,
                                 HitTestResultArray & _outResults) const;
 
     virtual bool performSelectionTest(const Rect & _rect) const;

@@ -1101,7 +1101,6 @@ Segment Path::createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const V
 
 void Path::appendedSegments(Size _count)
 {
-    // printf("SEG COUNT %lu\n", m_segmentData.count())
     if (m_segmentData.count() > 1)
     {
         for (Size i = 0; i < _count; ++i)
@@ -1236,6 +1235,18 @@ const SegmentDataArray & Path::segmentData() const
     return m_segmentData;
 }
 
+SegmentDataArray Path::segmentData(const Mat32f & _transform) const
+{
+    SegmentDataArray ret = m_segmentData;
+    for (auto & seg : ret)
+    {
+        seg.handleIn = _transform * seg.handleIn;
+        seg.position = _transform * seg.position;
+        seg.handleOut = _transform * seg.handleOut;
+    }
+    return ret;
+}
+
 const CurveDataArray & Path::curveData() const
 {
     return m_curveData;
@@ -1346,53 +1357,159 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
     return ret;
 }
 
-CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDistance) const
+static CurveLocation closestCurveLocationImpl(const Path * _path,
+                                              const Vec2f & _point,
+                                              Float & _outDistance,
+                                              Vec2f * _outPosition,
+                                              const Mat32f * _transform)
 {
-    Float minDist = std::numeric_limits<Float>::infinity();
-    Float currentDist;
+    _outDistance = std::numeric_limits<Float>::infinity();
+
+    if (_path->segmentData().count() < 2)
+        return CurveLocation();
+
+    Float currentDist = 0;
     Float closestParameter;
     Float currentParameter;
-    Bezier tmp;
+    CurveLocation ret;
 
-    auto cv = curves();
-    auto closestCurve = cv.end();
-
-    auto it = cv.begin();
-    for (; it != cv.end(); ++it)
+    const SegmentDataArray * segments;
+    SegmentDataArray tmp;
+    if (_transform)
     {
-        // if the path is transformed in any way, we need to recreate the transformed curve
-        if (isTransformed())
-        {
-            tmp = (*it).absoluteBezier();
-            currentParameter = tmp.closestParameter(_point, currentDist, 0, 1, 0);
-        }
-        // otherwise we can just do it.
-        else
-        {
-            currentParameter = (*it).closestParameter(_point, currentDist);
-        }
+        tmp = _path->segmentData(*_transform);
+        segments = &tmp;
+    }
+    else
+        segments = &_path->segmentData();
 
-        if (currentDist < minDist)
+    Bezier bez, closestBez;
+    for (Size i = 0; i < (_path->isClosed() ? segments->count() : segments->count() - 1); ++i)
+    {
+        bez = Bezier((*segments)[i].position,
+                     (*segments)[i].handleOut,
+                     (*segments)[(i + 1) % (*segments).count()].handleIn,
+                     (*segments)[(i + 1) % (*segments).count()].position);
+
+        currentParameter = bez.closestParameter(_point, currentDist, 0, 1, 0);
+        if (currentDist < _outDistance)
         {
-            minDist = currentDist;
+            _outDistance = currentDist;
             closestParameter = currentParameter;
-            closestCurve = it;
+            ret = _path->curve(i).curveLocationAtParameter(closestParameter);
+            closestBez = bez;
         }
     }
 
-    if (closestCurve != cv.end())
-    {
-        _outDistance = minDist;
-        return (*closestCurve).curveLocationAtParameter(closestParameter);
-    }
+    if (_outPosition)
+        *_outPosition = closestBez.positionAt(closestParameter);
 
-    return CurveLocation();
+    return ret;
+}
+
+CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDistance) const
+{
+    // Float minDist = std::numeric_limits<Float>::infinity();
+    // Float currentDist;
+    // Float closestParameter;
+    // Float currentParameter;
+
+    // auto cv = curves();
+    // auto closestCurve = cv.end();
+
+    // auto it = cv.begin();
+    // for (; it != cv.end(); ++it)
+    // {
+    //     currentParameter = (*it).closestParameter(_point, currentDist);
+
+    //     if (currentDist < minDist)
+    //     {
+    //         minDist = currentDist;
+    //         closestParameter = currentParameter;
+    //         closestCurve = it;
+    //     }
+    // }
+
+    // if (closestCurve != cv.end())
+    // {
+    //     _outDistance = minDist;
+    //     return (*closestCurve).curveLocationAtParameter(closestParameter);
+    // }
+
+    // return CurveLocation();
+
+    return closestCurveLocationImpl(
+        this, _point, _outDistance, nullptr, isTransformed() ? &absoluteTransform() : nullptr);
 }
 
 CurveLocation Path::closestCurveLocation(const Vec2f & _point) const
 {
     Float tmp;
     return closestCurveLocation(_point, tmp);
+}
+
+CurveLocation Path::closestCurveLocation(const Vec2f & _point,
+                                         const Mat32f & _transform,
+                                         Float & _outDistance) const
+{
+    return closestCurveLocationImpl(this, _point, _outDistance, nullptr, &_transform);
+}
+
+CurveLocation Path::closestCurveLocation(const Vec2f & _point, const Mat32f & _transform) const
+{
+    Float tmp;
+    return closestCurveLocation(_point, _transform, tmp);
+}
+
+CurveLocation Path::closestCurveLocationLocal(const Vec2f & _point, Float & _outDistance) const
+{
+    return closestCurveLocationImpl(this, _point, _outDistance, nullptr, nullptr);
+}
+
+CurveLocation Path::closestCurveLocationLocal(const Vec2f & _point) const
+{
+    Float tmp;
+    return closestCurveLocationLocal(_point, tmp);
+}
+
+Vec2f Path::closestPoint(const Vec2f & _point, Float & _outDistance) const
+{
+    if (isTransformed())
+        return closestPoint(_point, absoluteTransform(), _outDistance);
+    else
+        return closestPointLocal(_point, _outDistance);
+}
+
+Vec2f Path::closestPoint(const Vec2f & _point) const
+{
+    Float tmp;
+    return closestPoint(_point, tmp);
+}
+
+Vec2f Path::closestPoint(const Vec2f & _point,
+                         const Mat32f & _transform,
+                         Float & _outDistance) const
+{
+    Vec2f ret;
+    closestCurveLocationImpl(this, _point, _outDistance, &ret, &_transform);
+    return ret;
+}
+
+Vec2f Path::closestPoint(const Vec2f & _point, const Mat32f & _transform) const
+{
+    Float tmp;
+    return closestPoint(_point, _transform, tmp);
+}
+
+Vec2f Path::closestPointLocal(const Vec2f & _point, Float & _outDistance) const
+{
+    return closestCurveLocation(_point, _outDistance).position();
+}
+
+Vec2f Path::closestPointLocal(const Vec2f & _point) const
+{
+    Float tmp;
+    return closestPointLocal(_point, tmp);
 }
 
 CurveLocation Path::curveLocationAt(Float _offset) const
@@ -1657,18 +1774,41 @@ static void mergeStrokeJoin(Rect & _rect,
 }
 } // namespace detail
 
-bool Path::contains(const Vec2f & _point) const
+bool Path::containsImpl(const Vec2f & _point, const Mat32f * _transform) const
 {
-    if (!handleBounds().contains(_point))
+    // only use early out if no transform is provided (and we thus are on item space)
+    if (!_transform && !handleBounds().contains(_point))
         return false;
 
-    if (windingRule() == WindingRule::EvenOdd)
-        return detail::BooleanOperations::winding(
-                   _point, detail::BooleanOperations::monoCurves(this), false) &
-               1;
+    const detail::MonoCurveLoopArray * loopArray;
+    detail::MonoCurveLoopArray tmp(document()->allocator());
+    if (!_transform)
+    {
+        if (m_monoCurves.count() == 0)
+            detail::BooleanOperations::monoCurves(
+                this, m_monoCurves, isTransformed() ? &absoluteTransform() : nullptr);
+        loopArray = &m_monoCurves;
+    }
     else
-        return detail::BooleanOperations::winding(
-                   _point, detail::BooleanOperations::monoCurves(this), false) > 0;
+    {
+        detail::BooleanOperations::monoCurves(this, tmp, _transform);
+        loopArray = &tmp;
+    }
+
+    if (windingRule() == WindingRule::EvenOdd)
+        return detail::BooleanOperations::winding(_point, *loopArray, false) & 1;
+    else
+        return detail::BooleanOperations::winding(_point, *loopArray, false) > 0;
+}
+
+bool Path::contains(const Vec2f & _point) const
+{
+    return containsImpl(_point, nullptr);
+}
+
+bool Path::contains(const Vec2f & _point, const Mat32f & _transform) const
+{
+    return containsImpl(_point, &_transform);
 }
 
 Path * Path::clone() const
@@ -1733,17 +1873,51 @@ static inline bool isAdjacentCurve(Size _a, Size _b, Size _curveCount, bool _bIs
 
 static inline void intersectPaths(const Path * _self,
                                   const Path * _other,
-                                  IntersectionArray & _intersections)
+                                  IntersectionArray & _intersections,
+                                  const Mat32f * _transformSelf,
+                                  const Mat32f * _transformOther)
 {
     bool bSelf = _self == _other;
 
-    for (Size i = 0; i < _self->curveCount(); ++i)
+    const SegmentDataArray *segmentsA, *segmentsB;
+    segmentsA = segmentsA = nullptr;
+    SegmentDataArray tmpA, tmpB;
+
+    if (!_transformSelf)
+        segmentsA = &_self->segmentData();
+    else
     {
-        ConstCurve a = _self->curve(i);
-        for (Size j = bSelf ? i + 1 : 0; j < _other->curveCount(); ++j)
+        tmpA = _self->segmentData(*_transformSelf);
+        segmentsA = &tmpA;
+    }
+
+    if (bSelf)
+        segmentsB = segmentsA;
+    else if (!_transformOther)
+        segmentsB = &_other->segmentData();
+    else
+    {
+        tmpB = _other->segmentData(*_transformOther);
+        segmentsB = &tmpB;
+    }
+
+    STICK_ASSERT(segmentsA && segmentsB);
+    Bezier a, b;
+    for (Size i = 0; i < (_self->isClosed() ? segmentsA->count() : segmentsA->count() - 1); ++i)
+    {
+        auto & aa = (*segmentsA)[i];
+        auto & ab = (*segmentsA)[(i + 1) % segmentsA->count()];
+        a = Bezier(aa.position, aa.handleOut, ab.handleIn, ab.position);
+
+        for (Size j = bSelf ? i + 1 : 0;
+             j < (_other->isClosed() ? segmentsB->count() : segmentsB->count() - 1);
+             ++j)
         {
-            ConstCurve b = _other->curve(j);
-            auto intersections = a.absoluteBezier().intersections(b.absoluteBezier());
+            auto & ba = (*segmentsB)[j];
+            auto & bb = (*segmentsB)[(j + 1) % segmentsB->count()];
+            b = Bezier(ba.position, ba.handleOut, bb.handleIn, bb.position);
+
+            auto intersections = a.intersections(b);
             for (Int32 z = 0; z < intersections.count; ++z)
             {
                 bool bAdd = true;
@@ -1778,8 +1952,8 @@ static inline void intersectPaths(const Path * _self,
                 {
                     // @TODO: make sure we don't add an intersection twice. This can happen if the
                     // intersection is located between two adjacent curves of the path.
-                    CurveLocation cl =
-                        a.curveLocationAtParameter(intersections.values[z].parameterOne);
+                    CurveLocation cl = _self->curve(i).curveLocationAtParameter(
+                        intersections.values[z].parameterOne);
                     for (auto & isec : _intersections)
                     {
                         if (cl.isSynonymous(isec.location))
@@ -1801,12 +1975,15 @@ static inline void intersectPaths(const Path * _self,
 // helper to recursively intersect paths and its children (compound path)
 static inline void recursivelyIntersect(const Path * _self,
                                         const Path * _other,
-                                        IntersectionArray & _intersections)
+                                        IntersectionArray & _intersections,
+                                        const Mat32f * _transformSelf,
+                                        const Mat32f * _transformOther)
 {
-    intersectPaths(_self, _other, _intersections);
+    intersectPaths(_self, _other, _intersections, _transformSelf, _transformOther);
 
     for (Item * c : _other->children())
-        recursivelyIntersect(_self, static_cast<Path *>(c), _intersections);
+        recursivelyIntersect(
+            _self, static_cast<Path *>(c), _intersections, _transformSelf, _transformOther);
 }
 
 static inline void flattenPathChildren(const Path * _path,
@@ -1820,30 +1997,59 @@ static inline void flattenPathChildren(const Path * _path,
 
 IntersectionArray Path::intersections() const
 {
+    return intersections(absoluteTransform());
+}
+
+IntersectionArray Path::intersections(const Mat32f & _transform) const
+{
     IntersectionArray ret(m_segmentData.allocator());
-    intersectionsImpl(this, ret);
+    intersectionsImpl(this, ret, &_transform, nullptr);
+    return ret;
+}
+
+IntersectionArray Path::intersectionsLocal() const
+{
+    IntersectionArray ret(m_segmentData.allocator());
+    intersectionsImpl(this, ret, nullptr, nullptr);
     return ret;
 }
 
 IntersectionArray Path::intersections(const Path * _other) const
 {
+    //@TODO: allow to pass in external transform
     if (!bounds().overlaps(_other->bounds()))
         return IntersectionArray();
     IntersectionArray ret(m_segmentData.allocator());
-    intersectionsImpl(_other, ret);
+    intersectionsImpl(_other, ret, &absoluteTransform(), &_other->absoluteTransform());
     return ret;
 }
 
-void Path::intersectionsImpl(const Path * _other, IntersectionArray & _outIntersections) const
+IntersectionArray Path::intersections(const Path * _other,
+                                      const Mat32f * _transformSelf,
+                                      const Mat32f * _transformOther)
+{
+    IntersectionArray ret(m_segmentData.allocator());
+    intersectionsImpl(_other ? _other : this, ret, _transformSelf, _transformOther);
+    return ret;
+}
+
+void Path::intersectionsImpl(const Path * _other,
+                             IntersectionArray & _outIntersections,
+                             const Mat32f * _transformSelf,
+                             const Mat32f * _transformOther) const
 {
     // @TODO: Take transformation matrix into account!!
     if (this != _other)
     {
-        detail::recursivelyIntersect(this, _other, _outIntersections);
+        detail::recursivelyIntersect(
+            this, _other, _outIntersections, _transformSelf, _transformOther);
 
         for (Size i = 0; i < m_children.count(); ++i)
-            detail::recursivelyIntersect(
-                static_cast<Path *>(m_children[i]), _other, _outIntersections);
+            detail::recursivelyIntersect(static_cast<Path *>(m_children[i]),
+                                         _other,
+                                         _outIntersections,
+                                         _transformSelf,
+                                         _transformOther);
     }
     else
     {
@@ -1854,7 +2060,8 @@ void Path::intersectionsImpl(const Path * _other, IntersectionArray & _outInters
         detail::flattenPathChildren(this, paths);
         for (Size i = 0; i < paths.count(); ++i)
             for (Size j = i + 1; j < paths.count(); ++j)
-                detail::intersectPaths(paths[i], paths[j], _outIntersections);
+                detail::intersectPaths(
+                    paths[i], paths[j], _outIntersections, _transformSelf, _transformSelf);
     }
 }
 
@@ -1882,13 +2089,14 @@ bool Path::canAddChild(Item * _e) const
 bool Path::performHitTest(const Vec2f & _pos,
                           const HitTestSettings & _settings,
                           bool _bMultiple,
+                          const Mat32f * _transform,
                           HitTestResultArray & _outResults) const
 {
     Size startCount = _outResults.count();
     if (_settings.testCurves())
     {
         Float dist = 0;
-        closestCurveLocation(_pos, dist);
+        closestPoint(_pos, dist);
         if (dist < _settings.curveTolerance)
             _outResults.append({ (Item *)this, HitTestCurves });
 
@@ -1898,7 +2106,7 @@ bool Path::performHitTest(const Vec2f & _pos,
 
     if (_settings.testFill() && !fill().is<NoPaint>())
     {
-        if (contains(_pos))
+        if (containsImpl(_pos, _transform))
             _outResults.append({ (Item *)this, HitTestFill });
     }
 

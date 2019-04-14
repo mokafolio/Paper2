@@ -33,6 +33,9 @@ using MonoCurveLoopArray = stick::DynamicArray<MonoCurveLoop>;
 struct STICK_LOCAL BooleanOperations
 {
     static const MonoCurveLoopArray & monoCurves(const Path * _path);
+
+    static void monoCurves(const Path * _path, MonoCurveLoopArray & _outLoops, const Mat32f * _transform = nullptr);
+
     static stick::Int32 winding(const Vec2f & _point,
                                 const MonoCurveLoopArray & _loops,
                                 bool _bHorizontal);

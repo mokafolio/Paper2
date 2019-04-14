@@ -29,7 +29,7 @@ static void insertCurve(const Bezier & _c, MonoCurveLoop & _target)
         winding = 1;
     }
 
-    MonoCurve c = {_c, winding};
+    MonoCurve c = { _c, winding };
     _target.monoCurves.append(c);
 
     // Keep track of the last non-horizontal curve (with winding).
@@ -99,6 +99,62 @@ static void handleCurve(const Bezier & _c, MonoCurveLoop & _target)
     }
 }
 
+void BooleanOperations::monoCurves(const Path * _path, MonoCurveLoopArray & _outLoops, const Mat32f * _transform)
+{
+    MonoCurveLoop data;
+    // if (_path->isTransformed())
+    // {
+    //     data.bTransformed = true;
+    //     data.inverseTransform = crunch::inverse(_path->absoluteTransform());
+    // }
+    // else
+    //     data.bTransformed = false;
+
+    for (Size i = 0; i < _path->curveCount(); ++i)
+        handleCurve(_transform ? _path->curve(i).transformedBezier(*_transform) : _path->curve(i).absoluteBezier(),
+                    data);
+
+    // If the path is not closed, we need to join the end points with a
+    // straight line, just like how filling open paths works.
+
+    if (!_path->isClosed() && _path->segmentData().count() > 1)
+    {
+        Bezier tmp;
+        if (_transform)
+        {
+            tmp = Bezier(*_transform * _path->segmentData().last().position,
+                         *_transform * _path->segmentData().last().position,
+                         *_transform * _path->segmentData().first().position,
+                         *_transform * _path->segmentData().first().position);
+        }
+        else
+        {
+            tmp = Bezier(_path->segmentData().last().position,
+                         _path->segmentData().last().position,
+                         _path->segmentData().first().position,
+                         _path->segmentData().first().position);
+        }
+        handleCurve(tmp, data);
+    }
+
+    _outLoops.append(data);
+
+    Mat32f tmp;
+    // If this is a compound path, get the child mono curves and append them
+    for (Item * c : _path->children())
+    {
+        // const MonoCurveLoopArray & cc = BooleanOperations::monoCurves(static_cast<Path *>(c));
+        // _path->m_monoCurves.insert(_path->m_monoCurves.end(), cc.begin(), cc.end());
+        if(_transform)
+        {
+            tmp = *_transform * c->transform();
+            monoCurves(static_cast<Path *>(c), _outLoops, &tmp);
+        }
+        else
+            monoCurves(static_cast<Path *>(c), _outLoops, nullptr);
+    }
+}
+
 const MonoCurveLoopArray & BooleanOperations::monoCurves(const Path * _path)
 {
     if (!_path->m_monoCurves.count())
@@ -163,7 +219,7 @@ Int32 BooleanOperations::winding(const Vec2f & _point,
 
         for (const MonoCurveLoop & loop : _loops)
         {
-            Vec2f p = loop.bTransformed ? loop.inverseTransform * _point : _point;
+            Vec2f p = /*loop.bTransformed ? loop.inverseTransform * _point : */ _point;
             yBefore = p.y - epsilon;
             yAfter = p.y + epsilon;
             // Find the closest top and bottom intercepts for the vertical line.
@@ -207,7 +263,7 @@ Int32 BooleanOperations::winding(const Vec2f & _point,
 
         for (const MonoCurveLoop & loop : _loops)
         {
-            Vec2f p = loop.bTransformed ? loop.inverseTransform * _point : _point;
+            Vec2f p = /*loop.bTransformed ? loop.inverseTransform * _point : */ _point;
             xBefore = p.x - epsilon;
             xAfter = p.x + epsilon;
             for (Size i = 0; i < loop.monoCurves.count(); ++i)

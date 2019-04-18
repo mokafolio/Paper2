@@ -2024,9 +2024,21 @@ IntersectionArray Path::intersections(const Path * _other) const
     return ret;
 }
 
+IntersectionArray Path::intersections(const Path * _other, const Mat32f & _transformSelf) const
+{
+    return intersections(_other, &_transformSelf, nullptr);
+}
+
+IntersectionArray Path::intersections(const Path * _other,
+                                const Mat32f & _transformSelf,
+                                const Mat32f & _transformOther) const
+{
+    return intersections(_other, &_transformSelf, &_transformOther);
+}
+
 IntersectionArray Path::intersections(const Path * _other,
                                       const Mat32f * _transformSelf,
-                                      const Mat32f * _transformOther)
+                                      const Mat32f * _transformOther) const
 {
     IntersectionArray ret(m_segmentData.allocator());
     intersectionsImpl(_other ? _other : this, ret, _transformSelf, _transformOther);

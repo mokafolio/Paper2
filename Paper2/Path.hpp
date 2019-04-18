@@ -551,7 +551,7 @@ class STICK_API Path : public Item
     // in local path space.
     IntersectionArray intersections(const Path * _other,
                                     const Mat32f * _transformSelf,
-                                    const Mat32f * _transformOther);
+                                    const Mat32f * _transformOther) const;
 
     // called from Renderer
     bool cleanDirtyGeometry();

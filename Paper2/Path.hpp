@@ -157,8 +157,6 @@ class STICK_API CurveT
 
     void extrema(stick::DynamicArray<Float> & _extrema) const;
 
-    //@TODO: Find consistent way to allow getting this in local path space/document space.
-    // Right now this ignores any transform.
     CurveLocation closestCurveLocation(const Vec2f & _point) const;
 
     CurveLocation curveLocationAt(Float _offset) const;

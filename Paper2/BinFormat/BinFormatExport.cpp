@@ -269,7 +269,6 @@ Error exportItem(const Item * _item, DynamicArray<UInt8> & _outBytes)
     os.write((UInt32)0); // future file format version
 
     Size headerSize = os.positionAfterWritingBytes(sizeof(Size) * 2);
-    printf("EX OFF %lu\n", segmentDataOff);
     os.write(segmentDataOff + headerSize);
     os.write(paintDataOff + headerSize);
     os.write(tmp.storage().dataPtr(), tmp.storage().byteCount());

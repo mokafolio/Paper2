@@ -70,6 +70,11 @@ class STICK_API Item
 
     void remove();
 
+    //this allows you to take an item out of the dom by removing it from its parent.
+    //NOTE: If you do this, you need to manually call remove to deallocate the item as 
+    //no parent will have ownership of it anymore.
+    void removeFromParent();
+
     bool removeChild(Item * _item);
 
     void removeChildren();
@@ -350,8 +355,6 @@ class STICK_API Item
     virtual bool performSelectionTest(const Rect & _rect) const;
 
     virtual void transformChanged(bool _bCalledFromParent);
-
-    void removeFromParent();
 
     void markAbsoluteTransformDirty();
 

@@ -328,6 +328,8 @@ class STICK_API Item
     const stick::Maybe<Mat32f> & renderTransform() const;
     Size lastRenderTransformID() const;
 
+    virtual bool canAddChild(Item * _e) const;
+
   protected:
     struct Decomposed
     {
@@ -372,8 +374,6 @@ class STICK_API Item
     void cloneItemTo(Item * _item) const;
 
     void applyTransformToChildrenAndPivot(const Mat32f & _transform);
-
-    virtual bool canAddChild(Item * _e) const;
 
     virtual void addedChild(Item * _e);
 

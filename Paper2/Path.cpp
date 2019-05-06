@@ -2154,6 +2154,8 @@ void Path::addedChild(Item * _e)
     // @TODO?????
     // if (windingRule() == WindingRule::NonZero)
     //     static_cast<Path *>(_e)->setClockwise(!isClockwise());
+
+    markGeometryDirty(true, false);
 }
 
 static Mat32f strokeTransformHelper(const Mat32f & _transform,

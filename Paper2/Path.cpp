@@ -2429,4 +2429,10 @@ bool Path::cleanDirtyGeometry()
     m_bGeometryDirty = false;
     return ret;
 }
+
+bool Path::isGeometryDirty() const
+{
+    return m_bGeometryDirty;
+}
+
 } // namespace paper

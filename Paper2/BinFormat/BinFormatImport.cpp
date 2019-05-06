@@ -210,7 +210,7 @@ Result<Item *> import(Document & _doc, const UInt8 * _data, Size _byteCount)
     UInt64 segmentDataOff = ds.readUInt64();
     UInt64 paintDataOff = ds.readUInt64();
 
-    printf("VERSION %u SEGOFF %lu PDATAOFF %lu\n", version, segmentDataOff, paintDataOff);
+    printf("VERSION %u SEGOFF %lu PDATAOFF %lu BC %lu\n", version, segmentDataOff, paintDataOff, _byteCount);
 
     Size hierarchyPos = ds.position();
     ds.setPosition(segmentDataOff);

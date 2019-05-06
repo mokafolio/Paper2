@@ -556,6 +556,8 @@ class STICK_API Path : public Item
     // called from Renderer
     bool cleanDirtyGeometry();
 
+    bool isGeometryDirty() const;
+
   private:
     bool containsImpl(const Vec2f & _p, const Mat32f * _transform) const;
 

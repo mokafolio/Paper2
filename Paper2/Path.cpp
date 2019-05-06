@@ -2154,7 +2154,7 @@ void Path::addedChild(Item * _e)
     // @TODO?????
     // if (windingRule() == WindingRule::NonZero)
     //     static_cast<Path *>(_e)->setClockwise(!isClockwise());
-
+    printf("MARKING GEOM DIRTY BECAUSE OF NEW PATH CHILD\n");
     markGeometryDirty(true, false);
 }
 

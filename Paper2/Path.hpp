@@ -243,6 +243,8 @@ class STICK_API CurveLocation
 
     bool isSynonymous(const CurveLocation & _other) const;
 
+    Vec2f positionAbsolute() const;
+
     Vec2f position() const;
 
     Vec2f normal() const;

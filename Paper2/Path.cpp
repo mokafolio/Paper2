@@ -54,6 +54,14 @@ bool CurveLocation::isSynonymous(const CurveLocation & _other) const
     return false;
 }
 
+Vec2f CurveLocation::positionAbsolute() const
+{
+    //@TODO: Ensure that this makes sense, i.e. will the transformed position be on the transformed curve?
+    if(m_curve.path()->isTransformed())
+        return m_curve.path()->absoluteTransform() * m_curve.positionAtParameter(m_parameter);
+    return position();
+}
+
 Vec2f CurveLocation::position() const
 {
     return m_curve.positionAtParameter(m_parameter);

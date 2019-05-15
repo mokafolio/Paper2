@@ -110,6 +110,7 @@ void BooleanOperations::monoCurves(const Path * _path, MonoCurveLoopArray & _out
     // else
     //     data.bTransformed = false;
 
+    //@TODO: transformedbezier makes twice as many matrix multiplications as needed :/
     for (Size i = 0; i < _path->curveCount(); ++i)
         handleCurve(_transform ? _path->curve(i).transformedBezier(*_transform) : _path->curve(i).absoluteBezier(),
                     data);

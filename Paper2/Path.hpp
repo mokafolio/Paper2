@@ -41,6 +41,8 @@ class STICK_API SegmentT
 
     const Vec2f & position() const;
 
+    Vec2f positionAbsolute() const;
+
     Vec2f handleIn() const;
 
     Vec2f handleOut() const;
@@ -663,6 +665,14 @@ template <class PT>
 const Vec2f & SegmentT<PT>::position() const
 {
     return m_path->m_segmentData[m_index].position;
+}
+
+template <class PT>
+Vec2f SegmentT<PT>::positionAbsolute() const
+{
+    if(m_path->isTransformed())
+        return m_path->absoluteTransform() * position();
+    return position();
 }
 
 template <class PT>

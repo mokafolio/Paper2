@@ -254,9 +254,10 @@ static void recursivelyUpdateTarpPath(tpSegmentArray & _tmpData,
                                       Path * _path,
                                       tpPath _tarpPath,
                                       const Mat32f * _transform,
-                                      UInt32 & _contourIndex)
+                                      UInt32 & _contourIndex,
+                                      bool _bContoursDirty)
 {
-    if (_path->cleanDirtyGeometry() || _contourIndex >= tpPathContourCount(_tarpPath))
+    if (_path->cleanDirtyGeometry() || (_contourIndex > 0 && _bContoursDirty))
     {
         toTarpSegments(_tmpData, _path, _transform);
         tpPathSetContour(
@@ -282,7 +283,7 @@ static void recursivelyUpdateTarpPath(tpSegmentArray & _tmpData,
             }
         }
 
-        recursivelyUpdateTarpPath(_tmpData, static_cast<Path *>(c), _tarpPath, t, _contourIndex);
+        recursivelyUpdateTarpPath(_tmpData, static_cast<Path *>(c), _tarpPath, t, _contourIndex, _bContoursDirty);
     }
 }
 
@@ -292,7 +293,7 @@ static void updateTarpPath(tpSegmentArray & _tmpData,
                            const Mat32f * _transform)
 {
     UInt32 contourIndex = 0;
-    recursivelyUpdateTarpPath(_tmpData, _path, _tarpPath, _transform, contourIndex);
+    recursivelyUpdateTarpPath(_tmpData, _path, _tarpPath, _transform, contourIndex, _path->cleanDirtyContours());
 
     // remove contours that are not used anymore
     if (contourIndex < tpPathContourCount(_tarpPath))
@@ -300,6 +301,8 @@ static void updateTarpPath(tpSegmentArray & _tmpData,
         for (Size i = tpPathContourCount(_tarpPath) - 1; i >= contourIndex; --i)
             tpPathRemoveContour(_tarpPath, i);
     }
+
+    // printf("CONT C %i\n", tpPathContourCount(_tarpPath));
 
     // potentially update the stroke/fill transforms
     if (_path->hasfillPaintTransform() && _path->cleanDirtyFillPaintTransform())

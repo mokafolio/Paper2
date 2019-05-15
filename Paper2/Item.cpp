@@ -1,7 +1,7 @@
 #include <Crunch/MatrixFunc.hpp>
+#include <Paper2/BinFormat/BinFormatExport.hpp>
 #include <Paper2/Document.hpp>
 #include <Paper2/SVG/SVGExport.hpp>
-#include <Paper2/BinFormat/BinFormatExport.hpp>
 #include <Paper2/Symbol.hpp>
 #include <Stick/FileUtilities.hpp>
 
@@ -155,6 +155,7 @@ bool Item::removeChild(Item * _item)
     if (it != m_children.end())
     {
         m_children.remove(it);
+        removedChild(_item);
         return true;
     }
     return false;
@@ -187,6 +188,11 @@ bool Item::canAddChild(Item * _e) const
 }
 
 void Item::addedChild(Item * _e)
+{
+    // nothing to do by default
+}
+
+void Item::removedChild(Item * _e)
 {
     // nothing to do by default
 }
@@ -238,6 +244,22 @@ Item * Item::previousSibling() const
     if (it != m_parent->m_children.rend())
         return *it;
     return nullptr;
+}
+
+bool Item::isDescendant(const Item * _item) const
+{
+    const Item * parent = this;
+    while(parent = parent->m_parent)
+    {
+        if(parent == _item)
+            return true;
+    }
+    return false;
+}
+
+bool Item::isAncestor(const Item * _item) const
+{
+    return _item ? _item->isDescendant(this) : false;
 }
 
 void Item::setPosition(const Vec2f & _position)
@@ -1008,7 +1030,7 @@ Result<DynamicArray<UInt8>> Item::exportBinary() const
 {
     DynamicArray<UInt8> ret(document()->allocator());
     Error err = binfmt::exportItem(this, ret);
-    if(err)
+    if (err)
         return err;
     return ret;
 }
@@ -1114,15 +1136,16 @@ bool Item::hitTestChildren(const Vec2f & _pos,
     Mat32f tmp;
     for (auto it = children().rbegin(); it != children().rend(); ++it)
     {
-        if(_transform)
+        if (_transform)
         {
             Mat32f tmp = *_transform * (*it)->transform();
-            if ((*it)->performHitTest(_pos, _settings, _bMultiple, &tmp, _outResults) && !_bMultiple)
+            if ((*it)->performHitTest(_pos, _settings, _bMultiple, &tmp, _outResults) &&
+                !_bMultiple)
                 return true;
         }
-        else if ((*it)->performHitTest(_pos, _settings, _bMultiple, nullptr, _outResults) && !_bMultiple)
+        else if ((*it)->performHitTest(_pos, _settings, _bMultiple, nullptr, _outResults) &&
+                 !_bMultiple)
             return true;
-
     }
     return startCount < _outResults.count();
 }

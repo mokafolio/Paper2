@@ -556,6 +556,8 @@ class STICK_API Path : public Item
     // called from Renderer
     bool cleanDirtyGeometry();
 
+    bool cleanDirtyContours();
+    
     bool isGeometryDirty() const;
 
   private:
@@ -572,6 +574,7 @@ class STICK_API Path : public Item
     bool performSelectionTest(const Rect & _rect) const final;
 
     void addedChild(Item * _e) final;
+    void removedChild(Item * _e) final;
 
     Segment createSegment(const Vec2f & _pos, const Vec2f & _handleIn, const Vec2f & _handleOut);
 
@@ -618,6 +621,7 @@ class STICK_API Path : public Item
     // rendering related
     mutable stick::Maybe<Float> m_length;
     bool m_bGeometryDirty;
+    bool m_bContoursDirty; //true if a child path was added/removed somewhere down the hierarchy
 };
 
 template <class PT>

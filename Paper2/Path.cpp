@@ -391,7 +391,8 @@ Path::Path(stick::Allocator & _alloc, Document * _document, const char * _name) 
     m_segmentData(_alloc),
     m_curveData(_alloc),
     m_bIsClosed(false),
-    m_bGeometryDirty(false)
+    m_bGeometryDirty(false),
+    m_bContoursDirty(false)
 {
 }
 
@@ -2085,6 +2086,9 @@ void Path::markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDir
         m_length.reset();
     m_monoCurves.clear();
     Item::markSymbolsDirty();
+
+    for(auto * child : children())
+        static_cast<Path*>(child)->markGeometryDirty(false, false);
 }
 
 void Path::transformChanged(bool _bCalledFromParent)
@@ -2154,8 +2158,21 @@ void Path::addedChild(Item * _e)
     // @TODO?????
     // if (windingRule() == WindingRule::NonZero)
     //     static_cast<Path *>(_e)->setClockwise(!isClockwise());
-    printf("MARKING GEOM DIRTY BECAUSE OF NEW PATH CHILD\n");
-    markGeometryDirty(true, false);
+    // printf("MARKING GEOM DIRTY BECAUSE OF NEW PATH CHILD\n");
+    // // markGeometryDirty(false, true);
+
+    Path * parent = this;
+    while(parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
+        parent = static_cast<Path*>(parent->m_parent);
+    parent->m_bContoursDirty = true;
+}
+
+void Path::removedChild(Item * _e)
+{
+    Path * parent = this;
+    while(parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
+        parent = static_cast<Path*>(parent->m_parent);
+    parent->m_bContoursDirty = true;
 }
 
 static Mat32f strokeTransformHelper(const Mat32f & _transform,
@@ -2427,6 +2444,13 @@ bool Path::cleanDirtyGeometry()
 {
     bool ret = m_bGeometryDirty;
     m_bGeometryDirty = false;
+    return ret;
+}
+
+bool Path::cleanDirtyContours()
+{
+    bool ret = m_bContoursDirty;
+    m_bContoursDirty = false;
     return ret;
 }
 

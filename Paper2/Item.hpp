@@ -95,6 +95,10 @@ class STICK_API Item
 
     Item * previousSibling() const;
 
+    bool isDescendant(const Item * _item) const;
+
+    bool isAncestor(const Item * _item) const;
+
     void setPosition(const Vec2f & _position);
 
     void setPivot(const Vec2f & _pivot);
@@ -376,6 +380,8 @@ class STICK_API Item
     void applyTransformToChildrenAndPivot(const Mat32f & _transform);
 
     virtual void addedChild(Item * _e);
+
+    virtual void removedChild(Item * _e);
 
     // overwritten by the actual Item types to compute the bounds. _transform will only be passed
     // along if it is different from the items transform (i.e. for Symbols). This seesm a little

@@ -645,13 +645,13 @@ void Item::setStrokeWidth(Float _width)
     markStrokeBoundsDirty(true);
 }
 
-void Item::setStroke(const ColorRGBA & _color)
-{
-    bool bps = hasStroke();
-    PROPERTY_SETTER(stroke, _color);
-    if (!bps)
-        markStrokeBoundsDirty(true);
-}
+// void Item::setStroke(const ColorRGBA & _color)
+// {
+//     bool bps = hasStroke();
+//     PROPERTY_SETTER(stroke, _color);
+//     if (!bps)
+//         markStrokeBoundsDirty(true);
+// }
 
 void Item::setStroke(const String & _svgName)
 {
@@ -661,21 +661,29 @@ void Item::setStroke(const String & _svgName)
         markStrokeBoundsDirty(true);
 }
 
-void Item::setStroke(const LinearGradientPtr & _grad)
+void Item::setStroke(const Paint & _paint)
 {
     bool bps = hasStroke();
-    PROPERTY_SETTER(stroke, _grad);
+    PROPERTY_SETTER(stroke, _paint);
     if (!bps)
         markStrokeBoundsDirty(true);
 }
 
-void Item::setStroke(const RadialGradientPtr & _grad)
-{
-    bool bps = hasStroke();
-    PROPERTY_SETTER(stroke, _grad);
-    if (!bps)
-        markStrokeBoundsDirty(true);
-}
+// void Item::setStroke(const LinearGradientPtr & _grad)
+// {
+//     bool bps = hasStroke();
+//     PROPERTY_SETTER(stroke, _grad);
+//     if (!bps)
+//         markStrokeBoundsDirty(true);
+// }
+
+// void Item::setStroke(const RadialGradientPtr & _grad)
+// {
+//     bool bps = hasStroke();
+//     PROPERTY_SETTER(stroke, _grad);
+//     if (!bps)
+//         markStrokeBoundsDirty(true);
+// }
 
 void Item::setDashArray(const DashArray & _arr)
 {
@@ -699,25 +707,30 @@ void Item::removeStroke()
     markStrokeBoundsDirty(true);
 }
 
-void Item::setFill(const ColorRGBA & _color)
-{
-    PROPERTY_SETTER(fill, _color);
-}
+// void Item::setFill(const ColorRGBA & _color)
+// {
+//     PROPERTY_SETTER(fill, _color);
+// }
 
 void Item::setFill(const stick::String & _svgName)
 {
     PROPERTY_SETTER(fill, crunch::svgColor<ColorRGBA>(_svgName));
 }
 
-void Item::setFill(const LinearGradientPtr & _grad)
+void Item::setFill(const Paint & _paint)
 {
-    PROPERTY_SETTER(fill, _grad);
+    PROPERTY_SETTER(fill, _paint);
 }
 
-void Item::setFill(const RadialGradientPtr & _grad)
-{
-    PROPERTY_SETTER(fill, _grad);
-}
+// void Item::setFill(const LinearGradientPtr & _grad)
+// {
+//     PROPERTY_SETTER(fill, _grad);
+// }
+
+// void Item::setFill(const RadialGradientPtr & _grad)
+// {
+//     PROPERTY_SETTER(fill, _grad);
+// }
 
 void Item::removeFill()
 {

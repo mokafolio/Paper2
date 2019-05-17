@@ -207,13 +207,18 @@ class STICK_API Item
 
     void setStrokeWidth(Float _width);
 
-    void setStroke(const ColorRGBA & _color);
+    // void setStroke(const ColorRGBA & _color);
+
+    // void setStroke(const stick::String & _svgName);
+
+    // void setStroke(const LinearGradientPtr & _grad);
+
+    // void setStroke(const RadialGradientPtr & _grad);
 
     void setStroke(const stick::String & _svgName);
 
-    void setStroke(const LinearGradientPtr & _grad);
+    void setStroke(const Paint & _paint);
 
-    void setStroke(const RadialGradientPtr & _grad);
 
     void setDashArray(const DashArray & _arr);
 
@@ -223,13 +228,15 @@ class STICK_API Item
 
     void removeStroke();
 
-    void setFill(const ColorRGBA & _color);
+    // void setFill(const ColorRGBA & _color);
 
     void setFill(const stick::String & _svgName);
 
-    void setFill(const LinearGradientPtr & _grad);
+    void setFill(const Paint & _paint);
 
-    void setFill(const RadialGradientPtr & _grad);
+    // void setFill(const LinearGradientPtr & _grad);
+
+    // void setFill(const RadialGradientPtr & _grad);
 
     void removeFill();
 

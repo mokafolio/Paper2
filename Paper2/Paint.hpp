@@ -96,6 +96,7 @@ using Paint = stick::Variant<NoPaint, ColorRGBA, LinearGradientPtr, RadialGradie
 
 STICK_API LinearGradientPtr createLinearGradient(const Vec2f & _from, const Vec2f & _to);
 STICK_API RadialGradientPtr createRadialGradient(const Vec2f & _from, const Vec2f & _to);
+
 } // namespace paper
 
 #endif // PAPER_PAINT_HPP

@@ -22,6 +22,7 @@ paperInc = [
     'Paper2/Path.hpp',
     'Paper2/RenderData.hpp',
     'Paper2/RenderInterface.hpp',
+    'Paper2/Style.hpp',
     'Paper2/Symbol.hpp'
 ]
 
@@ -68,6 +69,7 @@ paperSrc = [
     'Paper2/Paint.cpp',
     'Paper2/Path.cpp',
     'Paper2/RenderInterface.cpp',
+    'Paper2/Style.cpp',
     'Paper2/Symbol.cpp',
     'Paper2/Libs/GL/gl3w.c',
     'Paper2/Libs/pugixml/pugixml.cpp',

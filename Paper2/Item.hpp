@@ -2,7 +2,7 @@
 #define PAPER_ITEM_HPP
 
 #include <Paper2/Constants.hpp>
-#include <Paper2/Paint.hpp>
+#include <Paper2/Style.hpp>
 #include <Stick/Result.hpp>
 
 namespace paper
@@ -45,6 +45,7 @@ class STICK_API Item
     friend class RenderInterface;
     friend class Symbol;
     friend class Group;
+    friend class Style;
 
   public:
     enum class BoundsType
@@ -207,14 +208,6 @@ class STICK_API Item
 
     void setStrokeWidth(Float _width);
 
-    // void setStroke(const ColorRGBA & _color);
-
-    // void setStroke(const stick::String & _svgName);
-
-    // void setStroke(const LinearGradientPtr & _grad);
-
-    // void setStroke(const RadialGradientPtr & _grad);
-
     void setStroke(const stick::String & _svgName);
 
     void setStroke(const Paint & _paint);
@@ -269,6 +262,8 @@ class STICK_API Item
     Paint fill() const;
 
     Paint stroke() const;
+
+    ResolvedStyle resolvedStyle() const;
 
     bool isAffectedByFill() const;
 
@@ -332,7 +327,7 @@ class STICK_API Item
                                   const HitTestSettings & _settings = HitTestSettings()) const;
 
     // selection utilities
-    stick::DynamicArray<Item *> selectChildren(const Rect & _area);
+    ItemPtrArray selectChildren(const Rect & _area);
 
     //called from renderer
     void setRenderTransform(const Mat32f & trans, Size _lastRenderTransformID);
@@ -402,11 +397,15 @@ class STICK_API Item
 
     void markSymbolsDirty() const;
 
+    //used by style setters, this function either returns the current style of this item,
+    //or if the style is shared between multiple items, clones it.
+    StylePtr getOrCloneStyle();
+
     // helper to recursively reset a property Maybe (using pointer to member)
     template <class Member>
     void recursivelyResetProperty(Member _member)
     {
-        (this->*_member).reset();
+        (this->m_style.get()->*_member).reset();
         m_bStyleDirty = true;
         for (Item * c : m_children)
             c->recursivelyResetProperty(_member);
@@ -437,16 +436,17 @@ class STICK_API Item
     mutable bool m_bStyleDirty;
 
     // style
-    stick::Maybe<Paint> m_fill;
-    stick::Maybe<Paint> m_stroke;
-    stick::Maybe<Float> m_strokeWidth;
-    stick::Maybe<StrokeJoin> m_strokeJoin;
-    stick::Maybe<StrokeCap> m_strokeCap;
-    stick::Maybe<bool> m_scaleStroke;
-    stick::Maybe<Float> m_miterLimit;
-    stick::Maybe<DashArray> m_dashArray;
-    stick::Maybe<Float> m_dashOffset;
-    stick::Maybe<WindingRule> m_windingRule;
+    // stick::Maybe<Paint> m_fill;
+    // stick::Maybe<Paint> m_stroke;
+    // stick::Maybe<Float> m_strokeWidth;
+    // stick::Maybe<StrokeJoin> m_strokeJoin;
+    // stick::Maybe<StrokeCap> m_strokeCap;
+    // stick::Maybe<bool> m_scaleStroke;
+    // stick::Maybe<Float> m_miterLimit;
+    // stick::Maybe<DashArray> m_dashArray;
+    // stick::Maybe<Float> m_dashOffset;
+    // stick::Maybe<WindingRule> m_windingRule;
+    StylePtr m_style;
 
     // bounds / length
     mutable stick::Maybe<Rect> m_fillBounds;

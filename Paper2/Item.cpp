@@ -8,9 +8,9 @@
 #define PROPERTY_GETTER(name, def)                                                                 \
     do                                                                                             \
     {                                                                                              \
-        if (m_##name)                                                                              \
+        if (m_style->m_##name)                                                                     \
         {                                                                                          \
-            return *m_##name;                                                                      \
+            return *m_style->m_##name;                                                             \
         }                                                                                          \
         else if (m_parent)                                                                         \
         {                                                                                          \
@@ -25,10 +25,10 @@
 #define PROPERTY_SETTER(name, val)                                                                 \
     do                                                                                             \
     {                                                                                              \
-        m_##name = val;                                                                            \
+        m_style->m_##name = val;                                                                            \
         m_bStyleDirty = true;                                                                      \
         for (Item * child : m_children)                                                            \
-            child->recursivelyResetProperty(&Item::m_##name);                                      \
+            child->recursivelyResetProperty(&Style::m_##name);                            \
     } while (false)
 
 namespace paper
@@ -249,9 +249,9 @@ Item * Item::previousSibling() const
 bool Item::isDescendant(const Item * _item) const
 {
     const Item * parent = this;
-    while(parent = parent->m_parent)
+    while ((parent = parent->m_parent))
     {
-        if(parent == _item)
+        if (parent == _item)
             return true;
     }
     return false;
@@ -645,17 +645,9 @@ void Item::setStrokeWidth(Float _width)
     markStrokeBoundsDirty(true);
 }
 
-// void Item::setStroke(const ColorRGBA & _color)
-// {
-//     bool bps = hasStroke();
-//     PROPERTY_SETTER(stroke, _color);
-//     if (!bps)
-//         markStrokeBoundsDirty(true);
-// }
-
 void Item::setStroke(const String & _svgName)
 {
-    bool bps = hasStroke();
+    bool bps = isAffectedByStroke();
     PROPERTY_SETTER(stroke, crunch::svgColor<ColorRGBA>(_svgName));
     if (!bps)
         markStrokeBoundsDirty(true);
@@ -663,7 +655,7 @@ void Item::setStroke(const String & _svgName)
 
 void Item::setStroke(const Paint & _paint)
 {
-    bool bps = hasStroke();
+    bool bps = isAffectedByStroke();
     PROPERTY_SETTER(stroke, _paint);
     if (!bps)
         markStrokeBoundsDirty(true);
@@ -698,19 +690,14 @@ void Item::setDashOffset(Float _f)
 void Item::setScaleStroke(bool _b)
 {
     PROPERTY_SETTER(scaleStroke, _b);
-    markStrokeBoundsDirty(true);
+    // markStrokeBoundsDirty(true);
 }
 
 void Item::removeStroke()
 {
     PROPERTY_SETTER(stroke, NoPaint());
-    markStrokeBoundsDirty(true);
+    // markStrokeBoundsDirty(true);
 }
-
-// void Item::setFill(const ColorRGBA & _color)
-// {
-//     PROPERTY_SETTER(fill, _color);
-// }
 
 void Item::setFill(const stick::String & _svgName)
 {
@@ -722,19 +709,16 @@ void Item::setFill(const Paint & _paint)
     PROPERTY_SETTER(fill, _paint);
 }
 
-// void Item::setFill(const LinearGradientPtr & _grad)
-// {
-//     PROPERTY_SETTER(fill, _grad);
-// }
-
-// void Item::setFill(const RadialGradientPtr & _grad)
-// {
-//     PROPERTY_SETTER(fill, _grad);
-// }
-
 void Item::removeFill()
 {
     PROPERTY_SETTER(fill, NoPaint());
+}
+
+void Item::setWindingRule(WindingRule _rule)
+{
+    m_bStyleDirty = true;
+    auto s = getOrCloneStyle();
+    s->setWindingRule(_rule);
 }
 
 void Item::setFillPaintTransform(const Mat32f & _transform)
@@ -759,11 +743,6 @@ void Item::removeStrokePaintTransform()
 {
     m_strokePaintTransform.reset();
     m_strokePaintTransformDirty = true;
-}
-
-void Item::setWindingRule(WindingRule _rule)
-{
-    m_windingRule = _rule;
 }
 
 StrokeJoin Item::strokeJoin() const
@@ -817,18 +796,6 @@ Paint Item::stroke() const
     PROPERTY_GETTER(stroke, NoPaint());
 }
 
-bool Item::hasStroke() const
-{
-    // return !stroke().is<NoPaint>();
-    return (bool)m_stroke;
-}
-
-bool Item::hasFill() const
-{
-    // return !fill().is<NoPaint>();
-    return (bool)m_fill;
-}
-
 bool Item::isAffectedByFill() const
 {
     if (hasFill())
@@ -847,44 +814,56 @@ bool Item::isAffectedByStroke() const
     return false;
 }
 
+bool Item::hasStroke() const
+{
+    // return !stroke().is<NoPaint>();
+    return m_style->hasStroke();
+}
+
+bool Item::hasFill() const
+{
+    // return !fill().is<NoPaint>();
+    return m_style->hasFill();
+}
+
 bool Item::hasScaleStroke() const
 {
-    return (bool)m_scaleStroke;
+    return m_style->hasScaleStroke();
 }
 
 bool Item::hasMiterLimit() const
 {
-    return (bool)m_miterLimit;
+    return m_style->hasMiterLimit();
 }
 
 bool Item::hasWindingRule() const
 {
-    return (bool)m_windingRule;
+    return m_style->hasWindingRule();
 }
 
 bool Item::hasDashOffset() const
 {
-    return (bool)m_dashOffset;
+    return m_style->hasDashOffset();
 }
 
 bool Item::hasDashArray() const
 {
-    return (bool)m_dashArray;
+    return m_style->hasDashArray();
 }
 
 bool Item::hasStrokeWidth() const
 {
-    return (bool)m_strokeWidth;
+    return m_style->hasStrokeWidth();
 }
 
 bool Item::hasStrokeCap() const
 {
-    return (bool)m_strokeCap;
+    return m_style->hasStrokeCap();
 }
 
 bool Item::hasStrokeJoin() const
 {
-    return (bool)m_strokeJoin;
+    return m_style->hasStrokeJoin();
 }
 
 bool Item::hasfillPaintTransform() const
@@ -1001,16 +980,20 @@ void Item::cloneItemTo(Item * _item) const
     _item->m_fillPaintTransformDirty = m_fillPaintTransformDirty;
     _item->m_strokePaintTransformDirty = m_strokePaintTransformDirty;
     _item->m_pivot = m_pivot;
-    _item->m_fill = m_fill;
-    _item->m_stroke = m_stroke;
-    _item->m_strokeWidth = m_strokeWidth;
-    _item->m_strokeJoin = m_strokeJoin;
-    _item->m_strokeCap = m_strokeCap;
-    _item->m_scaleStroke = m_scaleStroke;
-    _item->m_miterLimit = m_miterLimit;
-    _item->m_dashArray = m_dashArray;
-    _item->m_dashOffset = m_dashOffset;
-    _item->m_windingRule = m_windingRule;
+
+
+    // _item->m_fill = m_fill;
+    // _item->m_stroke = m_stroke;
+    // _item->m_strokeWidth = m_strokeWidth;
+    // _item->m_strokeJoin = m_strokeJoin;
+    // _item->m_strokeCap = m_strokeCap;
+    // _item->m_scaleStroke = m_scaleStroke;
+    // _item->m_miterLimit = m_miterLimit;
+    // _item->m_dashArray = m_dashArray;
+    // _item->m_dashOffset = m_dashOffset;
+    // _item->m_windingRule = m_windingRule;
+    _item->m_style = m_style;
+
     _item->m_fillBounds = m_fillBounds;
     _item->m_strokeBounds = m_strokeBounds;
     _item->m_handleBounds = m_handleBounds;
@@ -1172,7 +1155,7 @@ bool Item::performHitTest(const Vec2f & _pos,
     return this->hitTestChildren(_pos, _settings, _bMultiple, _transform, _outResults);
 }
 
-DynamicArray<Item *> Item::selectChildren(const Rect & _area)
+ItemPtrArray Item::selectChildren(const Rect & _area)
 {
     DynamicArray<Item *> ret(m_children.allocator());
     for (Item * child : m_children)
@@ -1191,6 +1174,32 @@ bool Item::performSelectionTest(const Rect & _rect) const
             return true;
     }
     return false;
+}
+
+StylePtr Item::getOrCloneStyle()
+{
+    if(m_style.useCount())
+    {
+        m_style->itemRemovedStyle(this);
+        m_style = m_style->clone(this);
+    }
+    return m_style;
+}
+
+ResolvedStyle Item::resolvedStyle() const
+{
+    return {
+        fill(),
+        stroke(),
+        strokeWidth(),
+        strokeJoin(),
+        strokeCap(),
+        scaleStroke(),
+        miterLimit(),
+        dashArray(),
+        dashOffset(),
+        windingRule()
+    };
 }
 
 } // namespace paper

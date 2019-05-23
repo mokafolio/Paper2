@@ -3,8 +3,6 @@
 #include <Paper2/Path.hpp>
 #include <Paper2/RenderInterface.hpp>
 #include <Paper2/Symbol.hpp>
-// #include <Paper/PlacedSymbol.hpp>
-// #include <Crunch/StringConversion.hpp>
 
 namespace paper
 {

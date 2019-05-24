@@ -22,13 +22,30 @@
         }                                                                                          \
     } while (false)
 
+#define RESOLVE_STYLE(name, def)                                                                   \
+    do                                                                                             \
+    {                                                                                              \
+        if (m_style->m_##name)                                                                     \
+        {                                                                                          \
+            return *m_style->m_##name;                                                             \
+        }                                                                                          \
+        else if (m_parent)                                                                         \
+        {                                                                                          \
+            return m_parent->name();                                                               \
+        }                                                                                          \
+        else                                                                                       \
+        {                                                                                          \
+            return def;                                                                            \
+        }                                                                                          \
+    } while (false)
+
 #define PROPERTY_SETTER(name, val)                                                                 \
     do                                                                                             \
     {                                                                                              \
-        m_style->m_##name = val;                                                                            \
+        m_style->m_##name = val;                                                                   \
         m_bStyleDirty = true;                                                                      \
         for (Item * child : m_children)                                                            \
-            child->recursivelyResetProperty(&Style::m_##name);                            \
+            child->recursivelyResetProperty(&Style::m_##name);                                     \
     } while (false)
 
 namespace paper
@@ -47,7 +64,8 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     m_lastRenderTransformID(-1),
     m_fillPaintTransformDirty(false),
     m_strokePaintTransformDirty(false),
-    m_bStyleDirty(false)
+    m_style(_document->defaultStyle()),
+    m_bStyleDirty(true)
 {
     m_name.append(_name);
 }
@@ -621,28 +639,35 @@ const Mat32f & Item::strokePaintTransform() const
     return s_proxy;
 }
 
+void Item::setStyle(const StylePtr & _style)
+{
+    m_style->itemRemovedStyle(this);
+    m_style = _style;
+    m_style->itemAddedStyle(this);
+}
+
 void Item::setStrokeJoin(StrokeJoin _join)
 {
     PROPERTY_SETTER(strokeJoin, _join);
-    markStrokeBoundsDirty(true);
+    // markStrokeBoundsDirty(true);
 }
 
 void Item::setStrokeCap(StrokeCap _cap)
 {
     PROPERTY_SETTER(strokeCap, _cap);
-    markStrokeBoundsDirty(true);
+    // markStrokeBoundsDirty(true);
 }
 
 void Item::setMiterLimit(Float _limit)
 {
     PROPERTY_SETTER(miterLimit, _limit);
-    markStrokeBoundsDirty(true);
+    // markStrokeBoundsDirty(true);
 }
 
 void Item::setStrokeWidth(Float _width)
 {
     PROPERTY_SETTER(strokeWidth, _width);
-    markStrokeBoundsDirty(true);
+    // markStrokeBoundsDirty(true);
 }
 
 void Item::setStroke(const String & _svgName)
@@ -660,22 +685,6 @@ void Item::setStroke(const Paint & _paint)
     if (!bps)
         markStrokeBoundsDirty(true);
 }
-
-// void Item::setStroke(const LinearGradientPtr & _grad)
-// {
-//     bool bps = hasStroke();
-//     PROPERTY_SETTER(stroke, _grad);
-//     if (!bps)
-//         markStrokeBoundsDirty(true);
-// }
-
-// void Item::setStroke(const RadialGradientPtr & _grad)
-// {
-//     bool bps = hasStroke();
-//     PROPERTY_SETTER(stroke, _grad);
-//     if (!bps)
-//         markStrokeBoundsDirty(true);
-// }
 
 void Item::setDashArray(const DashArray & _arr)
 {
@@ -747,53 +756,52 @@ void Item::removeStrokePaintTransform()
 
 StrokeJoin Item::strokeJoin() const
 {
-    PROPERTY_GETTER(strokeJoin, StrokeJoin::Bevel);
+    return resolvedStyle().strokeJoin;
 }
 
 StrokeCap Item::strokeCap() const
 {
-    PROPERTY_GETTER(strokeCap, StrokeCap::Butt);
+    return resolvedStyle().strokeCap;
 }
 
 Float Item::miterLimit() const
 {
-    PROPERTY_GETTER(miterLimit, 4);
+    return resolvedStyle().miterLimit;
 }
 
 Float Item::strokeWidth() const
 {
-    PROPERTY_GETTER(strokeWidth, 1.0);
+    return resolvedStyle().strokeWidth;
 }
 
 const DashArray & Item::dashArray() const
 {
-    static DashArray s_default;
-    PROPERTY_GETTER(dashArray, s_default);
+    return resolvedStyle().dashArray;
 }
 
 Float Item::dashOffset() const
 {
-    PROPERTY_GETTER(dashOffset, 0.0);
+    return resolvedStyle().dashOffset;
 }
 
 WindingRule Item::windingRule() const
 {
-    PROPERTY_GETTER(windingRule, WindingRule::EvenOdd);
+    return resolvedStyle().windingRule;
 }
 
 bool Item::scaleStroke() const
 {
-    PROPERTY_GETTER(scaleStroke, true);
+    return resolvedStyle().scaleStroke;
 }
 
 Paint Item::fill() const
 {
-    PROPERTY_GETTER(fill, NoPaint());
+    return resolvedStyle().fill;
 }
 
 Paint Item::stroke() const
 {
-    PROPERTY_GETTER(stroke, NoPaint());
+    return resolvedStyle().stroke;
 }
 
 bool Item::isAffectedByFill() const
@@ -981,7 +989,6 @@ void Item::cloneItemTo(Item * _item) const
     _item->m_strokePaintTransformDirty = m_strokePaintTransformDirty;
     _item->m_pivot = m_pivot;
 
-
     // _item->m_fill = m_fill;
     // _item->m_stroke = m_stroke;
     // _item->m_strokeWidth = m_strokeWidth;
@@ -1050,13 +1057,6 @@ bool Item::cleanDirtyStrokePaintTransform()
 {
     bool ret = m_strokePaintTransformDirty;
     m_strokePaintTransformDirty = false;
-    return ret;
-}
-
-bool Item::cleanDirtyStyle()
-{
-    bool ret = m_bStyleDirty;
-    m_bStyleDirty = false;
     return ret;
 }
 
@@ -1178,7 +1178,7 @@ bool Item::performSelectionTest(const Rect & _rect) const
 
 StylePtr Item::getOrCloneStyle()
 {
-    if(m_style.useCount())
+    if (m_style.useCount())
     {
         m_style->itemRemovedStyle(this);
         m_style = m_style->clone(this);
@@ -1186,20 +1186,31 @@ StylePtr Item::getOrCloneStyle()
     return m_style;
 }
 
-ResolvedStyle Item::resolvedStyle() const
+const ResolvedStyle & Item::resolvedStyle() const
 {
-    return {
-        fill(),
-        stroke(),
-        strokeWidth(),
-        strokeJoin(),
-        strokeCap(),
-        scaleStroke(),
-        miterLimit(),
-        dashArray(),
-        dashOffset(),
-        windingRule()
-    };
+    if (m_bStyleDirty)
+    {
+        m_bStyleDirty = false;
+        m_resolvedStyle = { 
+            resolveStyleProperty(&Style::m_fill, Style::defaultFill()),
+            resolveStyleProperty(&Style::m_stroke, Style::defaultStroke()),
+            resolveStyleProperty(&Style::m_strokeWidth, Style::defaultStrokeWidth()),
+            resolveStyleProperty(&Style::m_strokeJoin, Style::defaultStrokeJoin()),
+            resolveStyleProperty(&Style::m_strokeCap, Style::defaultStrokeCap()),
+            resolveStyleProperty(&Style::m_scaleStroke, Style::defaultScaleStroke()),
+            resolveStyleProperty(&Style::m_miterLimit, Style::defaultMiterLimit()),
+            resolveStyleProperty(&Style::m_dashArray, Style::defaultDashArray()),
+            resolveStyleProperty(&Style::m_dashOffset, Style::defaultDashOffset()),
+            resolveStyleProperty(&Style::m_windingRule, Style::defaultWindingRule())
+        };
+    }
+
+    return m_resolvedStyle;
+}
+
+const StylePtr & Item::style() const
+{
+    return m_style;
 }
 
 } // namespace paper

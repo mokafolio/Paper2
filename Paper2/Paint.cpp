@@ -146,13 +146,4 @@ const Maybe<Float> & RadialGradient::ratio() const
     return m_ratio;
 }
 
-LinearGradientPtr createLinearGradient(const Vec2f & _from, const Vec2f & _to)
-{
-    return makeShared<LinearGradient>(_from, _to);
-}
-
-RadialGradientPtr createRadialGradient(const Vec2f & _from, const Vec2f & _to)
-{
-    return makeShared<RadialGradient>(_from, _to);
-}
 } // namespace paper

@@ -57,6 +57,14 @@ class STICK_API Document : public Item
 
     stick::Allocator & allocator() const;
 
+    const StylePtr & defaultStyle() const;
+
+    StylePtr createStyle(const stick::Maybe<ResolvedStyle> & _style = stick::Maybe<ResolvedStyle>());
+
+    LinearGradientPtr createLinearGradient(const Vec2f & _from, const Vec2f & _to);
+    
+    RadialGradientPtr createRadialGradient(const Vec2f & _from, const Vec2f & _to);
+
   private:
     // documents can't be cloned for now
     Document * clone() const final;
@@ -65,8 +73,10 @@ class STICK_API Document : public Item
 
     void destroyItem(Item * _e);
 
+    stick::Allocator * m_alloc;
     ItemUniquePtrArray m_itemStorage;
     Vec2f m_size;
+    StylePtr m_defaultStyle;
 };
 } // namespace paper
 

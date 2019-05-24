@@ -251,12 +251,12 @@ Result<Item *> import(Document & _doc, const UInt8 * _data, Size _byteCount)
         Vec2f dest = readVec2f(ds);
         if (type == GradientType::Linear)
         {
-            auto linearGrad = createLinearGradient(origin, dest);
+            auto linearGrad = _doc.createLinearGradient(origin, dest);
             grad = linearGrad;
         }
         else if (type == GradientType::Radial)
         {
-            auto radialGrad = createRadialGradient(origin, dest);
+            auto radialGrad = _doc.createRadialGradient(origin, dest);
             grad = radialGrad;
 
             if (ds.readBool())

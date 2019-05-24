@@ -57,7 +57,7 @@ int main(int _argc, const char * _args[])
         Path * path = doc.createCircle(Vec2f(100, 100), 50);
         // path->translateTransform(100, 50);
 
-        auto grad = createLinearGradient(Vec2f(50, 50), Vec2f(150, 150));
+        auto grad = doc.createLinearGradient(Vec2f(50, 50), Vec2f(150, 150));
         grad->addStop(ColorRGBA(0.5, 1.0, 0.0, 1.0), 0.0);
         grad->addStop(ColorRGBA(0.5, 0.0, 1.0, 1.0), 1.0);
         // grad->setFocalPointOffset(Vec2f(20, -10));
@@ -102,7 +102,7 @@ int main(int _argc, const char * _args[])
             grp2->addChild(p);
         }
 
-        auto grad2 = createRadialGradient(Vec2f(200, 200), Vec2f(300, 200));
+        auto grad2 = doc.createRadialGradient(Vec2f(200, 200), Vec2f(300, 200));
         grad2->addStop(ColorRGBA(0.5, 0.3, 1.0, 1.0), 0.0);
         grad2->addStop(ColorRGBA(0.5, 1.0, 0.3, 1.0), 0.35);
         grad2->addStop(ColorRGBA(0.25, 0.0, 0.6, 1.0), 1.0);

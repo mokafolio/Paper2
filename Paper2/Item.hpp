@@ -243,6 +243,8 @@ class STICK_API Item
 
     void setWindingRule(WindingRule _rule);
 
+    void setStyle(const StylePtr & _style);
+
     StrokeJoin strokeJoin() const;
 
     StrokeCap strokeCap() const;
@@ -263,7 +265,9 @@ class STICK_API Item
 
     Paint stroke() const;
 
-    ResolvedStyle resolvedStyle() const;
+    const ResolvedStyle & resolvedStyle() const;
+
+    const StylePtr & style() const;
 
     bool isAffectedByFill() const;
 
@@ -313,8 +317,6 @@ class STICK_API Item
     bool cleanDirtyFillPaintTransform();
 
     bool cleanDirtyStrokePaintTransform();
-
-    bool cleanDirtyStyle();
 
     //@TODO: debug functions to print the hierarchy
     void hierarchyString(String & _outputString, Size _indent = 0) const;
@@ -411,6 +413,19 @@ class STICK_API Item
             c->recursivelyResetProperty(_member);
     }
 
+    template<class T>
+    typename T::ValueType resolveStyleProperty(T (Style::*_member), typename T::ValueType _default) const
+    {
+        const Item * parent = this;
+        while(parent && !((*parent->m_style).*_member))
+            parent = parent->m_parent;
+
+        if ((*parent->m_style).*_member)
+            return *((*parent->m_style).*_member);
+
+        return _default;
+    }
+
     // basics
     mutable Document * m_document;
     ItemType m_type;
@@ -433,7 +448,6 @@ class STICK_API Item
     stick::Maybe<Mat32f> m_strokePaintTransform;
     mutable bool m_fillPaintTransformDirty;
     mutable bool m_strokePaintTransformDirty;
-    mutable bool m_bStyleDirty;
 
     // style
     // stick::Maybe<Paint> m_fill;
@@ -447,6 +461,8 @@ class STICK_API Item
     // stick::Maybe<Float> m_dashOffset;
     // stick::Maybe<WindingRule> m_windingRule;
     StylePtr m_style;
+    mutable ResolvedStyle m_resolvedStyle;
+    mutable bool m_bStyleDirty;
 
     // bounds / length
     mutable stick::Maybe<Rect> m_fillBounds;

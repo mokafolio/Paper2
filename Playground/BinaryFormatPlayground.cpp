@@ -51,7 +51,7 @@ int main(int _argc, const char * _args[])
             return EXIT_FAILURE;
         }
 
-        LinearGradientPtr g = createLinearGradient(Vec2f(100, 100), Vec2f(200, 200));
+        LinearGradientPtr g = doc.createLinearGradient(Vec2f(100, 100), Vec2f(200, 200));
         g->addStop(ColorRGBA(1, 1, 0, 1), 0);
         g->addStop(ColorRGBA(0, 1, 1, 1), 1);
 

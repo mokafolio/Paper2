@@ -20,6 +20,9 @@ struct STICK_API ResolvedStyle
     StrokeCap strokeCap;
     bool scaleStroke;
     Float miterLimit;
+    //@TODO: as an optimization we could most likely just have a pointer and a size
+    // indicator for the dash array once its resolved pointing to the dash array of
+    // the style. Would avoid dash array copy at cost of a nicer api thogh.
     DashArray dashArray;
     Float dashOffset;
     WindingRule windingRule;
@@ -32,7 +35,13 @@ class STICK_API Style
 {
     friend class Item;
 
-    public:
+  public:
+
+    Style(stick::Allocator & _alloc);
+    Style(const Style &) = default;
+    Style(Style &&) = default;
+    Style(stick::Allocator & _alloc, const ResolvedStyle & _resolved);
+    ~Style() = default;
 
     void setStrokeJoin(StrokeJoin _join);
     void setStrokeCap(StrokeCap _cap);
@@ -71,8 +80,18 @@ class STICK_API Style
 
     StylePtr clone(Item * _item = nullptr) const;
 
-private:
+    static StrokeJoin defaultStrokeJoin();
+    static StrokeCap defaultStrokeCap();
+    static Float defaultMiterLimit();
+    static Float defaultStrokeWidth();
+    static Float defaultDashOffset();
+    static const DashArray & defaultDashArray();
+    static WindingRule defaultWindingRule();
+    static bool defaultScaleStroke();
+    static Paint defaultFill();
+    static Paint defaultStroke();
 
+  private:
     void itemRemovedStyle(Item * _item);
     void itemAddedStyle(Item * _item);
 

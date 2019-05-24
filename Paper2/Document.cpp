@@ -3,8 +3,8 @@
 #include <Paper2/Path.hpp>
 #include <Paper2/Symbol.hpp>
 
-#include <Paper2/SVG/SVGImport.hpp>
 #include <Paper2/BinFormat/BinFormatImport.hpp>
+#include <Paper2/SVG/SVGImport.hpp>
 
 #include <Stick/FileUtilities.hpp>
 
@@ -14,9 +14,11 @@ using namespace stick;
 
 Document::Document(const char * _name, Allocator & _alloc) :
     Item(_alloc, this, ItemType::Document, _name),
+    m_alloc(&_alloc),
     m_itemStorage(_alloc),
     m_size(0)
 {
+    m_defaultStyle = makeShared<Style>(_alloc, _alloc);
 }
 
 Path * Document::createPath(const char * _name)
@@ -133,9 +135,30 @@ svg::SVGImportResult Document::loadSVG(const String & _uri, Size _dpi)
     return parseSVG(result.get(), _dpi);
 }
 
-Result<Item*> Document::parseBinary(const UInt8 * _data, Size _byteCount)
+Result<Item *> Document::parseBinary(const UInt8 * _data, Size _byteCount)
 {
     return binfmt::import(*this, _data, _byteCount);
+}
+
+const StylePtr & Document::defaultStyle() const
+{
+    return m_defaultStyle;
+}
+
+StylePtr Document::createStyle(const stick::Maybe<ResolvedStyle> & _style)
+{
+    return _style ? makeShared<Style>(*m_alloc, *m_alloc, *_style)
+                  : makeShared<Style>(*m_alloc, *m_alloc);
+}
+
+LinearGradientPtr Document::createLinearGradient(const Vec2f & _from, const Vec2f & _to)
+{
+    return makeShared<LinearGradient>(*m_alloc, _from, _to);
+}
+
+RadialGradientPtr Document::createRadialGradient(const Vec2f & _from, const Vec2f & _to)
+{
+    return makeShared<RadialGradient>(*m_alloc, _from, _to);
 }
 
 } // namespace paper

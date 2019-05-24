@@ -74,4 +74,26 @@ Size Symbol::version() const
     return m_version;
 }
 
+ResolvedStyle Symbol::resolveStyle() const
+{
+    const ResolvedStyle & ss = resolvedStyle();
+    const ResolvedStyle & is = m_item->resolvedStyle();
+
+    const StylePtr & style = m_item->style();
+
+    return
+    {
+        style->hasFill() ? is.fill : ss.fill,
+        style->hasStroke() ? is.stroke : ss.stroke,
+        style->hasStrokeWidth() ? is.strokeWidth : ss.strokeWidth,
+        style->hasStrokeJoin() ? is.strokeJoin : ss.strokeJoin,
+        style->hasStrokeCap() ? is.strokeCap : ss.strokeCap,
+        style->hasScaleStroke() ? is.scaleStroke : ss.scaleStroke,
+        style->hasMiterLimit() ? is.miterLimit : ss.miterLimit,
+        style->hasDashArray() ? is.dashArray : ss.dashArray,
+        style->hasDashOffset() ? is.dashOffset : ss.dashOffset,
+        style->hasWindingRule() ? is.windingRule : ss.windingRule
+    };
+}
+
 } // namespace paper

@@ -42,7 +42,8 @@
 #define PROPERTY_SETTER(name, val)                                                                 \
     do                                                                                             \
     {                                                                                              \
-        m_style->m_##name = val;                                                                   \
+        Style & s = getOrCloneStyle();                                                             \
+        s.m_##name = val;                                                                          \
         m_bStyleDirty = true;                                                                      \
         for (Item * child : m_children)                                                            \
             child->recursivelyResetProperty(&Style::m_##name);                                     \
@@ -64,10 +65,12 @@ Item::Item(Allocator & _alloc, Document * _document, ItemType _type, const char 
     m_lastRenderTransformID(-1),
     m_fillPaintTransformDirty(false),
     m_strokePaintTransformDirty(false),
-    m_style(_document->defaultStyle()),
     m_bStyleDirty(true)
 {
     m_name.append(_name);
+
+    if (m_type != ItemType::Document)
+        setStyle(m_document->defaultStyle());
 }
 
 Item::~Item()
@@ -641,7 +644,8 @@ const Mat32f & Item::strokePaintTransform() const
 
 void Item::setStyle(const StylePtr & _style)
 {
-    m_style->itemRemovedStyle(this);
+    if(m_style)
+        m_style->itemRemovedStyle(this);
     m_style = _style;
     m_style->itemAddedStyle(this);
 }
@@ -672,18 +676,18 @@ void Item::setStrokeWidth(Float _width)
 
 void Item::setStroke(const String & _svgName)
 {
-    bool bps = isAffectedByStroke();
-    PROPERTY_SETTER(stroke, crunch::svgColor<ColorRGBA>(_svgName));
-    if (!bps)
-        markStrokeBoundsDirty(true);
+    setStroke(crunch::svgColor<ColorRGBA>(_svgName));
 }
 
 void Item::setStroke(const Paint & _paint)
 {
+    printf("SETTING STROKE\n");
     bool bps = isAffectedByStroke();
+    printf("SETTING STROKE2\n");
     PROPERTY_SETTER(stroke, _paint);
     if (!bps)
         markStrokeBoundsDirty(true);
+    printf("SETTING STROKE3\n");
 }
 
 void Item::setDashArray(const DashArray & _arr)
@@ -726,8 +730,8 @@ void Item::removeFill()
 void Item::setWindingRule(WindingRule _rule)
 {
     m_bStyleDirty = true;
-    auto s = getOrCloneStyle();
-    s->setWindingRule(_rule);
+    Style & s = getOrCloneStyle();
+    s.setWindingRule(_rule);
 }
 
 void Item::setFillPaintTransform(const Mat32f & _transform)
@@ -806,7 +810,7 @@ Paint Item::stroke() const
 
 bool Item::isAffectedByFill() const
 {
-    if (hasFill())
+    if (m_style->hasFill())
         return true;
     if (m_parent)
         return m_parent->isAffectedByFill();
@@ -815,64 +819,64 @@ bool Item::isAffectedByFill() const
 
 bool Item::isAffectedByStroke() const
 {
-    if (hasStroke())
+    if (m_style->hasStroke())
         return true;
     if (m_parent)
         return m_parent->isAffectedByStroke();
     return false;
 }
 
-bool Item::hasStroke() const
-{
-    // return !stroke().is<NoPaint>();
-    return m_style->hasStroke();
-}
+// bool Item::hasStroke() const
+// {
+//     // return !stroke().is<NoPaint>();
+//     return m_style->hasStroke();
+// }
 
-bool Item::hasFill() const
-{
-    // return !fill().is<NoPaint>();
-    return m_style->hasFill();
-}
+// bool Item::hasFill() const
+// {
+//     // return !fill().is<NoPaint>();
+//     return m_style->hasFill();
+// }
 
-bool Item::hasScaleStroke() const
-{
-    return m_style->hasScaleStroke();
-}
+// bool Item::hasScaleStroke() const
+// {
+//     return m_style->hasScaleStroke();
+// }
 
-bool Item::hasMiterLimit() const
-{
-    return m_style->hasMiterLimit();
-}
+// bool Item::hasMiterLimit() const
+// {
+//     return m_style->hasMiterLimit();
+// }
 
-bool Item::hasWindingRule() const
-{
-    return m_style->hasWindingRule();
-}
+// bool Item::hasWindingRule() const
+// {
+//     return m_style->hasWindingRule();
+// }
 
-bool Item::hasDashOffset() const
-{
-    return m_style->hasDashOffset();
-}
+// bool Item::hasDashOffset() const
+// {
+//     return m_style->hasDashOffset();
+// }
 
-bool Item::hasDashArray() const
-{
-    return m_style->hasDashArray();
-}
+// bool Item::hasDashArray() const
+// {
+//     return m_style->hasDashArray();
+// }
 
-bool Item::hasStrokeWidth() const
-{
-    return m_style->hasStrokeWidth();
-}
+// bool Item::hasStrokeWidth() const
+// {
+//     return m_style->hasStrokeWidth();
+// }
 
-bool Item::hasStrokeCap() const
-{
-    return m_style->hasStrokeCap();
-}
+// bool Item::hasStrokeCap() const
+// {
+//     return m_style->hasStrokeCap();
+// }
 
-bool Item::hasStrokeJoin() const
-{
-    return m_style->hasStrokeJoin();
-}
+// bool Item::hasStrokeJoin() const
+// {
+//     return m_style->hasStrokeJoin();
+// }
 
 bool Item::hasfillPaintTransform() const
 {
@@ -999,7 +1003,7 @@ void Item::cloneItemTo(Item * _item) const
     // _item->m_dashArray = m_dashArray;
     // _item->m_dashOffset = m_dashOffset;
     // _item->m_windingRule = m_windingRule;
-    _item->m_style = m_style;
+    _item->setStyle(m_style);
 
     _item->m_fillBounds = m_fillBounds;
     _item->m_strokeBounds = m_strokeBounds;
@@ -1176,14 +1180,16 @@ bool Item::performSelectionTest(const Rect & _rect) const
     return false;
 }
 
-StylePtr Item::getOrCloneStyle()
+Style & Item::getOrCloneStyle()
 {
-    if (m_style.useCount())
+    printf("GETTING STYLE\n");
+    if (m_style.useCount() > 1)
     {
+        printf("CLONING STYLE\n");
         m_style->itemRemovedStyle(this);
         m_style = m_style->clone(this);
     }
-    return m_style;
+    return *m_style;
 }
 
 const ResolvedStyle & Item::resolvedStyle() const
@@ -1191,7 +1197,7 @@ const ResolvedStyle & Item::resolvedStyle() const
     if (m_bStyleDirty)
     {
         m_bStyleDirty = false;
-        m_resolvedStyle = { 
+        m_resolvedStyle = {
             resolveStyleProperty(&Style::m_fill, Style::defaultFill()),
             resolveStyleProperty(&Style::m_stroke, Style::defaultStroke()),
             resolveStyleProperty(&Style::m_strokeWidth, Style::defaultStrokeWidth()),

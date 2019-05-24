@@ -225,9 +225,12 @@ bool Style::hasStrokeJoin() const
 
 StylePtr Style::clone(Item * _item) const
 {
-    auto ret = stick::makeShared<Style>(*this);
+    printf("A\n");
+    auto ret = stick::makeShared<Style>(m_items.allocator(), *this);
+    printf("B\n");
     if (_item)
         ret->itemAddedStyle(_item);
+    printf("C\n");
     return ret;
 }
 

@@ -146,31 +146,31 @@ void recursivelyExportItem(const Item * _item,
     if (_item->hasPivot())
         serialize(_serializer, _item->pivot());
 
-    if (_item->hasFill())
+    if (_item->style()->hasFill())
         exportPaint(_serializer, _item->fill(), _session);
     else
         _serializer.write(false);
 
-    if (_item->hasStroke())
+    if (_item->style()->hasStroke())
         exportPaint(_serializer, _item->stroke(), _session);
     else
         _serializer.write(false);
 
     printf("B\n");
-    _serializer.write(_item->hasStrokeWidth());
-    if (_item->hasStrokeWidth())
+    _serializer.write(_item->style()->hasStrokeWidth());
+    if (_item->style()->hasStrokeWidth())
         _serializer.write(_item->strokeWidth());
-    _serializer.write(_item->hasStrokeJoin());
-    if (_item->hasStrokeJoin())
+    _serializer.write(_item->style()->hasStrokeJoin());
+    if (_item->style()->hasStrokeJoin())
         _serializer.write((UInt64)_item->strokeJoin());
-    _serializer.write(_item->hasStrokeCap());
-    if (_item->hasStrokeCap())
+    _serializer.write(_item->style()->hasStrokeCap());
+    if (_item->style()->hasStrokeCap())
         _serializer.write((UInt64)_item->strokeCap());
-    _serializer.write(_item->hasScaleStroke());
-    if (_item->hasScaleStroke())
+    _serializer.write(_item->style()->hasScaleStroke());
+    if (_item->style()->hasScaleStroke())
         _serializer.write(_item->scaleStroke());
-    _serializer.write(_item->hasMiterLimit());
-    if (_item->hasMiterLimit())
+    _serializer.write(_item->style()->hasMiterLimit());
+    if (_item->style()->hasMiterLimit())
         _serializer.write(_item->miterLimit());
 
     printf("C\n");
@@ -181,11 +181,11 @@ void recursivelyExportItem(const Item * _item,
         _serializer.write(da[i]);
 
     printf("D\n");
-    _serializer.write(_item->hasDashOffset());
-    if (_item->hasDashOffset())
+    _serializer.write(_item->style()->hasDashOffset());
+    if (_item->style()->hasDashOffset())
         _serializer.write(_item->dashOffset());
-    _serializer.write(_item->hasWindingRule());
-    if (_item->hasWindingRule())
+    _serializer.write(_item->style()->hasWindingRule());
+    if (_item->style()->hasWindingRule())
         _serializer.write((UInt64)_item->windingRule());
 
     printf("E\n");

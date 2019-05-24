@@ -2305,7 +2305,7 @@ Maybe<Rect> Path::computeFillBounds(const Mat32f * _transform, Float _padding) c
 
 Maybe<Rect> Path::computeStrokeBounds(const Mat32f * _transform) const
 {
-    if (!hasStroke())
+    if (!m_style->hasStroke())
         return computeFillBounds(_transform, 0);
 
     StrokeJoin join = strokeJoin();

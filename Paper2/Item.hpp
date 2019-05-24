@@ -273,25 +273,25 @@ class STICK_API Item
 
     bool isAffectedByStroke() const;
 
-    bool hasStroke() const;
+    // bool hasStroke() const;
 
-    bool hasFill() const;
+    // bool hasFill() const;
 
-    bool hasScaleStroke() const;
+    // bool hasScaleStroke() const;
 
-    bool hasMiterLimit() const;
+    // bool hasMiterLimit() const;
 
-    bool hasWindingRule() const;
+    // bool hasWindingRule() const;
 
-    bool hasDashOffset() const;
+    // bool hasDashOffset() const;
 
-    bool hasDashArray() const;
+    // bool hasDashArray() const;
 
-    bool hasStrokeWidth() const;
+    // bool hasStrokeWidth() const;
 
-    bool hasStrokeCap() const;
+    // bool hasStrokeCap() const;
 
-    bool hasStrokeJoin() const;
+    // bool hasStrokeJoin() const;
 
     bool hasfillPaintTransform() const;
 
@@ -401,7 +401,7 @@ class STICK_API Item
 
     //used by style setters, this function either returns the current style of this item,
     //or if the style is shared between multiple items, clones it.
-    StylePtr getOrCloneStyle();
+    Style & getOrCloneStyle();
 
     // helper to recursively reset a property Maybe (using pointer to member)
     template <class Member>
@@ -417,7 +417,7 @@ class STICK_API Item
     typename T::ValueType resolveStyleProperty(T (Style::*_member), typename T::ValueType _default) const
     {
         const Item * parent = this;
-        while(parent && !((*parent->m_style).*_member))
+        while(parent && !((*parent->m_style).*_member) && parent->m_parent)
             parent = parent->m_parent;
 
         if ((*parent->m_style).*_member)

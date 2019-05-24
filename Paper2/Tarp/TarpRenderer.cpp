@@ -353,22 +353,22 @@ static detail::TarpGradientData & updateTarpGradient(BaseGradient & _grad)
 
 // ugly template helper using pointer to member
 // so we don't have to write the code for setting stroke and fill twice
-template <class M, class M2>
-static void setPaint(tpStyle * _style, M _styleMember, Item * _item, M2 _pathMember)
+template <class M>
+static void setPaint(tpStyle * _style, M _styleMember, const Paint & _paint)
 {
-    if ((_item->*_pathMember)().template is<ColorRGBA>())
+    if (_paint.is<ColorRGBA>())
     {
-        ColorRGBA & col = (_item->*_pathMember)().template get<ColorRGBA>();
+        const ColorRGBA & col = _paint.get<ColorRGBA>();
         _style->*_styleMember = tpPaintMakeColor(col.r, col.g, col.b, col.a);
     }
-    else if ((_item->*_pathMember)().template is<LinearGradientPtr>() ||
-             (_item->*_pathMember)().template is<RadialGradientPtr>())
+    else if (_paint.is<LinearGradientPtr>() ||
+             _paint.is<RadialGradientPtr>())
     {
         SharedPtr<BaseGradient> ptr;
-        if ((_item->*_pathMember)().template is<LinearGradientPtr>())
-            ptr = (_item->*_pathMember)().template get<LinearGradientPtr>();
+        if (_paint.is<LinearGradientPtr>())
+            ptr = _paint.get<LinearGradientPtr>();
         else
-            ptr = (_item->*_pathMember)().template get<RadialGradientPtr>();
+            ptr = _paint.get<RadialGradientPtr>();
 
         if (ptr)
         {
@@ -383,59 +383,129 @@ static void setPaint(tpStyle * _style, M _styleMember, Item * _item, M2 _pathMem
 }
 
 // helper to pick the correct style between a potential symbol and its path
-template <class Ret>
-Ret property(Item * _prio,
-             Item * _other,
-             bool (Item::*_haser)() const,
-             Ret (Item::*_getter)() const)
-{
-    if (!_other || (_prio && (_prio->*_haser)()))
-        return (_prio->*_getter)();
+// template <class Ret>
+// Ret property(Item * _prio,
+//              Item * _other,
+//              bool (Item::*_haser)() const,
+//              Ret (Item::*_getter)() const)
+// {
+//     if (!_other || (_prio && (_prio->*_haser)()))
+//         return (_prio->*_getter)();
 
-    return (_other->*_getter)();
-}
+//     return (_other->*_getter)();
+// }
 
-static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol = false)
+// static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol = false)
+// {
+//     Item *prio, *other;
+//     if (_bPrioritizeSymbol)
+//     {
+//         prio = _symbol;
+//         other = _path;
+//     }
+//     else
+//     {
+//         prio = _path;
+//         other = _symbol;
+//     }
+
+//     STICK_ASSERT(prio || other);
+
+//     tpStyle style = tpStyleMake();
+//     style.fillRule =
+//         property(prio, other, &Item::hasWindingRule, &Item::windingRule) == WindingRule::NonZero
+//             ? kTpFillRuleNonZero
+//             : kTpFillRuleEvenOdd;
+
+//     if (!other || (prio && prio->hasFill()))
+//         setPaint(&style, &tpStyle::fill, prio, &Item::fill);
+//     else
+//         setPaint(&style, &tpStyle::fill, other, &Item::fill);
+
+//     if (!other || (prio && prio->hasStroke()))
+//         setPaint(&style, &tpStyle::stroke, prio, &Item::stroke);
+//     else
+//         setPaint(&style, &tpStyle::stroke, other, &Item::stroke);
+
+//     Float sw = property(prio, other, &Item::hasStrokeWidth, &Item::strokeWidth);
+//     if (style.stroke.type != kTpPaintTypeNone && sw)
+//     {
+//         style.strokeWidth = sw;
+//         style.miterLimit = property(prio, other, &Item::hasMiterLimit, &Item::miterLimit);
+//         style.scaleStroke =
+//             (tpBool)property(_path, _symbol, &Item::hasScaleStroke, &Item::scaleStroke);
+
+//         switch (property(prio, other, &Item::hasStrokeJoin, &Item::strokeJoin))
+//         {
+//         case StrokeJoin::Round:
+//             style.strokeJoin = kTpStrokeJoinRound;
+//             break;
+//         case StrokeJoin::Miter:
+//             style.strokeJoin = kTpStrokeJoinMiter;
+//             break;
+//         case StrokeJoin::Bevel:
+//         default:
+//             style.strokeJoin = kTpStrokeJoinBevel;
+//             break;
+//         }
+
+//         switch (property(prio, other, &Item::hasStrokeCap, &Item::strokeCap))
+//         {
+//         case StrokeCap::Round:
+//             style.strokeCap = kTpStrokeCapRound;
+//             break;
+//         case StrokeCap::Square:
+//             style.strokeCap = kTpStrokeCapSquare;
+//             break;
+//         case StrokeCap::Butt:
+//         default:
+//             style.strokeCap = kTpStrokeCapButt;
+//             break;
+//         }
+
+//         auto & da =
+//             !other || (prio && prio->hasDashArray()) ? prio->dashArray() : other->dashArray();
+//         if (da.count())
+//         {
+//             style.dashArray = &da[0];
+//             style.dashCount = da.count();
+//             style.dashOffset = property(prio, other, &Item::hasDashOffset, &Item::dashOffset);
+//         }
+//     }
+
+//     return style;
+// }
+
+Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth)
 {
-    Item *prio, *other;
-    if (_bPrioritizeSymbol)
+    detail::TarpPathData & rd = ensureRenderData(_path);
+
+    const ResolvedStyle * rs;
+    ResolvedStyle tmp;
+
+    if(_symbol)
     {
-        prio = _symbol;
-        other = _path;
+        STICK_ASSERT(_path == _symbol->item());
+        tmp = _symbol->resolveStyle();
+        rs = &tmp;
     }
     else
-    {
-        prio = _path;
-        other = _symbol;
-    }
-
-    STICK_ASSERT(prio || other);
+        rs = &_path->resolvedStyle();
 
     tpStyle style = tpStyleMake();
     style.fillRule =
-        property(prio, other, &Item::hasWindingRule, &Item::windingRule) == WindingRule::NonZero
-            ? kTpFillRuleNonZero
-            : kTpFillRuleEvenOdd;
+        rs->windingRule == WindingRule::NonZero ? kTpFillRuleNonZero : kTpFillRuleEvenOdd;
 
-    if (!other || (prio && prio->hasFill()))
-        setPaint(&style, &tpStyle::fill, prio, &Item::fill);
-    else
-        setPaint(&style, &tpStyle::fill, other, &Item::fill);
+    setPaint(&style, &tpStyle::fill, rs->fill);
+    setPaint(&style, &tpStyle::stroke, rs->stroke);
 
-    if (!other || (prio && prio->hasStroke()))
-        setPaint(&style, &tpStyle::stroke, prio, &Item::stroke);
-    else
-        setPaint(&style, &tpStyle::stroke, other, &Item::stroke);
-
-    Float sw = property(prio, other, &Item::hasStrokeWidth, &Item::strokeWidth);
-    if (style.stroke.type != kTpPaintTypeNone && sw)
+    if (style.stroke.type != kTpPaintTypeNone && rs->strokeWidth)
     {
-        style.strokeWidth = sw;
-        style.miterLimit = property(prio, other, &Item::hasMiterLimit, &Item::miterLimit);
-        style.scaleStroke =
-            (tpBool)property(_path, _symbol, &Item::hasScaleStroke, &Item::scaleStroke);
+        style.strokeWidth = rs->strokeWidth;
+        style.miterLimit = rs->miterLimit;
+        style.scaleStroke = (tpBool)rs->scaleStroke;
 
-        switch (property(prio, other, &Item::hasStrokeJoin, &Item::strokeJoin))
+        switch (rs->strokeJoin)
         {
         case StrokeJoin::Round:
             style.strokeJoin = kTpStrokeJoinRound;
@@ -449,7 +519,7 @@ static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol
             break;
         }
 
-        switch (property(prio, other, &Item::hasStrokeCap, &Item::strokeCap))
+        switch (rs->strokeCap)
         {
         case StrokeCap::Round:
             style.strokeCap = kTpStrokeCapRound;
@@ -463,73 +533,16 @@ static tpStyle makeStyle(Path * _path, Symbol * _symbol, bool _bPrioritizeSymbol
             break;
         }
 
-        auto & da =
-            !other || (prio && prio->hasDashArray()) ? prio->dashArray() : other->dashArray();
+        auto & da = rs->dashArray;
         if (da.count())
         {
             style.dashArray = &da[0];
             style.dashCount = da.count();
-            style.dashOffset = property(prio, other, &Item::hasDashOffset, &Item::dashOffset);
+            style.dashOffset = rs->dashOffset;
         }
     }
 
-    return style;
-}
-
-Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _symbol, Size _depth)
-{
-    detail::TarpPathData & rd = ensureRenderData(_path);
-    // tpStyle style = tpStyleMake();
-    // style.fillRule =
-    //     _path->windingRule() == WindingRule::NonZero ? kTpFillRuleNonZero : kTpFillRuleEvenOdd;
-
-    // setPaint(&style, &tpStyle::fill, _path, &Path::fill);
-    // setPaint(&style, &tpStyle::stroke, _path, &Path::stroke);
-
-    // if (style.stroke.type != kTpPaintTypeNone && _path->strokeWidth())
-    // {
-    //     style.strokeWidth = _path->strokeWidth();
-    //     style.miterLimit = _path->miterLimit();
-    //     style.scaleStroke = (tpBool)_path->scaleStroke();
-
-    //     switch (_path->strokeJoin())
-    //     {
-    //     case StrokeJoin::Round:
-    //         style.strokeJoin = kTpStrokeJoinRound;
-    //         break;
-    //     case StrokeJoin::Miter:
-    //         style.strokeJoin = kTpStrokeJoinMiter;
-    //         break;
-    //     case StrokeJoin::Bevel:
-    //     default:
-    //         style.strokeJoin = kTpStrokeJoinBevel;
-    //         break;
-    //     }
-
-    //     switch (_path->strokeCap())
-    //     {
-    //     case StrokeCap::Round:
-    //         style.strokeCap = kTpStrokeCapRound;
-    //         break;
-    //     case StrokeCap::Square:
-    //         style.strokeCap = kTpStrokeCapSquare;
-    //         break;
-    //     case StrokeCap::Butt:
-    //     default:
-    //         style.strokeCap = kTpStrokeCapButt;
-    //         break;
-    //     }
-
-    //     auto & da = _path->dashArray();
-    //     if (da.count())
-    //     {
-    //         style.dashArray = &da[0];
-    //         style.dashCount = da.count();
-    //         style.dashOffset = _path->dashOffset();
-    //     }
-    // }
-
-    tpStyle style = makeStyle(_path, _symbol);
+    // tpStyle style = makeStyle(_path, _symbol);
     // style = makeStyle(_path, nullptr);
     updateTarpPath(m_tarp->tmpSegmentBuffer, _path, rd.path, nullptr);
 

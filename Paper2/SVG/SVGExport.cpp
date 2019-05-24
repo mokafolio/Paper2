@@ -314,7 +314,7 @@ static void addStyle(const Item * _item,
         _node.append_attribute("visibility") = "hidden";
 
     // fill related things
-    if (_item->hasFill() && _item->fill().is<NoPaint>())
+    if (_item->style()->hasFill() && _item->fill().is<NoPaint>())
         _node.append_attribute("fill") = "none";
     else
         addPaintToStyle(&Item::fill,
@@ -326,7 +326,7 @@ static void addStyle(const Item * _item,
                         _session);
 
     // stroke related things
-    if (!_item->hasStroke())
+    if (!_item->style()->hasStroke())
         _node.append_attribute("stroke") = "none";
     else
         addPaintToStyle(&Item::stroke,
@@ -337,12 +337,12 @@ static void addStyle(const Item * _item,
                         _node,
                         _session);
 
-    if (_item->hasStroke() || _item->children().count())
+    if (_item->style()->hasStroke() || _item->children().count())
     {
-        if (_item->hasStrokeWidth())
+        if (_item->style()->hasStrokeWidth())
             _node.append_attribute("stroke-width") = _item->strokeWidth();
 
-        if (_item->hasStrokeCap())
+        if (_item->style()->hasStrokeCap())
         {
             switch (_item->strokeCap())
             {
@@ -357,7 +357,7 @@ static void addStyle(const Item * _item,
                 break;
             }
         }
-        if (_item->hasStrokeJoin())
+        if (_item->style()->hasStrokeJoin())
         {
             switch (_item->strokeJoin())
             {
@@ -373,10 +373,10 @@ static void addStyle(const Item * _item,
             }
         }
 
-        if (_item->hasMiterLimit())
+        if (_item->style()->hasMiterLimit())
             _node.append_attribute("stroke-miterlimit") = _item->miterLimit();
 
-        if (_item->hasDashArray() && _item->dashArray().count())
+        if (_item->style()->hasDashArray() && _item->dashArray().count())
         {
             String dashString;
             auto it = _item->dashArray().begin();
@@ -390,10 +390,10 @@ static void addStyle(const Item * _item,
             _node.append_attribute("stroke-dasharray") = dashString.cString();
         }
 
-        if (_item->hasDashOffset())
+        if (_item->style()->hasDashOffset())
             _node.append_attribute("stroke-dashoffset") = _item->dashOffset();
 
-        if (_item->hasScaleStroke() && !_item->scaleStroke())
+        if (_item->style()->hasScaleStroke() && !_item->scaleStroke())
             _node.append_attribute("vector-effect") = "non-scaling-stroke";
     }
 }

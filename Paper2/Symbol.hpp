@@ -24,6 +24,9 @@ class STICK_API Symbol : public Item
     // called from Renderer
     Size version() const;
 
+    // resolves the style of the style set on the symbol and the style of the item the symbol is referencing.
+    ResolvedStyle resolveStyle() const;
+
   private:
     stick::Maybe<Rect> computeBounds(const Mat32f * _transform, BoundsType _type) const final;
 

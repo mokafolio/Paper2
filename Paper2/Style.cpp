@@ -275,7 +275,7 @@ bool strokeBoundsDifferent(const StyleData & _a, const StyleData & _b)
 {
     if (_a.strokeWidth != _b.strokeWidth || _a.strokeJoin != _b.strokeJoin ||
         _a.strokeCap != _b.strokeCap || _a.miterLimit != _b.miterLimit ||
-        _a.scaleStroke != _b.scaleStroke || _a.stroke.is<NoPaint>() && !_b.stroke.is<NoPaint>())
+        _a.scaleStroke != _b.scaleStroke || (_a.stroke.is<NoPaint>() && !_b.stroke.is<NoPaint>()))
         return true;
     return false;
 }

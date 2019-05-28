@@ -626,10 +626,11 @@ const Mat32f & Item::strokePaintTransform() const
 //@TODO: diff settings that affect stroke bounds and mark them dirty accordingly
 void Item::setStyle(const StylePtr & _style)
 {
+    STICK_ASSERT(_style);
     if (m_style)
         m_style->itemRemovedStyle(this);
 
-    bool bDifferent = strokeBoundsDifferent(m_style->m_data, _style->m_data);
+    bool bDifferent = m_style ? strokeBoundsDifferent(m_style->m_data, _style->m_data) : true;
     m_style = _style;
     m_style->itemAddedStyle(this);
 

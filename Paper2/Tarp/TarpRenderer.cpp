@@ -480,17 +480,17 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
 {
     detail::TarpPathData & rd = ensureRenderData(_path);
 
-    const ResolvedStyle * rs;
-    ResolvedStyle tmp;
+    const StyleData * rs;
+    StyleData tmp;
 
-    if(_symbol)
-    {
-        STICK_ASSERT(_path == _symbol->item());
-        tmp = _symbol->resolveStyle();
-        rs = &tmp;
-    }
-    else
-        rs = &_path->resolvedStyle();
+    // if(_symbol)
+    // {
+    //     STICK_ASSERT(_path == _symbol->item());
+    //     tmp = _symbol->resolveStyle();
+    //     rs = &tmp;
+    // }
+    // else
+        rs = &_path->style().data();
 
     tpStyle style = tpStyleMake();
     style.fillRule =

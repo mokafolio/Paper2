@@ -2173,6 +2173,8 @@ void Path::addedChild(Item * _e)
     while(parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
         parent = static_cast<Path*>(parent->m_parent);
     parent->m_bContoursDirty = true;
+
+    _e->setStyle(m_style);
 }
 
 void Path::removedChild(Item * _e)
@@ -2305,7 +2307,7 @@ Maybe<Rect> Path::computeFillBounds(const Mat32f * _transform, Float _padding) c
 
 Maybe<Rect> Path::computeStrokeBounds(const Mat32f * _transform) const
 {
-    if (!m_style->hasStroke())
+    if (!m_style->stroke().is<NoPaint>())
         return computeFillBounds(_transform, 0);
 
     StrokeJoin join = strokeJoin();

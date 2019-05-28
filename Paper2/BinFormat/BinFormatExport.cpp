@@ -10,13 +10,41 @@ namespace binfmt
 {
 using namespace stick;
 
-using Serializer = SerializerT<LittleEndianPolicy, ContainerWriter<DynamicArray<UInt8>>>;
+template <class T>
+struct SharedResourceExport
+{
+    using ResourceArray = stick::DynamicArray<const T *>;
 
+    template <class S>
+    void write(const T * _res, S & _serializer)
+    {
+        auto it = stick::find(m_exported.begin(), m_exported.end(), _res);
+        if (it == m_exported.end())
+        {
+            m_exported.append(_res);
+            _serializer.write((UInt32)m_exported.count() - 1);
+            printf("FIRST FOUND ITEM %lu\n", m_exported.count() - 1);
+        }
+        else
+        {
+            printf("FOUND ITEM\n");
+            auto dist = std::distance(m_exported.begin(), it);
+            printf("DIST %lu\n", dist);
+            _serializer.write((UInt32)dist);
+        }
+    }
+
+    ResourceArray m_exported;
+};
+
+using Serializer = SerializerT<LittleEndianPolicy, ContainerWriter<DynamicArray<UInt8>>>;
 using ExportedGradients = stick::DynamicArray<const BaseGradient *>;
 
 struct ExportSession
 {
-    ExportedGradients exportedGradients;
+    // ExportedGradients exportedGradients;
+    SharedResourceExport<BaseGradient> gradientExport;
+    SharedResourceExport<Style> styleExport;
 };
 
 //@TODO: We could squeze all of the enum types into UInt8 or UInt16 I am sure...
@@ -57,44 +85,34 @@ void serialize(S & _s, const ColorRGBA & _col)
 template <class S>
 void exportPaint(S & _serializer, const Paint & _paint, ExportSession & _session)
 {
-    _serializer.write(true);
-    if (_paint.is<ColorRGBA>())
+    if (_paint.is<NoPaint>())
+        _serializer.write(false);
+    else
     {
-        _serializer.write((UInt8)0);
-        serialize(_serializer, _paint.get<ColorRGBA>());
-    }
-    else if (_paint.is<LinearGradientPtr>() || _paint.is<RadialGradientPtr>())
-    {
-        const BaseGradient * bgrad =
-            _paint.is<LinearGradientPtr>()
-                ? (const BaseGradient *)_paint.get<LinearGradientPtr>().get()
-                : (const BaseGradient *)_paint.get<RadialGradientPtr>().get();
-
-        _serializer.write(_paint.is<LinearGradientPtr>() ? (UInt8)1 : (UInt8)2);
-
-        // check if the gradient was allready serialized (i.e. if its shared between multiple items)
-        auto it = stick::find(
-            _session.exportedGradients.begin(), _session.exportedGradients.end(), bgrad);
-        if (it == _session.exportedGradients.end())
+        _serializer.write(true);
+        if (_paint.is<ColorRGBA>())
         {
-            printf("FIRST FOUND GRAD\n");
-            _session.exportedGradients.append(bgrad);
-            _serializer.write((UInt32)_session.exportedGradients.count() - 1);
+            _serializer.write((UInt8)0);
+            serialize(_serializer, _paint.get<ColorRGBA>());
         }
-        else
+        else if (_paint.is<LinearGradientPtr>() || _paint.is<RadialGradientPtr>())
         {
-            printf("FOUND GRAD\n");
-            auto dist = std::distance(_session.exportedGradients.begin(), it);
-            printf("DIST %lu\n", dist);
-            _serializer.write((UInt32)dist);
-        }
+            const BaseGradient * bgrad =
+                _paint.is<LinearGradientPtr>()
+                    ? (const BaseGradient *)_paint.get<LinearGradientPtr>().get()
+                    : (const BaseGradient *)_paint.get<RadialGradientPtr>().get();
 
-        // _serializer.write(_paint.is<LinearGradientPtr>() ? (UInt8)1 : (UInt8)2);
-        // _serializer.write((UInt64)bgrad->type());
-        // serialize(bgrad->origin());
-        // serialize(bgrad->destination());
+            _serializer.write(_paint.is<LinearGradientPtr>() ? (UInt8)1 : (UInt8)2);
+            _session.gradientExport.write(bgrad, _serializer);
+        }
     }
 }
+
+// template <class S>
+// void exportStyle(S & _serializer, const StylePtr & _style, ExportSession & _session)
+// {
+
+// }
 
 template <class S>
 void recursivelyExportItem(const Item * _item,
@@ -138,6 +156,8 @@ void recursivelyExportItem(const Item * _item,
     _serializer.write(_item->isVisible());
     _serializer.write(_item->hasTransform());
 
+    // const Style & s = _item->style();
+
     //@TODO: we could shorten the following stuff with a macro or template helper.
     // Macro will most likely be nicer in this case.
     if (_item->hasTransform())
@@ -146,49 +166,70 @@ void recursivelyExportItem(const Item * _item,
     if (_item->hasPivot())
         serialize(_serializer, _item->pivot());
 
-    if (_item->style()->hasFill())
-        exportPaint(_serializer, _item->fill(), _session);
-    else
-        _serializer.write(false);
+    _session.styleExport.write(_item->stylePtr().get(), _serializer);
 
-    if (_item->style()->hasStroke())
-        exportPaint(_serializer, _item->stroke(), _session);
-    else
-        _serializer.write(false);
+    // if (_item->style()->hasFill())
+    //     exportPaint(_serializer, _item->fill(), _session);
+    // else
+    //     _serializer.write(false);
 
-    printf("B\n");
-    _serializer.write(_item->style()->hasStrokeWidth());
-    if (_item->style()->hasStrokeWidth())
-        _serializer.write(_item->strokeWidth());
-    _serializer.write(_item->style()->hasStrokeJoin());
-    if (_item->style()->hasStrokeJoin())
-        _serializer.write((UInt64)_item->strokeJoin());
-    _serializer.write(_item->style()->hasStrokeCap());
-    if (_item->style()->hasStrokeCap())
-        _serializer.write((UInt64)_item->strokeCap());
-    _serializer.write(_item->style()->hasScaleStroke());
-    if (_item->style()->hasScaleStroke())
-        _serializer.write(_item->scaleStroke());
-    _serializer.write(_item->style()->hasMiterLimit());
-    if (_item->style()->hasMiterLimit())
-        _serializer.write(_item->miterLimit());
+    // if (_item->style()->hasStroke())
+    //     exportPaint(_serializer, _item->stroke(), _session);
+    // else
+    //     _serializer.write(false);
 
-    printf("C\n");
-    const auto & da = _item->dashArray();
-    Size daCount = da.count();
-    _serializer.write(daCount);
-    for (Size i = 0; i < daCount; ++i)
-        _serializer.write(da[i]);
+    // exportPaint(_serializer, s.fill(), _session);
+    // exportPaint(_serializer, s.stroke(), _session);
 
-    printf("D\n");
-    _serializer.write(_item->style()->hasDashOffset());
-    if (_item->style()->hasDashOffset())
-        _serializer.write(_item->dashOffset());
-    _serializer.write(_item->style()->hasWindingRule());
-    if (_item->style()->hasWindingRule())
-        _serializer.write((UInt64)_item->windingRule());
+    // printf("B\n");
 
-    printf("E\n");
+    // _serializer.write(_item->style()->hasStrokeWidth());
+    // if (_item->style()->hasStrokeWidth())
+    //     _serializer.write(_item->strokeWidth());
+    // _serializer.write(_item->style()->hasStrokeJoin());
+    // if (_item->style()->hasStrokeJoin())
+    //     _serializer.write((UInt64)_item->strokeJoin());
+    // _serializer.write(_item->style()->hasStrokeCap());
+    // if (_item->style()->hasStrokeCap())
+    //     _serializer.write((UInt64)_item->strokeCap());
+    // _serializer.write(_item->style()->hasScaleStroke());
+    // if (_item->style()->hasScaleStroke())
+    //     _serializer.write(_item->scaleStroke());
+    // _serializer.write(_item->style()->hasMiterLimit());
+    // if (_item->style()->hasMiterLimit())
+    //     _serializer.write(_item->miterLimit());
+
+    // _serializer.write(true);
+    // _serializer.write(s.strokeWidth());
+    // _serializer.write(true);
+    // _serializer.write((UInt64)s.strokeJoin());
+    // _serializer.write(true);
+    // _serializer.write((UInt64)s.strokeCap());
+    // _serializer.write(true);
+    // _serializer.write(s.scaleStroke());
+    // _serializer.write(true);
+    // _serializer.write(s.miterLimit());
+
+    // printf("C\n");
+    // const auto & da = s.dashArray();
+    // Size daCount = da.count();
+    // _serializer.write(daCount);
+    // for (Size i = 0; i < daCount; ++i)
+    //     _serializer.write(da[i]);
+
+    // printf("D\n");
+    // // _serializer.write(_item->style()->hasDashOffset());
+    // // if (_item->style()->hasDashOffset())
+    // //     _serializer.write(_item->dashOffset());
+    // // _serializer.write(_item->style()->hasWindingRule());
+    // // if (_item->style()->hasWindingRule())
+    // //     _serializer.write((UInt64)_item->windingRule());
+    // _serializer.write(true);
+    // _serializer.write(s.dashOffset());
+    // _serializer.write(true);
+    // _serializer.write((UInt64)s.windingRule());
+
+    // printf("E\n");
     // children
     _serializer.write(_item->children().count());
     for (const Item * child : _item->children())
@@ -207,14 +248,14 @@ Error exportItem(const Item * _item, DynamicArray<UInt8> & _outBytes)
     SegmentDataArray segmentData(_item->document()->allocator());
 
     // 01. hierarchy
-    tmp.write("hr");
+    tmp.write("hierarchy");
     ExportSession session;
     recursivelyExportItem(_item, tmp, segmentData, session);
 
     // 02. segment data
-    printf("OFF %lu\n", tmp.storage().data.count());
+    printf("seg OFF %lu\n", tmp.storage().data.count());
     Size segmentDataOff = tmp.position();
-    tmp.write("sd");
+    tmp.write("segmentData");
     tmp.write(segmentData.count());
 
     //@TODO: if host platform is little endian and float 4-byte aligned, copy all segments at
@@ -227,33 +268,60 @@ Error exportItem(const Item * _item, DynamicArray<UInt8> & _outBytes)
         serialize(tmp, seg.handleOut);
     }
 
-    // 03. gradient/paint data
-    Size paintDataOff = tmp.position();
-    tmp.write("pd");
-    tmp.write(session.exportedGradients.count());
+    // 03. Style data
+    Size styleDataOff = tmp.position();
+    tmp.write("styleData");
+    tmp.write(session.styleExport.m_exported.count());
 
-    printf("EXPORTING GRADS %lu %lu\n", paintDataOff, session.exportedGradients.count());
-    for (const BaseGradient * grad : session.exportedGradients)
+    printf("EXPORTING STYLES %lu\n", session.styleExport.m_exported.count());
+    for (const Style * s : session.styleExport.m_exported)
+    {
+        exportPaint(tmp, s->fill(), session);
+        exportPaint(tmp, s->stroke(), session);
+
+        tmp.write(s->strokeWidth());
+        tmp.write((UInt64)s->strokeJoin());
+        tmp.write((UInt64)s->strokeCap());
+        tmp.write(s->scaleStroke());
+        tmp.write(s->miterLimit());
+
+        const auto & da = s->dashArray();
+        Size daCount = da.count();
+        tmp.write(daCount);
+        for (Size i = 0; i < daCount; ++i)
+            tmp.write(da[i]);
+
+        tmp.write(s->dashOffset());
+        tmp.write((UInt64)s->windingRule());
+    }
+
+    // 04. gradient/paint data
+    Size paintDataOff = tmp.position();
+    tmp.write("paintData");
+    tmp.write(session.gradientExport.m_exported.count());
+
+    printf("EXPORTING GRADS %lu %lu\n", paintDataOff, session.gradientExport.m_exported.count());
+    for (const BaseGradient * grad : session.gradientExport.m_exported)
     {
         tmp.write((UInt64)grad->type());
         serialize(tmp, grad->origin());
         serialize(tmp, grad->destination());
 
-        if(grad->type() == GradientType::Radial)
+        if (grad->type() == GradientType::Radial)
         {
-            const RadialGradient * rg = static_cast<const RadialGradient*>(grad);
+            const RadialGradient * rg = static_cast<const RadialGradient *>(grad);
             const auto & fpo = rg->focalPointOffset();
             tmp.write((bool)fpo);
-            if(fpo)
+            if (fpo)
                 serialize(tmp, *fpo);
             const auto & ratio = rg->ratio();
             tmp.write((bool)ratio);
-            if(ratio)
+            if (ratio)
                 tmp.write(*ratio);
         }
 
         tmp.write((UInt64)grad->stops().count());
-        for(const ColorStop & stop : grad->stops())
+        for (const ColorStop & stop : grad->stops())
         {
             serialize(tmp, stop.color);
             tmp.write(stop.offset);
@@ -268,8 +336,11 @@ Error exportItem(const Item * _item, DynamicArray<UInt8> & _outBytes)
     os.write("paper");
     os.write((UInt32)0); // future file format version
 
-    Size headerSize = os.positionAfterWritingBytes(sizeof(Size) * 2);
+    Size headerSize = os.positionAfterWritingBytes(sizeof(Size) * 3);
+
+    printf("FINALS %lu %lu %lu\n", segmentDataOff + headerSize, styleDataOff + headerSize, paintDataOff + headerSize);
     os.write(segmentDataOff + headerSize);
+    os.write(styleDataOff + headerSize);
     os.write(paintDataOff + headerSize);
     os.write(tmp.storage().dataPtr(), tmp.storage().byteCount());
 

@@ -299,9 +299,11 @@ static void addStyle(const Item * _item,
         _node.addChild("id", _item.name(), ValueHint::XMLAttribute);
     }*/
 
-    if (_bIsClipPath || !_item->fill().is<NoPaint>() || _item->children().count())
+    const Style & s = _item->style();
+
+    if (_bIsClipPath || !s.fill().is<NoPaint>() || _item->children().count())
     {
-        if (_item->windingRule() == WindingRule::NonZero)
+        if (s.windingRule() == WindingRule::NonZero)
             _node.append_attribute("fill-rule") = "nonzero";
         else
             _node.append_attribute("fill-rule") = "evenodd";
@@ -314,7 +316,7 @@ static void addStyle(const Item * _item,
         _node.append_attribute("visibility") = "hidden";
 
     // fill related things
-    if (_item->style()->hasFill() && _item->fill().is<NoPaint>())
+    if (s.fill().is<NoPaint>())
         _node.append_attribute("fill") = "none";
     else
         addPaintToStyle(&Item::fill,
@@ -326,7 +328,7 @@ static void addStyle(const Item * _item,
                         _session);
 
     // stroke related things
-    if (!_item->style()->hasStroke())
+    if (s.stroke().is<NoPaint>())
         _node.append_attribute("stroke") = "none";
     else
         addPaintToStyle(&Item::stroke,
@@ -337,14 +339,14 @@ static void addStyle(const Item * _item,
                         _node,
                         _session);
 
-    if (_item->style()->hasStroke() || _item->children().count())
+    // if (_item->style()->hasStroke() || _item->children().count())
     {
-        if (_item->style()->hasStrokeWidth())
-            _node.append_attribute("stroke-width") = _item->strokeWidth();
+        // if (_item->style()->hasStrokeWidth())
+        _node.append_attribute("stroke-width") = s.strokeWidth();
 
-        if (_item->style()->hasStrokeCap())
+        // if (_item->style()->hasStrokeCap())
         {
-            switch (_item->strokeCap())
+            switch (s.strokeCap())
             {
             case StrokeCap::Butt:
                 _node.append_attribute("stroke-linecap") = "butt";
@@ -357,9 +359,9 @@ static void addStyle(const Item * _item,
                 break;
             }
         }
-        if (_item->style()->hasStrokeJoin())
+        // if (_item->style()->hasStrokeJoin())
         {
-            switch (_item->strokeJoin())
+            switch (s.strokeJoin())
             {
             case StrokeJoin::Bevel:
                 _node.append_attribute("stroke-linejoin") = "bevel";
@@ -373,16 +375,17 @@ static void addStyle(const Item * _item,
             }
         }
 
-        if (_item->style()->hasMiterLimit())
-            _node.append_attribute("stroke-miterlimit") = _item->miterLimit();
+        // if (_item->style()->hasMiterLimit())
+            _node.append_attribute("stroke-miterlimit") = s.miterLimit();
 
-        if (_item->style()->hasDashArray() && _item->dashArray().count())
+        // if (_item->style()->hasDashArray() && _item->dashArray().count())
+        if(s.dashArray().count())
         {
             String dashString;
-            auto it = _item->dashArray().begin();
-            for (; it != _item->dashArray().end(); ++it)
+            auto it = s.dashArray().begin();
+            for (; it != s.dashArray().end(); ++it)
             {
-                if (it != _item->dashArray().begin())
+                if (it != s.dashArray().begin())
                     dashString.appendFormatted(", %.4f", *it);
                 else
                     dashString.appendFormatted("%.4f", *it);
@@ -390,10 +393,11 @@ static void addStyle(const Item * _item,
             _node.append_attribute("stroke-dasharray") = dashString.cString();
         }
 
-        if (_item->style()->hasDashOffset())
-            _node.append_attribute("stroke-dashoffset") = _item->dashOffset();
+        // if (_item->style()->hasDashOffset())
+        _node.append_attribute("stroke-dashoffset") = s.dashOffset();
 
-        if (_item->style()->hasScaleStroke() && !_item->scaleStroke())
+        // if (_item->style()->hasScaleStroke() && !_item->scaleStroke())
+        if(!s.scaleStroke())
             _node.append_attribute("vector-effect") = "non-scaling-stroke";
     }
 }
@@ -576,6 +580,7 @@ static pugi::xml_node addItemToXml(const Item * _item,
                                    bool _bMatchShapes)
 {
     pugi::xml_node node;
+    //@TODO: Support symbols
     switch (_item->itemType())
     {
     case ItemType::Document:
@@ -593,6 +598,7 @@ static pugi::xml_node addItemToXml(const Item * _item,
 
     if (node && _item->itemType() != ItemType::Document)
         addStyle(_item, node, _session);
+
     return node;
 }
 

@@ -14,6 +14,7 @@ using Deserializer = DeserializerT<LittleEndianPolicy, MemoryReader>;
 
 struct ImportSession
 {
+    DynamicArray<StylePtr> importedStyles;
     DynamicArray<SharedPtr<BaseGradient>> importedGradients;
 };
 
@@ -28,42 +29,42 @@ ColorRGBA readColor(Deserializer & _ds)
 }
 
 //@TODO: This whole function could be a lot more concise
-void importPaint(Item * _item, Deserializer & _ds, ImportSession & _session, bool _bStroke)
+void importPaint(StyleData & _data, Deserializer & _ds, ImportSession & _session, bool _bStroke)
 {
     if (_ds.readBool())
     {
         UInt8 type = _ds.readUInt8();
+        printf("IMPORT PAINT %i\n", type);
         if (type == 0)
         {
             if (_bStroke)
-                _item->setStroke(readColor(_ds));
+                _data.stroke = readColor(_ds);
             else
-                _item->setFill(readColor(_ds));
+                _data.fill = readColor(_ds);
         }
         else if (type == 1 || type == 2)
         {
             UInt32 idx = _ds.readUInt32();
-            STICK_ASSERT(
-                idx < _session.importedGradients.count()); //@TODO: instead of assert, this should
-                                                           // most likely be a bad file error
+            printf("IDX %lu %lu\n", idx, _session.importedGradients.count());
+            //@TODO: instead of assert, this should
+            // most likely be a bad file error
+            STICK_ASSERT(idx < _session.importedGradients.count());
             const auto & grad = _session.importedGradients[idx];
             if (_bStroke)
             {
                 if (grad->type() == GradientType::Linear)
-                    _item->setStroke(
-                        LinearGradientPtr(grad, static_cast<LinearGradient *>(grad.get())));
+                    _data.stroke =
+                        LinearGradientPtr(grad, static_cast<LinearGradient *>(grad.get()));
                 else
-                    _item->setStroke(
-                        RadialGradientPtr(grad, static_cast<RadialGradient *>(grad.get())));
+                    _data.stroke =
+                        RadialGradientPtr(grad, static_cast<RadialGradient *>(grad.get()));
             }
             else
             {
                 if (grad->type() == GradientType::Linear)
-                    _item->setFill(
-                        LinearGradientPtr(grad, static_cast<LinearGradient *>(grad.get())));
+                    _data.fill = LinearGradientPtr(grad, static_cast<LinearGradient *>(grad.get()));
                 else
-                    _item->setFill(
-                        RadialGradientPtr(grad, static_cast<RadialGradient *>(grad.get())));
+                    _data.fill = RadialGradientPtr(grad, static_cast<RadialGradient *>(grad.get()));
             }
         }
         else
@@ -143,42 +144,46 @@ static Item * importItem(Document & _doc,
     if (_ds.readBool())
         ret->setPivot(Vec2f(_ds.readFloat32(), _ds.readFloat32()));
 
-    importPaint(ret, _ds, _session, false);
-    importPaint(ret, _ds, _session, true);
+    UInt32 idx = _ds.readUInt32();
+    STICK_ASSERT(idx < _session.importedStyles.count());
+    ret->setStyle(_session.importedStyles[idx]);
 
-    // // stick::Maybe<Paint> m_fill;
-    // // stick::Maybe<Paint> m_stroke;
+    // importPaint(ret, _ds, _session, false);
+    // importPaint(ret, _ds, _session, true);
 
-    if (_ds.readBool())
-        ret->setStrokeWidth(_ds.readFloat32());
+    // // // stick::Maybe<Paint> m_fill;
+    // // // stick::Maybe<Paint> m_stroke;
 
-    if (_ds.readBool())
-        ret->setStrokeJoin((StrokeJoin)_ds.readUInt64());
+    // if (_ds.readBool())
+    //     ret->setStrokeWidth(_ds.readFloat32());
 
-    if (_ds.readBool())
-        ret->setStrokeCap((StrokeCap)_ds.readUInt64());
+    // if (_ds.readBool())
+    //     ret->setStrokeJoin((StrokeJoin)_ds.readUInt64());
 
-    if (_ds.readBool())
-        ret->setScaleStroke(_ds.readBool());
+    // if (_ds.readBool())
+    //     ret->setStrokeCap((StrokeCap)_ds.readUInt64());
 
-    if (_ds.readBool())
-        ret->setMiterLimit(_ds.readFloat32());
+    // if (_ds.readBool())
+    //     ret->setScaleStroke(_ds.readBool());
 
-    Size dashCount = _ds.readUInt64();
-    if (dashCount)
-    {
-        DashArray arr(_doc.allocator());
-        arr.resize(dashCount);
-        for (Size i = 0; i < dashCount; ++i)
-            arr[i] = _ds.readFloat32();
-        ret->setDashArray(std::move(arr));
-    }
+    // if (_ds.readBool())
+    //     ret->setMiterLimit(_ds.readFloat32());
 
-    if (_ds.readBool())
-        ret->setDashOffset(_ds.readFloat32());
+    // Size dashCount = _ds.readUInt64();
+    // if (dashCount)
+    // {
+    //     DashArray arr(_doc.allocator());
+    //     arr.resize(dashCount);
+    //     for (Size i = 0; i < dashCount; ++i)
+    //         arr[i] = _ds.readFloat32();
+    //     ret->setDashArray(std::move(arr));
+    // }
 
-    if (_ds.readBool())
-        ret->setWindingRule((WindingRule)_ds.readUInt64());
+    // if (_ds.readBool())
+    //     ret->setDashOffset(_ds.readFloat32());
+
+    // if (_ds.readBool())
+    //     ret->setWindingRule((WindingRule)_ds.readUInt64());
 
     Size childCount = _ds.readUInt64();
     printf("CHILD COUNT %lu\n", childCount);
@@ -208,9 +213,15 @@ Result<Item *> import(Document & _doc, const UInt8 * _data, Size _byteCount)
 
     UInt32 version = ds.readUInt32();
     UInt64 segmentDataOff = ds.readUInt64();
+    UInt64 styleDataOff = ds.readUInt64();
     UInt64 paintDataOff = ds.readUInt64();
 
-    printf("VERSION %u SEGOFF %lu PDATAOFF %lu BC %lu\n", version, segmentDataOff, paintDataOff, _byteCount);
+    printf("VERSION %u SEGOFF %lu STYLEOFF %lu PDATAOFF %lu BC %lu\n",
+           version,
+           segmentDataOff,
+           styleDataOff,
+           paintDataOff,
+           _byteCount);
 
     Size hierarchyPos = ds.position();
     ds.setPosition(segmentDataOff);
@@ -219,7 +230,7 @@ Result<Item *> import(Document & _doc, const UInt8 * _data, Size _byteCount)
 
     const char * sr = ds.readCString();
     printf("sr %s\n", sr);
-    if (!sr || std::strcmp(sr, "sd") != 0)
+    if (!sr || std::strcmp(sr, "segmentData") != 0)
         return Error(ec::InvalidOperation, "bad file", STICK_FILE, STICK_LINE);
 
     Size segmentDataCount = ds.readUInt64();
@@ -239,10 +250,11 @@ Result<Item *> import(Document & _doc, const UInt8 * _data, Size _byteCount)
     ds.setPosition(paintDataOff);
     sr = ds.readCString();
     printf("SRRRR %s\n", sr);
-    if (!sr || std::strcmp(sr, "pd") != 0)
+    if (!sr || std::strcmp(sr, "paintData") != 0)
         return Error(ec::InvalidOperation, "bad file", STICK_FILE, STICK_LINE);
 
     Size gradCount = ds.readUInt64();
+    printf("GRAD COUNT %lu\n", gradCount);
     for (Size i = 0; i < gradCount; ++i)
     {
         SharedPtr<BaseGradient> grad;
@@ -278,10 +290,48 @@ Result<Item *> import(Document & _doc, const UInt8 * _data, Size _byteCount)
 
     printf("D\n");
 
+    // style data
+    ds.setPosition(styleDataOff);
+    sr = ds.readCString();
+    printf("SRRRR %s\n", sr);
+    if (!sr || std::strcmp(sr, "styleData") != 0)
+        return Error(ec::InvalidOperation, "bad file", STICK_FILE, STICK_LINE);
+
+    Size styleCount = ds.readUInt64();
+    printf("Style COUNT %lu\n", styleCount);
+    for (Size i = 0; i < styleCount; ++i)
+    {
+        StyleData styleData;
+        importPaint(styleData, ds, session, false);
+        importPaint(styleData, ds, session, true);
+
+        styleData.strokeWidth = ds.readFloat32();
+        styleData.strokeJoin = (StrokeJoin)ds.readUInt64();
+        styleData.strokeCap = (StrokeCap)ds.readUInt64();
+        styleData.scaleStroke = ds.readBool();
+        styleData.miterLimit = ds.readFloat32();
+
+        Size dashCount = ds.readUInt64();
+        if (dashCount)
+        {
+            DashArray arr(_doc.allocator());
+            arr.resize(dashCount);
+            for (Size i = 0; i < dashCount; ++i)
+                arr[i] = ds.readFloat32();
+            styleData.dashArray = std::move(arr);
+        }
+
+        styleData.dashOffset = ds.readFloat32();
+        styleData.windingRule = (WindingRule)ds.readUInt64();
+
+        StylePtr s = _doc.createStyle(styleData);
+        session.importedStyles.append(s);
+    }
+
     // hieararchy
     ds.setPosition(hierarchyPos);
     const char * hr = ds.readCString();
-    if (!hr || std::strcmp(hr, "hr") != 0)
+    if (!hr || std::strcmp(hr, "hierarchy") != 0)
         return Error(ec::InvalidOperation, "bad file", STICK_FILE, STICK_LINE);
 
     printf("E\n");

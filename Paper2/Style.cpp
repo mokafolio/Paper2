@@ -17,47 +17,55 @@
 #define STROKE_PROPERTY_SETTER(name, val)                                                          \
     do                                                                                             \
     {                                                                                              \
-        m_##name = val;                                                                            \
+        m_data.name = val;                                                                         \
         for (Item * it : m_items)                                                                  \
         {                                                                                          \
             it->markStrokeBoundsDirty(true);                                                       \
-            it->m_bStyleDirty = true;                                                              \
         }                                                                                          \
     } while (false)
 
 #define PROPERTY_SETTER(name, val)                                                                 \
     do                                                                                             \
     {                                                                                              \
-        m_##name = val;                                                                            \
-        for (Item * it : m_items)                                                                  \
-            it->m_bStyleDirty = true;                                                              \
+        m_data.name = val;                                                                         \
     } while (false)
 
 namespace paper
 {
 using namespace stick;
 
+StyleData::StyleData() :
+    fill(Style::defaultFill()),
+    stroke(Style::defaultStroke()),
+    strokeWidth(Style::defaultStrokeWidth()),
+    strokeJoin(Style::defaultStrokeJoin()),
+    strokeCap(Style::defaultStrokeCap()),
+    scaleStroke(Style::defaultScaleStroke()),
+    miterLimit(Style::defaultMiterLimit()),
+    dashArray(Style::defaultDashArray()),
+    dashOffset(Style::defaultDashOffset()),
+    windingRule(Style::defaultWindingRule())
+{
+}
+
 Style::Style(stick::Allocator & _alloc) : m_items(_alloc)
 {
 }
 
-Style::Style(stick::Allocator & _alloc, const ResolvedStyle & _resolved) :
-    m_fill(_resolved.fill),
-    m_stroke(_resolved.stroke),
-    m_strokeWidth(_resolved.strokeWidth),
-    m_strokeJoin(_resolved.strokeJoin),
-    m_strokeCap(_resolved.strokeCap),
-    m_scaleStroke(_resolved.scaleStroke),
-    m_miterLimit(_resolved.miterLimit),
-    m_dashOffset(_resolved.dashOffset),
-    m_windingRule(_resolved.windingRule),
-    m_items(_alloc)
+Style::Style(stick::Allocator & _alloc, const StyleData & _data) : m_data(_data), m_items(_alloc)
 {
-    if (_resolved.dashArray.count())
+}
+
+Style & Style::operator=(const StyleData & _data)
+{
+    bool bDifferent = strokeBoundsDifferent(m_data, _data);
+    m_data = _data;
+    if (bDifferent)
     {
-        m_dashArray = DashArray(_alloc);
-        m_dashArray->append(_resolved.dashArray.begin(), _resolved.dashArray.end());
+        for (Item * item : m_items)
+            item->markStrokeBoundsDirty(true);
     }
+    return *this;
 }
 
 void Style::setStrokeJoin(StrokeJoin _join)
@@ -95,17 +103,19 @@ void Style::setStroke(const Paint & _paint)
 
 void Style::setDashArray(const DashArray & _arr)
 {
-    PROPERTY_SETTER(dashArray, _arr);
+    // PROPERTY_SETTER(dashArray, _arr);
+    m_data.dashArray = _arr;
 }
 
 void Style::setDashOffset(Float _f)
 {
-    PROPERTY_SETTER(dashOffset, _f);
+    // PROPERTY_SETTER(dashOffset, _f);
+    m_data.dashOffset = _f;
 }
 
 void Style::setScaleStroke(bool _b)
 {
-    PROPERTY_SETTER(scaleStroke, _b);
+    STROKE_PROPERTY_SETTER(scaleStroke, _b);
 }
 
 void Style::setFill(const String & _svgName)
@@ -115,122 +125,86 @@ void Style::setFill(const String & _svgName)
 
 void Style::setFill(const Paint & _paint)
 {
-    PROPERTY_SETTER(fill, _paint);
+    // PROPERTY_SETTER(fill, _paint);
+    m_data.fill = _paint;
 }
 
 void Style::setWindingRule(WindingRule _rule)
 {
-    PROPERTY_SETTER(windingRule, _rule);
+    // PROPERTY_SETTER(windingRule, _rule);
+    m_data.windingRule = _rule;
 }
 
 StrokeJoin Style::strokeJoin() const
 {
-    PROPERTY_GETTER(strokeJoin, defaultStrokeJoin());
+    // PROPERTY_GETTER(strokeJoin, defaultStrokeJoin());
+    return m_data.strokeJoin;
 }
 
 StrokeCap Style::strokeCap() const
 {
-    PROPERTY_GETTER(strokeCap, defaultStrokeCap());
+    // PROPERTY_GETTER(strokeCap, defaultStrokeCap());
+    return m_data.strokeCap;
 }
 
 Float Style::miterLimit() const
 {
-    PROPERTY_GETTER(miterLimit, defaultMiterLimit());
+    // PROPERTY_GETTER(miterLimit, defaultMiterLimit());
+    return m_data.miterLimit;
 }
 
 Float Style::strokeWidth() const
 {
-    PROPERTY_GETTER(strokeWidth, defaultStrokeWidth());
+    // PROPERTY_GETTER(strokeWidth, defaultStrokeWidth());
+    return m_data.strokeWidth;
 }
 
 const DashArray & Style::dashArray() const
 {
-    PROPERTY_GETTER(dashArray, defaultDashArray());
+    // PROPERTY_GETTER(dashArray, defaultDashArray());
+    return m_data.dashArray;
 }
 
 Float Style::dashOffset() const
 {
-    PROPERTY_GETTER(dashOffset, defaultDashOffset());
+    // PROPERTY_GETTER(dashOffset, defaultDashOffset());
+    return m_data.dashOffset;
 }
 
 WindingRule Style::windingRule() const
 {
-    PROPERTY_GETTER(windingRule, defaultWindingRule());
+    // PROPERTY_GETTER(windingRule, defaultWindingRule());
+    return m_data.windingRule;
 }
 
 bool Style::scaleStroke() const
 {
-    PROPERTY_GETTER(scaleStroke, defaultScaleStroke());
+    // PROPERTY_GETTER(scaleStroke, defaultScaleStroke());
+    return m_data.scaleStroke;
 }
 
 Paint Style::fill() const
 {
-    PROPERTY_GETTER(fill, defaultFill());
+    // PROPERTY_GETTER(fill, defaultFill());
+    return m_data.fill;
 }
 
 Paint Style::stroke() const
 {
-    PROPERTY_GETTER(stroke, defaultStroke());
+    // PROPERTY_GETTER(stroke, defaultStroke());
+    return m_data.stroke;
 }
 
-bool Style::hasStroke() const
+const StyleData & Style::data() const
 {
-    return (bool)m_stroke;
-}
-
-bool Style::hasFill() const
-{
-    return (bool)m_fill;
-}
-
-bool Style::hasScaleStroke() const
-{
-    return (bool)m_scaleStroke;
-}
-
-bool Style::hasMiterLimit() const
-{
-    return (bool)m_miterLimit;
-}
-
-bool Style::hasWindingRule() const
-{
-    return (bool)m_windingRule;
-}
-
-bool Style::hasDashOffset() const
-{
-    return (bool)m_dashOffset;
-}
-
-bool Style::hasDashArray() const
-{
-    return (bool)m_dashArray;
-}
-
-bool Style::hasStrokeWidth() const
-{
-    return (bool)m_strokeWidth;
-}
-
-bool Style::hasStrokeCap() const
-{
-    return (bool)m_strokeCap;
-}
-
-bool Style::hasStrokeJoin() const
-{
-    return (bool)m_strokeJoin;
+    return m_data;
 }
 
 StylePtr Style::clone(Item * _item) const
 {
-    printf("A\n");
     auto ret = stick::makeShared<Style>(m_items.allocator(), *this);
-    printf("B\n");
     if (_item)
         ret->itemAddedStyle(_item);
-    printf("C\n");
     return ret;
 }
 
@@ -295,6 +269,15 @@ Paint Style::defaultFill()
 Paint Style::defaultStroke()
 {
     return NoPaint();
+}
+
+bool strokeBoundsDifferent(const StyleData & _a, const StyleData & _b)
+{
+    if (_a.strokeWidth != _b.strokeWidth || _a.strokeJoin != _b.strokeJoin ||
+        _a.strokeCap != _b.strokeCap || _a.miterLimit != _b.miterLimit ||
+        _a.scaleStroke != _b.scaleStroke || _a.stroke.is<NoPaint>() && !_b.stroke.is<NoPaint>())
+        return true;
+    return false;
 }
 
 } // namespace paper

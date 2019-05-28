@@ -146,10 +146,9 @@ const StylePtr & Document::defaultStyle() const
     return m_defaultStyle;
 }
 
-StylePtr Document::createStyle(const stick::Maybe<ResolvedStyle> & _style)
+StylePtr Document::createStyle(const StyleData & _style)
 {
-    return _style ? makeShared<Style>(*m_alloc, *m_alloc, *_style)
-                  : makeShared<Style>(*m_alloc, *m_alloc);
+    return makeShared<Style>(*m_alloc, *m_alloc, _style);
 }
 
 LinearGradientPtr Document::createLinearGradient(const Vec2f & _from, const Vec2f & _to)

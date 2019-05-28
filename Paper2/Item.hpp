@@ -245,6 +245,8 @@ class STICK_API Item
 
     void setStyle(const StylePtr & _style);
 
+    void setStyle(const StyleData & _data);
+
     StrokeJoin strokeJoin() const;
 
     StrokeCap strokeCap() const;
@@ -265,13 +267,15 @@ class STICK_API Item
 
     Paint stroke() const;
 
-    const ResolvedStyle & resolvedStyle() const;
+    // const ResolvedStyle & resolvedStyle() const;
 
-    const StylePtr & style() const;
+    const Style & style() const;
 
-    bool isAffectedByFill() const;
+    const StylePtr & stylePtr() const;
 
-    bool isAffectedByStroke() const;
+    // bool isAffectedByFill() const;
+
+    // bool isAffectedByStroke() const;
 
     // bool hasStroke() const;
 
@@ -401,14 +405,14 @@ class STICK_API Item
 
     //used by style setters, this function either returns the current style of this item,
     //or if the style is shared between multiple items, clones it.
-    Style & getOrCloneStyle();
+    StylePtr & getOrCloneStyle();
 
     // helper to recursively reset a property Maybe (using pointer to member)
     template <class Member>
     void recursivelyResetProperty(Member _member)
     {
         (this->m_style.get()->*_member).reset();
-        m_bStyleDirty = true;
+        // m_bStyleDirty = true;
         for (Item * c : m_children)
             c->recursivelyResetProperty(_member);
     }
@@ -461,8 +465,8 @@ class STICK_API Item
     // stick::Maybe<Float> m_dashOffset;
     // stick::Maybe<WindingRule> m_windingRule;
     StylePtr m_style;
-    mutable ResolvedStyle m_resolvedStyle;
-    mutable bool m_bStyleDirty;
+    // mutable ResolvedStyle m_resolvedStyle;
+    // mutable bool m_bStyleDirty;
 
     // bounds / length
     mutable stick::Maybe<Rect> m_fillBounds;

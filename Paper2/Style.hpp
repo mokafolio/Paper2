@@ -11,8 +11,14 @@ namespace paper
 class Item;
 using ItemPtrArray = stick::DynamicArray<Item *>;
 
-struct STICK_API ResolvedStyle
+struct STICK_API StyleData
 {
+    StyleData();
+    StyleData(const StyleData &) = default;
+    StyleData(StyleData &&) = default;
+    StyleData & operator = (StyleData &&) = default;
+    StyleData & operator = (const StyleData &) = default;
+
     Paint fill;
     Paint stroke;
     Float strokeWidth;
@@ -20,9 +26,6 @@ struct STICK_API ResolvedStyle
     StrokeCap strokeCap;
     bool scaleStroke;
     Float miterLimit;
-    //@TODO: as an optimization we could most likely just have a pointer and a size
-    // indicator for the dash array once its resolved pointing to the dash array of
-    // the style. Would avoid dash array copy at cost of a nicer api thogh.
     DashArray dashArray;
     Float dashOffset;
     WindingRule windingRule;
@@ -40,8 +43,11 @@ class STICK_API Style
     Style(stick::Allocator & _alloc);
     Style(const Style &) = default;
     Style(Style &&) = default;
-    Style(stick::Allocator & _alloc, const ResolvedStyle & _resolved);
+    Style(stick::Allocator & _alloc, const StyleData & _data);
     ~Style() = default;
+
+    Style & operator = (Style &&) = default;
+    Style & operator = (const StyleData & _data);
 
     void setStrokeJoin(StrokeJoin _join);
     void setStrokeCap(StrokeCap _cap);
@@ -66,17 +72,7 @@ class STICK_API Style
     bool scaleStroke() const;
     Paint fill() const;
     Paint stroke() const;
-
-    bool hasStroke() const;
-    bool hasFill() const;
-    bool hasScaleStroke() const;
-    bool hasMiterLimit() const;
-    bool hasWindingRule() const;
-    bool hasDashOffset() const;
-    bool hasDashArray() const;
-    bool hasStrokeWidth() const;
-    bool hasStrokeCap() const;
-    bool hasStrokeJoin() const;
+    const StyleData & data() const;
 
     StylePtr clone(Item * _item = nullptr) const;
 
@@ -95,19 +91,11 @@ class STICK_API Style
     void itemRemovedStyle(Item * _item);
     void itemAddedStyle(Item * _item);
 
-    stick::Maybe<Paint> m_fill;
-    stick::Maybe<Paint> m_stroke;
-    stick::Maybe<Float> m_strokeWidth;
-    stick::Maybe<StrokeJoin> m_strokeJoin;
-    stick::Maybe<StrokeCap> m_strokeCap;
-    stick::Maybe<bool> m_scaleStroke;
-    stick::Maybe<Float> m_miterLimit;
-    stick::Maybe<DashArray> m_dashArray;
-    stick::Maybe<Float> m_dashOffset;
-    stick::Maybe<WindingRule> m_windingRule;
-
+    StyleData m_data;
     ItemPtrArray m_items;
 };
+
+STICK_API bool strokeBoundsDifferent(const StyleData & _a, const StyleData & _b);
 
 } // namespace paper
 

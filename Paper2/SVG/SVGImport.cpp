@@ -448,7 +448,7 @@ class STICK_API SVGImportSession
             ret->addChild(m_hiddenGroup);
             Group * grp = static_cast<Group *>(recursivelyImportNode(doc.first_child(), err));
 
-            recursivelySetDefaultFill(grp);
+            // recursivelySetDefaultFill(grp);
 
             ret->addChild(grp);
             return SVGImportResult(ret, vp[1], vp[2], err);
@@ -464,24 +464,24 @@ class STICK_API SVGImportSession
         printf("END PARSE\n");
     }
 
-    void recursivelySetDefaultFill(Item * _item)
-    {
-        for (Item * child : _item->children())
-        {
-            if (child->itemType() == ItemType::Path)
-            {
-                // set the default fill if there is none directly set on the child
-                if (!child->style()->hasFill())
-                    child->setFill(ColorRGBA(0, 0, 0, 1));
-            }
-            else if (child->itemType() == ItemType::Group)
-            {
-                // only recurse into the group if there is no fill set on it
-                if (!child->style()->hasFill())
-                    recursivelySetDefaultFill(child);
-            }
-        }
-    }
+    // void recursivelySetDefaultFill(Item * _item)
+    // {
+    //     for (Item * child : _item->children())
+    //     {
+    //         if (child->itemType() == ItemType::Path)
+    //         {
+    //             // set the default fill if there is none directly set on the child
+    //             if (!child->style()->hasFill())
+    //                 child->setFill(ColorRGBA(0, 0, 0, 1));
+    //         }
+    //         else if (child->itemType() == ItemType::Group)
+    //         {
+    //             // only recurse into the group if there is no fill set on it
+    //             if (!child->style()->hasFill())
+    //                 recursivelySetDefaultFill(child);
+    //         }
+    //     }
+    // }
 
     Item * recursivelyImportNode(pugi::xml_node _node, Error & _error)
     {
@@ -562,13 +562,13 @@ class STICK_API SVGImportSession
 
         if (item)
         {
-            // accomodate for SVG's default winding rule (which is NonZero, paper defaults to
+            // accomodate for SVG's default winding rule (which is NonZero, we defaults to
             // EvenOdd)
-            if (item->itemType() == ItemType::Path)
-            {
-                if (!item->style()->hasWindingRule())
-                    item->setWindingRule(WindingRule::NonZero);
-            }
+            // if (item->itemType() == ItemType::Path)
+            // {
+            //     if (!item->style()->hasWindingRule())
+            //         item->setWindingRule(WindingRule::NonZero);
+            // }
 
             // // we take care of the clip-path / viewBox (as it might induce clipping, too)
             // attribute
@@ -1583,7 +1583,6 @@ class STICK_API SVGImportSession
         {
             _attributes.strokeWidth = coordinatePixels(
                 _value.cString(), 0, currentViewLength(), SVGCoordinate{ SVGUnits::PX, 1.0 });
-            printf("dAAAAHAHAHA STROKE WIDTH: %f\n", _attributes.strokeWidth);
             _item->setStrokeWidth(_attributes.strokeWidth);
         }
         else if (_name == "stroke-linecap")

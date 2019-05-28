@@ -59,7 +59,7 @@ class STICK_API Document : public Item
 
     const StylePtr & defaultStyle() const;
 
-    StylePtr createStyle(const stick::Maybe<ResolvedStyle> & _style = stick::Maybe<ResolvedStyle>());
+    StylePtr createStyle(const StyleData & _style = StyleData());
 
     LinearGradientPtr createLinearGradient(const Vec2f & _from, const Vec2f & _to);
     

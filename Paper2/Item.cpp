@@ -176,6 +176,7 @@ void Item::removeHelper(bool _bRemoveFromParent)
     if (_bRemoveFromParent)
         removeFromParent();
 
+    m_style->itemRemovedStyle(this);
     m_document->destroyItem(this);
 }
 
@@ -626,19 +627,23 @@ const Mat32f & Item::strokePaintTransform() const
 //@TODO: diff settings that affect stroke bounds and mark them dirty accordingly
 void Item::setStyle(const StylePtr & _style)
 {
+    printf("SETTING STYLE\n");
     STICK_ASSERT(_style);
     if (m_style)
         m_style->itemRemovedStyle(this);
 
+    printf("b\n");
     bool bDifferent = m_style ? strokeBoundsDifferent(m_style->m_data, _style->m_data) : true;
     m_style = _style;
     m_style->itemAddedStyle(this);
 
+     printf("c\n");
     if (bDifferent)
         markStrokeBoundsDirty(true);
 
     for (Item * child : m_children)
         child->setStyle(_style);
+     printf("d\n");
 }
 
 void Item::setStyle(const StyleData & _data)
@@ -1187,10 +1192,8 @@ bool Item::performSelectionTest(const Rect & _rect) const
 
 StylePtr & Item::getOrCloneStyle()
 {
-    printf("GETTING STYLE\n");
     if (m_style.useCount() > 1)
     {
-        printf("CLONING STYLE\n");
         m_style->itemRemovedStyle(this);
         m_style = m_style->clone(this);
     }

@@ -19,7 +19,7 @@ Document::Document(const char * _name, Allocator & _alloc) :
     m_size(0)
 {
     m_defaultStyle = createStyle();
-    m_style = m_defaultStyle;
+    setStyle(m_defaultStyle);
 }
 
 Path * Document::createPath(const char * _name)

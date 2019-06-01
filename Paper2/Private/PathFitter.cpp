@@ -143,7 +143,6 @@ void PathFitter::fitCubic(Size _first, Size _last, const Vec2f & _tan1, const Ve
         if (max.value < m_error && bParametersInOrder)
         {
             // printf("ADDING CURVE\n");
-            printf("AC2\n");
             addCurve(
                 curve.positionOne(), curve.handleOne(), curve.handleTwo(), curve.positionTwo());
             return;

@@ -483,8 +483,6 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     const StyleData * rs;
     StyleData tmp;
 
-    printf("drawing path\n");
-
     // if(_symbol)
     // {
     //     STICK_ASSERT(_path == _symbol->item());
@@ -547,9 +545,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     // tpStyle style = makeStyle(_path, _symbol);
     // style = makeStyle(_path, nullptr);
 
-    printf("update path\n");
     updateTarpPath(m_tarp->tmpSegmentBuffer, _path, rd.path, nullptr);
-    printf("update path end\n");
 
     tpBool err = tpFalse;
     //@TODO: Draw the path if there is no other style on the symbol and if the path is only
@@ -567,9 +563,7 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
 
         /* @TODO: only set the transform if it actually changed compared to the last draw call */
         tpSetTransform(m_tarp->ctx, (tpTransform *)&(*_path->renderTransform()));
-        printf("dp\n");
         err = tpDrawPath(m_tarp->ctx, rd.path, &style);
-        printf("dp2\n");
     }
     else
     {
@@ -593,7 +587,6 @@ Error TarpRenderer::drawPath(Path * _path, const Mat32f & _transform, Symbol * _
     if (err)
         return Error(ec::InvalidOperation, "Failed to draw tarp path", STICK_FILE, STICK_LINE);
 
-     printf("drawing path eeeend\n");
     return Error();
 }
 

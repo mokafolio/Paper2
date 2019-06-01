@@ -1,4 +1,5 @@
 #include <Paper2/Private/PathFitter.hpp>
+#include <cmath>
 
 namespace paper
 {
@@ -44,7 +45,7 @@ void PathFitter::fit()
 {
     if (m_positions.count() > 0)
     {
-        m_newSegments.append({m_positions[0], m_positions[0], m_positions[0]});
+        m_newSegments.append({ m_positions[0], m_positions[0], m_positions[0] });
 
         // Size i = 0;
         // Size count = m_newSegments.count();
@@ -102,8 +103,19 @@ void PathFitter::fitCubic(Size _first, Size _last, const Vec2f & _tan1, const Ve
         // printf("heuristic\n");
         const Vec2f & pt1 = m_positions[_first];
         const Vec2f & pt2 = m_positions[_last];
+
+        STICK_ASSERT(!std::isnan(pt1.x));
+        STICK_ASSERT(!std::isnan(pt1.y));
+        STICK_ASSERT(!std::isnan(pt2.x));
+        STICK_ASSERT(!std::isnan(pt2.y));
+
         Float64 dist = crunch::distance(pt1, pt2) / 3.0;
-        addCurve(pt1, pt1 + normalize(_tan1) * dist, pt2 + normalize(_tan2) * dist, pt2);
+        STICK_ASSERT(!std::isnan(dist));
+        auto t1l = length(_tan1);
+        auto t1n = t1l > 0 ? _tan1 / t1l : _tan1;
+        auto t2l = length(_tan2);
+        auto t2n = t2l > 0 ? _tan2 / t2l : _tan2;
+        addCurve(pt1, pt1 + t1n * dist, pt2 + t2n * dist, pt2);
         return;
     }
 
@@ -131,6 +143,7 @@ void PathFitter::fitCubic(Size _first, Size _last, const Vec2f & _tan1, const Ve
         if (max.value < m_error && bParametersInOrder)
         {
             // printf("ADDING CURVE\n");
+            printf("AC2\n");
             addCurve(
                 curve.positionOne(), curve.handleOne(), curve.handleTwo(), curve.positionTwo());
             return;
@@ -162,8 +175,16 @@ void PathFitter::addCurve(const Vec2f & _pointOne,
                           const Vec2f & _handleTwo,
                           const Vec2f & _pointTwo)
 {
+    STICK_ASSERT(!std::isnan(_pointOne.x));
+    STICK_ASSERT(!std::isnan(_pointOne.y));
+    STICK_ASSERT(!std::isnan(_handleOne.x));
+    STICK_ASSERT(!std::isnan(_handleOne.y));
+    STICK_ASSERT(!std::isnan(_handleTwo.x));
+    STICK_ASSERT(!std::isnan(_handleTwo.y));
+    STICK_ASSERT(!std::isnan(_pointTwo.x));
+    STICK_ASSERT(!std::isnan(_pointTwo.y));
     m_newSegments.last().handleOut = _handleOne;
-    m_newSegments.append({_handleTwo, _pointTwo, _pointTwo});
+    m_newSegments.append({ _handleTwo, _pointTwo, _pointTwo });
 }
 
 Bezier PathFitter::generateBezier(Size _first,
@@ -172,13 +193,13 @@ Bezier PathFitter::generateBezier(Size _first,
                                   const Vec2f & _tan1,
                                   const Vec2f & _tan2)
 {
-    static const Float64 s_epsilon = detail::PaperConstants::epsilon();
+    static const Float64 s_epsilon = detail::PaperConstants::geometricEpsilon();
 
     const Vec2f & pt1 = m_positions[_first];
     const Vec2f & pt2 = m_positions[_last];
 
-    Float64 c[2][2] = {{0, 0}, {0, 0}};
-    Float64 x[2] = {0, 0};
+    Float64 c[2][2] = { { 0, 0 }, { 0, 0 } };
+    Float64 x[2] = { 0, 0 };
 
     for (Size i = 0, l = _last - _first + 1; i < l; ++i)
     {
@@ -269,6 +290,15 @@ Bezier PathFitter::generateBezier(Size _first,
         }
     }
 
+    STICK_ASSERT(!std::isnan(pt1.x));
+    STICK_ASSERT(!std::isnan(pt1.y));
+    STICK_ASSERT(!std::isnan(pt2.x));
+    STICK_ASSERT(!std::isnan(pt2.y));
+    STICK_ASSERT(!std::isnan(handleOne.x));
+    STICK_ASSERT(!std::isnan(handleOne.y));
+    STICK_ASSERT(!std::isnan(handleTwo.x));
+    STICK_ASSERT(!std::isnan(handleTwo.y));
+
     // First and last control points of the Bezier curve are
     // positioned exactly at the first and last data points
     // Control points 1 and 2 are positioned an alpha distance out
@@ -279,7 +309,8 @@ Bezier PathFitter::generateBezier(Size _first,
 Vec2f PathFitter::evaluate(Int32 _degree, const Bezier & _curve, Float64 _t)
 {
     Vec2f tmp[4] = {
-        _curve.positionOne(), _curve.handleOne(), _curve.handleTwo(), _curve.positionTwo()};
+        _curve.positionOne(), _curve.handleOne(), _curve.handleTwo(), _curve.positionTwo()
+    };
     for (Int32 i = 1; i <= _degree; ++i)
     {
         for (Int32 j = 0; j <= _degree - i; ++j)
@@ -371,7 +402,7 @@ PathFitter::MaxError PathFitter::findMaxError(Size _first,
             index = i;
         }
     }
-    return {maxDist, index};
+    return { maxDist, index };
 }
 } // namespace detail
 } // namespace paper

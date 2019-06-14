@@ -51,7 +51,7 @@ paperPugiInc = [
     'Paper2/Libs/pugixml/pugiconfig.hpp'
 ]
 
-if meson.is_subproject() == false
+if meson.is_subproject() == false or get_option('forceInstallHeaders')
     install_headers(paperInc, subdir: 'Paper2')
     install_headers(paperPrivateInc, subdir: 'Paper2/Private')
     install_headers(paperSVGInc, subdir: 'Paper2/SVG')

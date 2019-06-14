@@ -1,1 +1,2 @@
 option('buildSubmodules', type : 'boolean', value : false, yield : true)
+option('forceInstallHeaders', type : 'boolean', value : false, yield : true)

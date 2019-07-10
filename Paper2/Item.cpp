@@ -1172,21 +1172,31 @@ bool Item::performHitTest(const Vec2f & _pos,
 ItemPtrArray Item::selectChildren(const Rect & _area)
 {
     DynamicArray<Item *> ret(m_children.allocator());
-    for (Item * child : m_children)
+    printf("selectChildren %f %f %f %f\n", _area.min().x, _area.min().y, _area.max().x, _area.max().y);
+    printf("CC %lu\n", m_children.count());
+    // for (Item * child : m_children)
+    for(Size i = 0; i < m_children.count(); ++i)
     {
+        printf("child %lu\n", i);
+        Item * child = m_children[i];
+        STICK_ASSERT(child);
         if (child->performSelectionTest(_area))
             ret.append(child);
+        printf("(fock)\n");
     }
+    printf("selectChildren end\n");
     return ret;
 }
 
 bool Item::performSelectionTest(const Rect & _rect) const
 {
+    printf("FOCK YOU\n");
     for (auto it = children().rbegin(); it != children().rend(); ++it)
     {
         if ((*it)->performSelectionTest(_rect))
             return true;
     }
+    printf("FOCK YOU 2\n");
     return false;
 }
 
@@ -1196,6 +1206,7 @@ StylePtr & Item::getOrCloneStyle()
     {
         m_style->itemRemovedStyle(this);
         m_style = m_style->clone(this);
+        STICK_ASSERT(m_style->m_items.count() == 1);
     }
     return m_style;
 }

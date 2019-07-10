@@ -56,6 +56,10 @@ Style::Style(stick::Allocator & _alloc, const StyleData & _data) : m_data(_data)
 {
 }
 
+Style::Style(const Style & _other) : m_data(_other.m_data), m_items(_other.m_items.allocator())
+{
+}
+
 Style & Style::operator=(const StyleData & _data)
 {
     bool bDifferent = strokeBoundsDifferent(m_data, _data);

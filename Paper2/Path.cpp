@@ -2139,6 +2139,7 @@ bool Path::performHitTest(const Vec2f & _pos,
 
 bool Path::performSelectionTest(const Rect & _rect) const
 {
+    printf("performSelectionTest a\n");
     // if the bounds are fully contained, add it to the selection
     if (_rect.contains(bounds()))
         return true;
@@ -2149,14 +2150,20 @@ bool Path::performSelectionTest(const Rect & _rect) const
     //     return true;
 
     // otherwise we do a full on intersection test
+    printf("performSelectionTest b\n");
     Path * tmp = m_document->createRectangle(_rect.min(), _rect.max());
     tmp->removeFromParent(); // make sure the rectangle sits outside of the document
+
+    printf("performSelectionTest c\n");
     bool ret = false;
     auto isec = intersections(tmp);
     if (isec.count())
         ret = true;
 
+    printf("performSelectionTest d\n");
+
     tmp->remove();
+    printf("performSelectionTest e\n");
     return ret;
 }
 

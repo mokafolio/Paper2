@@ -41,7 +41,7 @@ class STICK_API Style
   public:
 
     Style(stick::Allocator & _alloc);
-    Style(const Style &) = default;
+    Style(const Style &);
     Style(Style &&) = default;
     Style(stick::Allocator & _alloc, const StyleData & _data);
     ~Style() = default;

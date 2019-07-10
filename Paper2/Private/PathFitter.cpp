@@ -94,6 +94,13 @@ void PathFitter::fit()
     }
 }
 
+template<class T>
+inline crunch::Vector2<T> normalizeSafe(const crunch::Vector2<T> & _vec)
+{
+    T len = length(_vec);
+    return len > 0 ? _vec / len : _vec;
+}
+
 void PathFitter::fitCubic(Size _first, Size _last, const Vec2f & _tan1, const Vec2f & _tan2)
 {
     // printf("FIRST %lu LAST %lu\n", _first, _last);
@@ -111,11 +118,7 @@ void PathFitter::fitCubic(Size _first, Size _last, const Vec2f & _tan1, const Ve
 
         Float64 dist = crunch::distance(pt1, pt2) / 3.0;
         STICK_ASSERT(!std::isnan(dist));
-        auto t1l = length(_tan1);
-        auto t1n = t1l > 0 ? _tan1 / t1l : _tan1;
-        auto t2l = length(_tan2);
-        auto t2n = t2l > 0 ? _tan2 / t2l : _tan2;
-        addCurve(pt1, pt1 + t1n * dist, pt2 + t2n * dist, pt2);
+        addCurve(pt1, pt1 + normalizeSafe(_tan1) * dist, pt2 + normalizeSafe(_tan2) * dist, pt2);
         return;
     }
 
@@ -209,8 +212,8 @@ Bezier PathFitter::generateBezier(Size _first,
         Float64 b1 = b * t;
         Float64 b2 = b * u;
         Float64 b3 = u * u * u;
-        Vec2f a1 = normalize(_tan1) * b1;
-        Vec2f a2 = normalize(_tan2) * b2;
+        Vec2f a1 = normalizeSafe(_tan1) * b1;
+        Vec2f a2 = normalizeSafe(_tan2) * b2;
         Vec2f tmp = m_positions[_first + i];
         tmp -= pt1 * (b0 + b1);
         tmp -= pt2 * (b2 + b3);
@@ -277,15 +280,15 @@ Bezier PathFitter::generateBezier(Size _first,
         // projected onto the line through pt1 and pt2.
         Vec2f line = pt2 - pt1;
 
-        handleOne = normalize(_tan1) * alpha1;
-        handleTwo = normalize(_tan2) * alpha2;
+        handleOne = normalizeSafe(_tan1) * alpha1;
+        handleTwo = normalizeSafe(_tan2) * alpha2;
 
         if (crunch::dot(handleOne, line) - crunch::dot(handleTwo, line) > segLength * segLength)
         {
             // Fall back to the Wu/Barsky heuristic above.
             alpha1 = alpha2 = segLength / 3.0;
-            handleOne = normalize(_tan1) * alpha1;
-            handleTwo = normalize(_tan2) * alpha2;
+            handleOne = normalizeSafe(_tan1) * alpha1;
+            handleTwo = normalizeSafe(_tan2) * alpha2;
         }
     }
 

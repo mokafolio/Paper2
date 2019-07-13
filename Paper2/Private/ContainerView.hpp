@@ -102,6 +102,25 @@ class ContainerView
             return ret;
         }
 
+        IterT operator--()
+        {
+            --m_it;
+            return *this;
+        }
+
+        IterT operator-=(int _i)
+        {
+            m_it -= _i;
+            return *this;
+        }
+
+        IterT operator-(int _i)
+        {
+            IterT ret(*this);
+            ret.m_it -= _i;
+            return ret;
+        }
+
         // IterT operator - (int _i)
         // {
         //     IterT ret(*this);

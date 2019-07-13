@@ -1206,7 +1206,7 @@ StylePtr & Item::getOrCloneStyle()
     {
         m_style->itemRemovedStyle(this);
         m_style = m_style->clone(this);
-        STICK_ASSERT(m_style->m_items.count() == 1);
+        STICK_ASSERT(m_style->m_items.count() == 1 && m_style.useCount());
     }
     return m_style;
 }
@@ -1217,7 +1217,7 @@ StylePtr & Item::getOrCloneStyle()
 //     {
 //         m_bStyleDirty = false;
 //         m_resolvedStyle = {
-//             resolveStyleProperty(&Style::m_fill, Style::defaultFill()),
+//             resolveStyleProperty(&Style::m_filclonel, Style::defaultFill()),
 //             resolveStyleProperty(&Style::m_stroke, Style::defaultStroke()),
 //             resolveStyleProperty(&Style::m_strokeWidth, Style::defaultStrokeWidth()),
 //             resolveStyleProperty(&Style::m_strokeJoin, Style::defaultStrokeJoin()),

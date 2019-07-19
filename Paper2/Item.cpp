@@ -627,23 +627,19 @@ const Mat32f & Item::strokePaintTransform() const
 //@TODO: diff settings that affect stroke bounds and mark them dirty accordingly
 void Item::setStyle(const StylePtr & _style)
 {
-    printf("SETTING STYLE\n");
     STICK_ASSERT(_style);
     if (m_style)
         m_style->itemRemovedStyle(this);
 
-    printf("b\n");
     bool bDifferent = m_style ? strokeBoundsDifferent(m_style->m_data, _style->m_data) : true;
     m_style = _style;
     m_style->itemAddedStyle(this);
 
-     printf("c\n");
     if (bDifferent)
         markStrokeBoundsDirty(true);
 
     for (Item * child : m_children)
         child->setStyle(_style);
-     printf("d\n");
 }
 
 void Item::setStyle(const StyleData & _data)

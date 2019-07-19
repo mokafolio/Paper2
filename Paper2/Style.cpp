@@ -108,13 +108,15 @@ void Style::setStroke(const Paint & _paint)
 void Style::setDashArray(const DashArray & _arr)
 {
     // PROPERTY_SETTER(dashArray, _arr);
-    m_data.dashArray = _arr;
+    // m_data.dashArray = _arr;
+    STROKE_PROPERTY_SETTER(dashArray, _arr);
 }
 
 void Style::setDashOffset(Float _f)
 {
     // PROPERTY_SETTER(dashOffset, _f);
-    m_data.dashOffset = _f;
+    // m_data.dashOffset = _f;
+    STROKE_PROPERTY_SETTER(dashOffset, _f);
 }
 
 void Style::setScaleStroke(bool _b)

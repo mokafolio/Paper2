@@ -167,7 +167,8 @@ static void recursivelyAddPathToPathData(const Path * _path, String & _currentDa
     {
         if (i > 0)
             _currentData.append(" ");
-        recursivelyAddPathToPathData(static_cast<const Path *>(_path->children()[i]), _currentData, false);
+        recursivelyAddPathToPathData(
+            static_cast<const Path *>(_path->children()[i]), _currentData, false);
     }
 }
 
@@ -188,8 +189,8 @@ static void addPaintToStyle(Getter _getter,
         if (color.a < 1.0)
             _node.append_attribute(String::concat(_attributeName, "-opacity").cString()) = color.a;
     }
-    else if (_item->fill().template is<LinearGradientPtr>() ||
-             _item->fill().template is<RadialGradientPtr>())
+    else if ((_item->*_getter)().template is<LinearGradientPtr>() ||
+             (_item->*_getter)().template is<RadialGradientPtr>())
     {
         const BaseGradient * grad =
             (_item->*_getter)().template is<LinearGradientPtr>()
@@ -376,10 +377,10 @@ static void addStyle(const Item * _item,
         }
 
         // if (_item->style()->hasMiterLimit())
-            _node.append_attribute("stroke-miterlimit") = s.miterLimit();
+        _node.append_attribute("stroke-miterlimit") = s.miterLimit();
 
         // if (_item->style()->hasDashArray() && _item->dashArray().count())
-        if(s.dashArray().count())
+        if (s.dashArray().count())
         {
             String dashString;
             auto it = s.dashArray().begin();
@@ -397,7 +398,7 @@ static void addStyle(const Item * _item,
         _node.append_attribute("stroke-dashoffset") = s.dashOffset();
 
         // if (_item->style()->hasScaleStroke() && !_item->scaleStroke())
-        if(!s.scaleStroke())
+        if (!s.scaleStroke())
             _node.append_attribute("vector-effect") = "non-scaling-stroke";
     }
 }

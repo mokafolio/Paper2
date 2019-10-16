@@ -14,10 +14,8 @@ CurveLocation::CurveLocation()
 {
 }
 
-CurveLocation::CurveLocation(ConstCurve _c, Float _parameter, Float _offset) :
-    m_curve(_c),
-    m_parameter(_parameter),
-    m_offset(_offset)
+CurveLocation::CurveLocation(ConstCurve _c, Float _parameter, Float _offset)
+    : m_curve(_c), m_parameter(_parameter), m_offset(_offset)
 {
 }
 
@@ -56,8 +54,9 @@ bool CurveLocation::isSynonymous(const CurveLocation & _other) const
 
 Vec2f CurveLocation::positionAbsolute() const
 {
-    //@TODO: Ensure that this makes sense, i.e. will the transformed position be on the transformed curve?
-    if(m_curve.path()->isTransformed())
+    //@TODO: Ensure that this makes sense, i.e. will the transformed position be on the transformed
+    // curve?
+    if (m_curve.path()->isTransformed())
         return m_curve.path()->absoluteTransform() * m_curve.positionAtParameter(m_parameter);
     return position();
 }
@@ -394,13 +393,13 @@ Error arcBy(SegmentDataArray & _segs, const Vec2f & _to, bool _bClockwise)
 }
 } // namespace segments
 
-Path::Path(stick::Allocator & _alloc, Document * _document, const char * _name) :
-    Item(_alloc, _document, ItemType::Path, _name),
-    m_segmentData(_alloc),
-    m_curveData(_alloc),
-    m_bIsClosed(false),
-    m_bGeometryDirty(false),
-    m_bContoursDirty(false)
+Path::Path(stick::Allocator & _alloc, Document * _document, const char * _name)
+    : Item(_alloc, _document, ItemType::Path, _name)
+    , m_segmentData(_alloc)
+    , m_curveData(_alloc)
+    , m_bIsClosed(false)
+    , m_bGeometryDirty(false)
+    , m_bContoursDirty(false)
 {
 }
 
@@ -1979,6 +1978,11 @@ static inline void intersectPaths(const Path * _self,
             }
         }
     }
+    std::sort(_intersections.begin(),
+              _intersections.end(),
+              [](const Intersection & _a, const Intersection & _b) {
+                  return _a.location.offset() < _b.location.offset();
+              });
 }
 
 // helper to recursively intersect paths and its children (compound path)
@@ -2039,8 +2043,8 @@ IntersectionArray Path::intersections(const Path * _other, const Mat32f & _trans
 }
 
 IntersectionArray Path::intersections(const Path * _other,
-                                const Mat32f & _transformSelf,
-                                const Mat32f & _transformOther) const
+                                      const Mat32f & _transformSelf,
+                                      const Mat32f & _transformOther) const
 {
     return intersections(_other, &_transformSelf, &_transformOther);
 }
@@ -2095,8 +2099,8 @@ void Path::markGeometryDirty(bool _bMarkLengthDirty, bool _bMarkParentsBoundsDir
     m_monoCurves.clear();
     Item::markSymbolsDirty();
 
-    for(auto * child : children())
-        static_cast<Path*>(child)->markGeometryDirty(false, false);
+    for (auto * child : children())
+        static_cast<Path *>(child)->markGeometryDirty(false, false);
 }
 
 void Path::transformChanged(bool _bCalledFromParent)
@@ -2177,8 +2181,8 @@ void Path::addedChild(Item * _e)
     // // markGeometryDirty(false, true);
 
     Path * parent = this;
-    while(parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
-        parent = static_cast<Path*>(parent->m_parent);
+    while (parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
+        parent = static_cast<Path *>(parent->m_parent);
     parent->m_bContoursDirty = true;
 
     _e->setStyle(m_style);
@@ -2187,8 +2191,8 @@ void Path::addedChild(Item * _e)
 void Path::removedChild(Item * _e)
 {
     Path * parent = this;
-    while(parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
-        parent = static_cast<Path*>(parent->m_parent);
+    while (parent->m_parent && parent->m_parent->itemType() == ItemType::Path)
+        parent = static_cast<Path *>(parent->m_parent);
     parent->m_bContoursDirty = true;
 }
 

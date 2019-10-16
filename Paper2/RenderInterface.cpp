@@ -111,7 +111,7 @@ Error RenderInterface::drawItem(Item * _item,
     else if (_item->itemType() == ItemType::Path)
     {
         Path * p = static_cast<Path *>(_item);
-        if (p->segmentData().count() > 1)
+        if (p->segmentData().count() > 1 || p->children().count())
             ret = drawPath(p, _transform ? *_transform : p->absoluteTransform(), _symbol, _depth);
     }
     else if (_item->itemType() == ItemType::Symbol)

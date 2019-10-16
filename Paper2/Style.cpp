@@ -34,17 +34,22 @@ namespace paper
 {
 using namespace stick;
 
-StyleData::StyleData() :
-    fill(Style::defaultFill()),
-    stroke(Style::defaultStroke()),
-    strokeWidth(Style::defaultStrokeWidth()),
-    strokeJoin(Style::defaultStrokeJoin()),
-    strokeCap(Style::defaultStrokeCap()),
-    scaleStroke(Style::defaultScaleStroke()),
-    miterLimit(Style::defaultMiterLimit()),
-    dashArray(Style::defaultDashArray()),
-    dashOffset(Style::defaultDashOffset()),
-    windingRule(Style::defaultWindingRule())
+StyleData::StyleData()
+    : fill(Style::defaultFill())
+    , stroke(Style::defaultStroke())
+    , strokeWidth(Style::defaultStrokeWidth())
+    , strokeJoin(Style::defaultStrokeJoin())
+    , strokeCap(Style::defaultStrokeCap())
+    , scaleStroke(Style::defaultScaleStroke())
+    , miterLimit(Style::defaultMiterLimit())
+    , dashArray(Style::defaultDashArray())
+    , dashOffset(Style::defaultDashOffset())
+    , windingRule(Style::defaultWindingRule())
+    , font(Style::defaultFont())
+    , textDirection(Style::defautTextDirection())
+    , fontSize(Style::defaultFontSize())
+    , fontTracking(Style::defaultFontTracking())
+    , fontLeading(Style::defaultFontLeading())
 {
 }
 
@@ -141,6 +146,31 @@ void Style::setWindingRule(WindingRule _rule)
     m_data.windingRule = _rule;
 }
 
+void Style::setFont(const tink::FontPtr & _fnt)
+{
+    m_data.font = _fnt;
+}
+void Style::setTextDirection(tink::TextDirection _dir)
+{
+    m_data.textDirection = _dir;
+}
+
+void Style::setFontSize(Float _size)
+{
+    m_data.fontSize = _size;
+    m_data.fontLeading = _size * 1.2;
+}
+
+void Style::setFontTracking(Float _val)
+{
+    m_data.fontTracking = _val;
+}
+
+void Style::setFontLeading(Float _val)
+{
+    m_data.fontLeading = _val;
+}
+
 StrokeJoin Style::strokeJoin() const
 {
     // PROPERTY_GETTER(strokeJoin, defaultStrokeJoin());
@@ -199,6 +229,31 @@ Paint Style::stroke() const
 {
     // PROPERTY_GETTER(stroke, defaultStroke());
     return m_data.stroke;
+}
+
+tink::FontPtr Style::font() const
+{
+    return m_data.font;
+}
+
+tink::TextDirection Style::textDirection() const
+{
+    return m_data.textDirection;
+}
+
+Float Style::fontSize() const
+{
+    return m_data.fontSize;
+}
+
+Float Style::fontTracking() const
+{
+    return m_data.fontTracking;
+}
+
+Float Style::fontLeading() const
+{
+    return m_data.fontLeading;
 }
 
 const StyleData & Style::data() const
@@ -275,6 +330,32 @@ Paint Style::defaultFill()
 Paint Style::defaultStroke()
 {
     return NoPaint();
+}
+
+tink::FontPtr Style::defaultFont()
+{
+    // @TODO: load a default font and return it here?
+    return tink::FontPtr();
+}
+
+tink::TextDirection Style::defautTextDirection()
+{
+    return tink::TextDirection::Auto;
+}
+
+Float Style::defaultFontSize()
+{
+    return 16.0;
+}
+
+Float Style::defaultFontTracking()
+{
+    return 0.0;
+}
+
+Float Style::defaultFontLeading()
+{
+    return defaultFontSize() * 1.2;
 }
 
 bool strokeBoundsDifferent(const StyleData & _a, const StyleData & _b)

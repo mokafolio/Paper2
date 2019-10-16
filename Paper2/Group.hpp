@@ -25,6 +25,7 @@ class STICK_API Group : public Item
 
     bool m_bIsClipped;
 };
+
 } // namespace paper
 
 #endif // PAPER_GROUP_HPP

@@ -19,6 +19,8 @@ STICK_API_ENUM_CLASS(Smoothing){Continuous, Asymmetric, CatmullRom, Geometric};
 
 STICK_API_ENUM_CLASS(GradientType){Linear, Radial};
 
+STICK_API_ENUM_CLASS(TextDirection){LTR, RTL, TTB, BTT};
+
 namespace detail
 {
 //@TODO: Adjust these for Float32 / Float64

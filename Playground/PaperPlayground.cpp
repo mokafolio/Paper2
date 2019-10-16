@@ -67,6 +67,8 @@ int main(int _argc, const char * _args[])
         doc.setSize(800, 600);
         d = &doc;
 
+        doc.exportPDF();
+
         printf(
             "ITEM SIZE %i %i\n", sizeof(std::shared_ptr<float>), sizeof(stick::SharedPtr<float>));
 
@@ -81,46 +83,106 @@ int main(int _argc, const char * _args[])
 
         path = doc.createCircle(Vec2f(100, 100), 50);
         path->setFill("red");
-        Path * rect = doc.createRectangle(Vec2f(40, 90), Vec2f(160, 110));
-        rect->setStroke("yellow");
+        // Path * rect = doc.createRectangle(Vec2f(40, 90), Vec2f(160, 110));
+        // rect->setStroke("yellow");
 
-        auto pos = Vec2f(0, 10);
-        auto cl = path->closestCurveLocation(pos);
-        printf("CL %f %f %f %lu\n", cl.parameter(), cl.position().x, cl.position().y, cl.curve().index());
-        Path * clp = doc.createCircle(cl.position(), 2);
-        clp->setFill("white");
+        // auto pos = Vec2f(0, 10);
+        // auto cl = path->closestCurveLocation(pos);
+        // printf("CL %f %f %f %lu\n", cl.parameter(), cl.position().x, cl.position().y,
+        // cl.curve().index()); Path * clp = doc.createCircle(cl.position(), 2);
+        // clp->setFill("white");
 
-        Path * clone1 = path->clone();
-        Path * clone2 = rect->clone();
-        clone1->translateTransform(100, 200);
-        clone2->translateTransform(150, 200);
-        clone2->rotateTransform(0.3);
+        // Path * clone1 = path->clone();
+        // Path * clone2 = rect->clone();
+        // clone1->translateTransform(100, 200);
+        // clone2->translateTransform(150, 200);
+        // clone2->rotateTransform(0.3);
 
-        auto isecs = clone2->intersections(clone1);
-        for (auto & isec : isecs)
-        {
-            Path * c = doc.createCircle(isec.position, 3);
-            c->setFill("pink");
+        // auto isecs = clone2->intersections(clone1);
+        // for (auto & isec : isecs)
+        // {
+        //     Path * c = doc.createCircle(isec.position, 3);
+        //     c->setFill("pink");
 
-            printf("ISEC idx %lu param %f\n",
-                   isec.location.curve().index(),
-                   isec.location.parameter());
-            auto pos = rect->curve(isec.location.curve().index())
-                           .positionAtParameter(isec.location.parameter());
-            Path * c2 = doc.createCircle(pos, 2);
-            c2->setFill("green");
+        //     printf("ISEC idx %lu param %f\n",
+        //            isec.location.curve().index(),
+        //            isec.location.parameter());
+        //     auto pos = rect->curve(isec.location.curve().index())
+        //                    .positionAtParameter(isec.location.parameter());
+        //     Path * c2 = doc.createCircle(pos, 2);
+        //     c2->setFill("green");
 
-            Path * c3 = doc.createCircle(clone2->absoluteTransform() * pos, 2);
-            c3->setFill("black");
-        }
+        //     Path * c3 = doc.createCircle(clone2->absoluteTransform() * pos, 2);
+        //     c3->setFill("black");
+        // }
 
-        auto isecs2 = clone1->intersections(clone2, nullptr, nullptr);
-        for (auto & isec : isecs2)
-        {
-            Path * c = doc.createCircle(isec.position, 3);
-            c->setFill("pink");
-        }
+        // auto isecs2 = clone1->intersections(clone2, nullptr, nullptr);
+        // for (auto & isec : isecs2)
+        // {
+        //     Path * c = doc.createCircle(isec.position, 3);
+        //     c->setFill("pink");
+        // }
 
+        // auto font2 =
+        //     tink::loadFont("../../subprojects/Tink/Tests/TestAssets/RobotoMono-Regular.ttf")
+        //         .ensure();
+        // // auto font = loadFont("../../subprojects/Tink/Tests/TestAssets/MokaScript2.ttf").ensure();
+
+        // /// usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf
+        // // auto font = tink::loadFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf").ensure();
+        // auto font = tink::loadFont("/home/moka/.local/share/fonts/Rubik-Regular.ttf").ensure();
+
+        // auto font3 =
+        //     tink::loadFont("/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc").ensure();
+
+        // // tink::FontAttributes fa(font);
+        // // fa.size = 64;
+        // // fa.tracking = 0.1;
+
+        // auto style = doc.createStyle();
+        // style->setFont(font);
+        // style->setFill("green");
+        // style->setFontSize(36);
+
+        // TextWithAttributes txt;
+        // txt.addText("Hello כל הגבלה אחרת. ", style);
+
+        // // TextWithAttributes txt2;
+        // // txt2.addText("לכ", style);
+
+        // // TextWithAttributes txt3;
+        // // txt3.addText("uga", style);
+
+        // auto style2 = doc.createStyle();
+        // style2->setFont(font);
+        // style2->setFill("yellow");
+        // style2->setFontSize(24);
+
+        // auto style3 = doc.createStyle();
+        // style3->setFont(font3);
+        // style3->setFill("red");
+        // style3->setFontSize(24);
+        // // style2->setFontTracking(0.5);
+
+        // // txt.addText("lo", style2);
+        // // txt.addText("Takimata sanctus est Lorem ipsum              dolor sit amet.", style2);
+        // txt.addText("Fock כל Me. Takimata sanctus est Lorem ipsum.", style2);
+        // txt.addText("Takimata Sanctus! ", style);
+        // txt.addText("장난 ", style3);
+        // txt.addText("Takimata sanctus est Lorem ipsum. Takimata sanctus est Lorem ipsum.", style2);
+
+        // // Group * text = doc.createTextOutlines("장난", fa, Vec2f(200, 200));
+        // Group * text = doc.createTextOutlines(txt, Vec2f(200, 200), 300);
+        // // Group * text2 = doc.createTextOutlines(txt2, Vec2f(200, 200), 400);
+        // // Group * tex3 = doc.createTextOutlines(txt3, Vec2f(200, 200), 400);
+        // // text->setFill("blue");
+        // // text->setStroke("white");
+        // // text->setStrokeWidth(4);
+        // // text->setDashArray({10, 20});
+        // printf("text child count %lu\n", text->children().count());
+
+        // path = doc.createCircle(Vec2f(200, 200), 4);
+        // path->setFill("red");
         // Path * p2 = doc.createCircle(Vec2f(100, 100), 30);
         // path->addChild(p2);
         // // path->addPoint(Vec2f(100, 100));

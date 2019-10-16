@@ -7,12 +7,14 @@
 
 namespace paper
 {
+
 class Path;
 class Group;
 class Symbol;
 
 using ItemUniquePtr = stick::UniquePtr<Item>;
 using ItemUniquePtrArray = stick::DynamicArray<ItemUniquePtr>;
+using TextWithAttributes = tink::TextWithAttributes2T<StylePtr>;
 
 class STICK_API Document : public Item
 {
@@ -37,6 +39,14 @@ class STICK_API Document : public Item
                                   const Vec2f & _radius,
                                   const char * _name = "");
 
+    Group * createTextOutlines(const char * _utf8,
+                               const tink::FontAttributes & _attributes,
+                               const Vec2f & _position);
+
+    Group * createTextOutlines(const TextWithAttributes & _txt,
+                               const Vec2f & _position,
+                               Float _maxWidth = std::numeric_limits<Float>::max());
+
     Group * createGroup(const char * _name = "");
 
     Symbol * createSymbol(Item * _item, const char * _name = "");
@@ -51,7 +61,7 @@ class STICK_API Document : public Item
 
     svg::SVGImportResult parseSVG(const stick::String & _svg, stick::Size _dpi = 96);
 
-    stick::Result<Item*> parseBinary(const stick::UInt8 * _data, Size _byteCount);
+    stick::Result<Item *> parseBinary(const stick::UInt8 * _data, Size _byteCount);
 
     svg::SVGImportResult loadSVG(const stick::String & _uri, stick::Size _dpi = 96);
 
@@ -62,8 +72,10 @@ class STICK_API Document : public Item
     StylePtr createStyle(const StyleData & _style = StyleData());
 
     LinearGradientPtr createLinearGradient(const Vec2f & _from, const Vec2f & _to);
-    
+
     RadialGradientPtr createRadialGradient(const Vec2f & _from, const Vec2f & _to);
+
+    stick::TextResult exportPDF() const; 
 
   private:
     // documents can't be cloned for now
@@ -79,5 +91,37 @@ class STICK_API Document : public Item
     StylePtr m_defaultStyle;
 };
 } // namespace paper
+
+namespace tink
+{
+template <>
+struct FontAttributeTraits2<paper::StylePtr>
+{
+    static FontPtr font(const paper::StylePtr & _style)
+    {
+        return _style->font();
+    }
+
+    static stick::Float32 size(const paper::StylePtr & _style)
+    {
+        return _style->fontSize();
+    }
+
+    static TextDirection direction(const paper::StylePtr & _style)
+    {
+        return _style->textDirection();
+    }
+
+    static stick::Float32 tracking(const paper::StylePtr & _style)
+    {
+        return _style->fontTracking();
+    }
+
+    static stick::Float32 leading(const paper::StylePtr & _style)
+    {
+        return _style->fontLeading();
+    }
+};
+} // namespace tink
 
 #endif // PAPER_DOCUMENT_HPP

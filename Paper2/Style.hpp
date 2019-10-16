@@ -5,6 +5,8 @@
 #include <Stick/Maybe.hpp>
 #include <Stick/SharedPtr.hpp>
 
+#include <Tink/Tink.hpp>
+
 namespace paper
 {
 
@@ -29,6 +31,13 @@ struct STICK_API StyleData
     DashArray dashArray;
     Float dashOffset;
     WindingRule windingRule;
+
+    //text related stuff
+    tink::FontPtr font;
+    tink::TextDirection textDirection;
+    Float fontSize;
+    Float fontTracking;
+    Float fontLeading;
 };
 
 class Style;
@@ -62,6 +71,13 @@ class STICK_API Style
     void setFill(const Paint & _paint);
     void setWindingRule(WindingRule _rule);
 
+    void setFont(const tink::FontPtr & _fnt);
+    void setTextDirection(tink::TextDirection _dir);
+    void setFontSize(Float _size);
+    void setFontTracking(Float _val);
+    void setFontLeading(Float _val);
+
+
     StrokeJoin strokeJoin() const;
     StrokeCap strokeCap() const;
     Float miterLimit() const;
@@ -74,6 +90,12 @@ class STICK_API Style
     Paint stroke() const;
     const StyleData & data() const;
 
+    tink::FontPtr font() const;
+    tink::TextDirection textDirection() const;
+    Float fontSize() const;
+    Float fontTracking() const;
+    Float fontLeading() const;
+
     StylePtr clone(Item * _item = nullptr) const;
 
     static StrokeJoin defaultStrokeJoin();
@@ -85,7 +107,12 @@ class STICK_API Style
     static WindingRule defaultWindingRule();
     static bool defaultScaleStroke();
     static Paint defaultFill();
-    static Paint defaultStroke();
+    static Paint defaultStroke();  
+    static tink::FontPtr defaultFont();
+    static tink::TextDirection defautTextDirection();
+    static Float defaultFontSize();
+    static Float defaultFontTracking();
+    static Float defaultFontLeading();
 
   private:
     void itemRemovedStyle(Item * _item);

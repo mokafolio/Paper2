@@ -5,6 +5,7 @@
 
 #include <Paper2/BinFormat/BinFormatImport.hpp>
 #include <Paper2/SVG/SVGImport.hpp>
+#include <Paper2/PDF/PDFExport.hpp>
 
 #include <Stick/FileUtilities.hpp>
 
@@ -12,11 +13,11 @@ namespace paper
 {
 using namespace stick;
 
-Document::Document(const char * _name, Allocator & _alloc) :
-    Item(_alloc, this, ItemType::Document, _name),
-    m_alloc(&_alloc),
-    m_itemStorage(_alloc),
-    m_size(0)
+Document::Document(const char * _name, Allocator & _alloc)
+    : Item(_alloc, this, ItemType::Document, _name)
+    , m_alloc(&_alloc)
+    , m_itemStorage(_alloc)
+    , m_size(0)
 {
     m_defaultStyle = createStyle();
     setStyle(m_defaultStyle);
@@ -58,6 +59,264 @@ Path * Document::createRoundedRectangle(const Vec2f & _min,
     Path * ret = createPath(_name);
     ret->makeRoundedRectangle(_min, _max, _radius);
     return ret;
+}
+
+// Group * Document::createTextOutlines(const char * _utf8,
+//                                      const tink::FontAttributes & _attributes,
+//                                      const Vec2f & _pos)
+// {
+//     tink::ShapedGlyphArray sga = tink::shape(_utf8, _attributes, tink::ShaperSettings(),
+//     *m_alloc); Group * root = createGroup();
+
+//     Vec2f p = _pos;
+//     for (auto & g : sga)
+//     {
+//         //         printf("sgs[%i] %lu %f %f %f %f\n",
+//         //        i,
+//         //        sgs[i].glyph,
+//         //        sgs[i].offsetX,
+//         //        sgs[i].offsetY,
+//         //        sgs[i].advanceX,
+//         //        sgs[i].advanceY);
+
+//         tink::FontVertexArray verts;
+//         _attributes.font->glyphShape(g.glyph, _attributes.size, verts);
+
+//         Path * currentPath = nullptr;
+//         Path * glyphRoot = nullptr;
+//         // Vec2f o(g.offsetX, g.offsetY);
+//         for (auto & vert : verts)
+//         {
+//             printf("%f %f\n", vert.x, vert.y);
+//             STICK_ASSERT(vert.cmd != tink::DrawCommand::Unknown);
+//             if (vert.cmd == tink::DrawCommand::MoveTo)
+//             {
+//                 printf("move to\n");
+//                 Path * parent = currentPath;
+//                 currentPath = createPath();
+//                 // currentPath->setFill("red");
+//                 currentPath->addPoint(p + Vec2f(vert.x, -vert.y));
+//                 if (parent)
+//                 {
+//                     parent->closePath();
+//                     printf("adding child\n");
+//                     parent->addChild(currentPath);
+//                 }
+//                 else
+//                     glyphRoot = currentPath;
+//             }
+//             else if (vert.cmd == tink::DrawCommand::LineTo)
+//             {
+//                 printf("line to\n");
+//                 STICK_ASSERT(currentPath);
+//                 currentPath->addPoint(p + Vec2f(vert.x, -vert.y));
+//             }
+//             else if (vert.cmd == tink::DrawCommand::QuadraticCurveTo)
+//             {
+//                 printf("quadratic to\n");
+//                 STICK_ASSERT(currentPath);
+//                 Vec2f v(vert.x, -vert.y);
+//                 currentPath->quadraticCurveTo(p + Vec2f(vert.cx, -vert.cy), p + v);
+//             }
+//             else if (vert.cmd == tink::DrawCommand::CubicCurveTo)
+//             {
+//                 printf("cubic to\n");
+//                 STICK_ASSERT(currentPath);
+//                 Vec2f v(vert.x, -vert.y);
+//                 currentPath->cubicCurveTo(
+//                     p + Vec2f(vert.cx, -vert.cy), p + Vec2f(vert.cx1, -vert.cy1), p + v);
+//             }
+//         }
+
+//         if (glyphRoot)
+//         {
+//             currentPath->closePath();
+//             printf("current path children %lu\n", currentPath->children().count());
+//             root->addChild(glyphRoot);
+//         }
+
+//         p += Vec2f(g.advanceX, -g.advanceY);
+//     }
+
+//     return root;
+// }
+
+Group * Document::createTextOutlines(const TextWithAttributes & _txt,
+                                     const Vec2f & _position,
+                                     Float _maxWidth)
+{
+
+    // tink::UnicodeArray ucode;
+    // tink::utf8::decode_range(_txt.text().begin(), _txt.text().end(), stick::backInserter(ucode));
+    // printf("num codepoints %lu\n", ucode.count());
+
+    // tink::UnicodeArray tmp;
+    // tink::bidi(ucode.ptr(), ucode.count(), tmp, tink::TextDirection::Auto);
+    // printf("num codepoints2 %lu\n", tmp.count());
+
+    // printf("input txt %s\n", _txt.text().cString());
+    // stick::String i2;
+    // tink::utf8::encode_range(tmp.begin(), tmp.end(), stick::backInserter(i2));
+    // printf("visual txt: %s\n", i2.cString());
+
+    // tink::Typesetter setter(*m_alloc);
+    // tink::TextLayout layout = setter.layout(_txt, _position.x, _position.y, _maxWidth);
+
+    // Group * root = createGroup();
+    // printf("line count %lu\n", layout.lines().count());
+    // for (const auto & line : layout.lines())
+    // {
+    //     printf("runs %lu %lu\n", line.runStartIdx, line.runCount);
+    //     for (const auto & run : layout.runs(line))
+    //     {
+    //         printf("attri %lu\n", run.attributesIndex);
+    //         const StylePtr & style = _txt.attributes(run.attributesIndex);
+    //         Group * grp = createGroup();
+    //         for (const auto & g : layout.glyphs(run))
+    //         {
+    //             tink::FontVertexArray verts;
+    //             printf("FONT SIZE %f\n", style->fontSize());
+    //             style->font()->glyphShape(g.sg.glyph, style->fontSize(), verts);
+
+    //             Vec2f p(g.x, g.y);
+    //             Path * currentPath = nullptr;
+    //             Path * glyphRoot = nullptr;
+    //             // Vec2f o(g.offsetX, g.offsetY);
+    //             for (auto & vert : verts)
+    //             {
+    //                 // printf("%f %f\n", vert.x, vert.y);
+    //                 STICK_ASSERT(vert.cmd != tink::DrawCommand::Unknown);
+    //                 if (vert.cmd == tink::DrawCommand::MoveTo)
+    //                 {
+    //                     // printf("move to\n");
+    //                     Path * parent = currentPath;
+    //                     currentPath = createPath();
+    //                     // currentPath->setFill("red");
+    //                     currentPath->addPoint(p + Vec2f(vert.x, -vert.y));
+    //                     if (parent)
+    //                     {
+    //                         parent->closePath();
+    //                         // printf("adding child\n");
+    //                         parent->addChild(currentPath);
+    //                     }
+    //                     else
+    //                         glyphRoot = currentPath;
+    //                 }
+    //                 else if (vert.cmd == tink::DrawCommand::LineTo)
+    //                 {
+    //                     // printf("line to\n");
+    //                     STICK_ASSERT(currentPath);
+    //                     currentPath->addPoint(p + Vec2f(vert.x, -vert.y));
+    //                 }
+    //                 else if (vert.cmd == tink::DrawCommand::QuadraticCurveTo)
+    //                 {
+    //                     // printf("quadratic to\n");
+    //                     STICK_ASSERT(currentPath);
+    //                     Vec2f v(vert.x, -vert.y);
+    //                     currentPath->quadraticCurveTo(p + Vec2f(vert.cx, -vert.cy), p + v);
+    //                 }
+    //                 else if (vert.cmd == tink::DrawCommand::CubicCurveTo)
+    //                 {
+    //                     // printf("cubic to\n");
+    //                     STICK_ASSERT(currentPath);
+    //                     Vec2f v(vert.x, -vert.y);
+    //                     currentPath->cubicCurveTo(
+    //                         p + Vec2f(vert.cx, -vert.cy), p + Vec2f(vert.cx1, -vert.cy1), p + v);
+    //                 }
+    //             }
+
+    //             if (glyphRoot)
+    //             {
+    //                 currentPath->closePath();
+    //                 // printf("current path children %lu\n", currentPath->children().count());
+    //                 grp->addChild(glyphRoot);
+    //             }
+
+    //             grp->setStyle(style);
+    //         }
+    //         root->addChild(grp);
+    //     }
+    // }
+    // return root;
+
+    tink::ParagraphLayout layout(*m_alloc);
+    layout.setText(_txt, tink::TextDirection::Auto);
+
+    Group * root = createGroup();
+
+    while (auto * line = layout.nextLine(_maxWidth))
+    {
+        for (const auto & run : line->runs())
+        {
+            const StylePtr & style = _txt.attributes(run.attributesIndex());
+            Group * grp = createGroup();
+            for (const auto & g : run.glyphs())
+            {
+                tink::FontVertexArray verts;
+                printf("FONT SIZE %f\n", style->fontSize());
+                style->font()->glyphShape(g.sg.glyph, style->fontSize(), verts);
+
+                Vec2f p = _position + Vec2f(g.x, g.y);
+                Path * currentPath = nullptr;
+                Path * glyphRoot = nullptr;
+                // Vec2f o(g.offsetX, g.offsetY);
+                for (auto & vert : verts)
+                {
+                    // printf("%f %f\n", vert.x, vert.y);
+                    STICK_ASSERT(vert.cmd != tink::DrawCommand::Unknown);
+                    if (vert.cmd == tink::DrawCommand::MoveTo)
+                    {
+                        // printf("move to\n");
+                        Path * parent = currentPath;
+                        currentPath = createPath();
+                        // currentPath->setFill("red");
+                        currentPath->addPoint(p + Vec2f(vert.x, -vert.y));
+                        if (parent)
+                        {
+                            parent->closePath();
+                            // printf("adding child\n");
+                            parent->addChild(currentPath);
+                        }
+                        else
+                            glyphRoot = currentPath;
+                    }
+                    else if (vert.cmd == tink::DrawCommand::LineTo)
+                    {
+                        // printf("line to\n");
+                        STICK_ASSERT(currentPath);
+                        currentPath->addPoint(p + Vec2f(vert.x, -vert.y));
+                    }
+                    else if (vert.cmd == tink::DrawCommand::QuadraticCurveTo)
+                    {
+                        // printf("quadratic to\n");
+                        STICK_ASSERT(currentPath);
+                        Vec2f v(vert.x, -vert.y);
+                        currentPath->quadraticCurveTo(p + Vec2f(vert.cx, -vert.cy), p + v);
+                    }
+                    else if (vert.cmd == tink::DrawCommand::CubicCurveTo)
+                    {
+                        // printf("cubic to\n");
+                        STICK_ASSERT(currentPath);
+                        Vec2f v(vert.x, -vert.y);
+                        currentPath->cubicCurveTo(
+                            p + Vec2f(vert.cx, -vert.cy), p + Vec2f(vert.cx1, -vert.cy1), p + v);
+                    }
+                }
+
+                if (glyphRoot)
+                {
+                    currentPath->closePath();
+                    // printf("current path children %lu\n", currentPath->children().count());
+                    grp->addChild(glyphRoot);
+                }
+
+                grp->setStyle(style);
+            }
+            root->addChild(grp);
+        }
+    }
+
+    return root;
 }
 
 Group * Document::createGroup(const char * _name)
@@ -159,6 +418,13 @@ LinearGradientPtr Document::createLinearGradient(const Vec2f & _from, const Vec2
 RadialGradientPtr Document::createRadialGradient(const Vec2f & _from, const Vec2f & _to)
 {
     return makeShared<RadialGradient>(*m_alloc, _from, _to);
+}
+
+TextResult Document::exportPDF() const
+{
+    ByteArray ba;
+    auto err = pdf::exportDocument(this, ba);
+    return err;
 }
 
 } // namespace paper

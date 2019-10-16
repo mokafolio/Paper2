@@ -7,3 +7,6 @@
 [submodule "subprojects/Tarp"]
 	path = subprojects/Tarp
 	url = https://github.com/mokafolio/Tarp
+[submodule "subprojects/Tink"]
+	path = subprojects/Tink
+	url = https://github.com/mokafolio/Tink.git

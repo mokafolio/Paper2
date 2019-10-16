@@ -83,26 +83,36 @@ paperSrc = [
     'Paper2/SVG/SVGImportResult.cpp',
     'Paper2/BinFormat/BinFormatExport.cpp',
     'Paper2/BinFormat/BinFormatImport.cpp',
+    'Paper2/PDF/PDFExport.cpp',
     'Paper2/Tarp/TarpRenderer.cpp'
 ]
 
 cc = meson.get_compiler('cpp')
 glDep = dependency('GL')
 if get_option('buildSubmodules') == false
-    stickDep = cc.find_library('Stick')
-    paperDeps = [stickDep, dependency('threads'), glDep]
+    paperDeps = [
+        cc.find_library('Stick'), 
+        dependency('threads'), 
+        cc.find_library('Tink'), 
+        dependency('harfbuzz'), 
+        glDep]
 else
     stickProj = subproject('Stick')
     crunchProj = subproject('Crunch')
     tarpProj = subproject('Tarp')
+    tinkProj = subproject('Tink')
     paperDeps = [stickProj.get_variable('stickDep'), 
         crunchProj.get_variable('crunchDep'), 
-        tarpProj.get_variable('tarpDep'), glDep]
+        tarpProj.get_variable('tarpDep'), 
+        tinkProj.get_variable('tinkDep'), glDep]
 endif
 
 if host_machine.system() == 'linux'
     paperDeps += cc.find_library('dl', required : true)
 endif
+
+# paperDeps += dependency('hpdf')
+paperDeps += cc.find_library('hpdf')
 
 incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 

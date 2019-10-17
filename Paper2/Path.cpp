@@ -1330,7 +1330,7 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
 
     SegmentDataArray tmp(m_segmentData.allocator());
     tmp.reserve(_to.curve().segmentOne().m_index - _from.curve().segmentTwo().m_index + 1);
-    tmp.append({ Vec2f(0.0), bez.positionOne(), bez.handleOne() - bez.positionOne() });
+    tmp.append({ bez.positionOne(), bez.positionOne(), bez.handleOne()});
 
     // add all the segments inbetween
     for (Size i = _from.curve().segmentTwo().m_index; i <= _to.curve().segmentOne().m_index; ++i)
@@ -1341,23 +1341,23 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
 
         if (i == _from.curve().segmentTwo().m_index && i == _to.curve().segmentOne().m_index)
         {
-            handleIn = bez.handleTwo() - bez.positionTwo();
-            handleOut = bez2.handleOne() - bez2.positionOne();
+            handleIn = bez.handleTwo();
+            handleOut = bez2.handleOne();
         }
         else if (i == _from.curve().segmentTwo().m_index)
         {
-            handleIn = bez.handleTwo() - bez.positionTwo();
+            handleIn = bez.handleTwo();
         }
         else if (i == _to.curve().segmentOne().m_index)
         {
-            handleOut = bez2.handleOne() - bez2.positionOne();
+            handleOut = bez2.handleOne();
         }
 
         tmp.append({ handleIn, seg.position(), handleOut });
     }
 
     // add the last segment based on the end curve location
-    tmp.append({ bez2.handleTwo() - bez2.positionTwo(), bez2.positionTwo(), Vec2f(0.0f) });
+    tmp.append({ bez2.handleTwo(), bez2.positionTwo(), bez2.positionTwo() });
 
     ret->swapSegments(tmp, isClosed());
 

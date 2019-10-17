@@ -1336,8 +1336,8 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
     for (Size i = _from.curve().segmentTwo().m_index; i <= _to.curve().segmentOne().m_index; ++i)
     {
         Segment seg = segment(i);
-        Vec2f handleIn = seg.handleIn();
-        Vec2f handleOut = seg.handleOut();
+        Vec2f handleIn = seg.handleInAbsolute();
+        Vec2f handleOut = seg.handleOutAbsolute();
 
         if (i == _from.curve().segmentTwo().m_index && i == _to.curve().segmentOne().m_index)
         {

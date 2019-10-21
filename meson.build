@@ -111,9 +111,6 @@ if host_machine.system() == 'linux'
     paperDeps += cc.find_library('dl', required : true)
 endif
 
-# paperDeps += dependency('hpdf')
-paperDeps += cc.find_library('hpdf')
-
 incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
 
 paper = library('Paper2', 

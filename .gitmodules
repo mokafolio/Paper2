@@ -10,3 +10,6 @@
 [submodule "subprojects/Tink"]
 	path = subprojects/Tink
 	url = https://github.com/mokafolio/Tink.git
+[submodule "subprojects/utf8er"]
+	path = subprojects/utf8er
+	url = https://github.com/mokafolio/utf8er

@@ -111,7 +111,7 @@ if host_machine.system() == 'linux'
     paperDeps += cc.find_library('dl', required : true)
 endif
 
-incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml')
+incDirs = include_directories('.', 'Paper2/Libs', 'Paper2/Libs/pugixml', 'subprojects')
 
 paper = library('Paper2', 
         paperSrc,

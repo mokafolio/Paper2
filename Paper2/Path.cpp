@@ -26,7 +26,7 @@ CurveLocation::operator bool() const
 
 bool CurveLocation::operator==(const CurveLocation & _other) const
 {
-    return m_curve.m_path == _other.m_curve.m_path && m_parameter == _other.m_parameter;
+    return m_curve.m_path == _other.m_curve.m_path && m_offset == _other.m_offset;
 }
 
 bool CurveLocation::operator!=(const CurveLocation & _other) const
@@ -1314,6 +1314,7 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
 
     //@TODO: is this cloning good enough?
     Path * ret = clone();
+    STICK_ASSERT(ret);
     ret->m_segmentData.clear();
     ret->m_curveData.clear();
     ret->m_bIsClosed = false;
@@ -1330,7 +1331,7 @@ Path * Path::slice(CurveLocation _from, CurveLocation _to) const
 
     SegmentDataArray tmp(m_segmentData.allocator());
     tmp.reserve(_to.curve().segmentOne().m_index - _from.curve().segmentTwo().m_index + 1);
-    tmp.append({ bez.positionOne(), bez.positionOne(), bez.handleOne()});
+    tmp.append({ bez.positionOne(), bez.positionOne(), bez.handleOne() });
 
     // add all the segments inbetween
     for (Size i = _from.curve().segmentTwo().m_index; i <= _to.curve().segmentOne().m_index; ++i)
@@ -1535,18 +1536,14 @@ CurveLocation Path::curveLocationAt(Float _offset) const
 
         // we found the curve
         if (len >= _offset)
-        {
             return (*it).curveLocationAt(_offset - start);
-        }
     }
 
     // comment from paper.js source in Path.js:
     // It may be that through impreciseness of getLength (length) , that the end
     // of the curves was missed:
     if (_offset <= length())
-    {
         return ConstCurve(this, m_curveData.count() - 1).curveLocationAtParameter(1);
-    }
 
     return CurveLocation();
 }
@@ -1663,8 +1660,7 @@ static void mergeStrokeCap(Rect & _rect,
     Vec2f pos = _bStart ? _a.position : _b.position;
     switch (_cap)
     {
-    case StrokeCap::Square:
-    {
+    case StrokeCap::Square: {
         Vec2f a, b, c, d;
         detail::capSquare(pos, dir, a, b, c, d);
         c = _strokeMat * c;
@@ -1673,8 +1669,7 @@ static void mergeStrokeCap(Rect & _rect,
         _rect = crunch::merge(_rect, _transform ? *_transform * d : d);
         break;
     }
-    case StrokeCap::Round:
-    {
+    case StrokeCap::Round: {
         Vec2f p = _strokeMat * pos;
         if (_transform)
         {
@@ -1684,8 +1679,7 @@ static void mergeStrokeCap(Rect & _rect,
         _rect = crunch::merge(_rect, r);
         break;
     }
-    case StrokeCap::Butt:
-    {
+    case StrokeCap::Butt: {
         Vec2f min, max;
         detail::capOrJoinBevelMinMax(pos, dir, min, max);
         min = _strokeMat * min;
@@ -1711,8 +1705,7 @@ static void mergeStrokeJoin(Rect & _rect,
 {
     switch (_join)
     {
-    case StrokeJoin::Round:
-    {
+    case StrokeJoin::Round: {
         Vec2f p = _strokeMat * _current.position;
         if (_transform)
         {
@@ -1722,8 +1715,7 @@ static void mergeStrokeJoin(Rect & _rect,
         _rect = crunch::merge(_rect, r);
         break;
     }
-    case StrokeJoin::Miter:
-    {
+    case StrokeJoin::Miter: {
         Bezier curveIn(_prev.position, _prev.handleOut, _current.handleIn, _current.position);
         Bezier curveOut(_current.position, _current.handleOut, _next.handleIn, _next.position);
 
@@ -1755,8 +1747,7 @@ static void mergeStrokeJoin(Rect & _rect,
         }
         // else fall back to Bevel
     }
-    case StrokeJoin::Bevel:
-    {
+    case StrokeJoin::Bevel: {
         Bezier curveIn(_prev.position, _prev.handleOut, _current.handleIn, _current.position);
         Bezier curveOut(_current.position, _current.handleOut, _next.handleIn, _next.position);
 

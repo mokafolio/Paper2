@@ -96,13 +96,19 @@ struct PDFSession
         Size len = std::strlen(_str);
         Size off = str.length();
         tmp.clear();
-        tmp.appendFormatted("%lu 0 obj\n    ", objects.count() + 1);
+        tmp.appendFormatted("%lu 0 obj\n", objects.count() + 1);
         str.append(tmp.begin(), tmp.end());
         str.append(_str, _str + len);
         str.append("\nendobj\n");
 
         objects.append({ off, len + tmp.length() + 8 });
         return objects.count() - 1;
+    }
+
+    Size addStreamObject(const char * _bytes)
+    {
+        auto count = std::strlen(_bytes);
+        return addObjectString(String::formatted("<</Length %lu>>\nstream\n%s\nendstream", count, _bytes).cString());
     }
 
     void finalize()
@@ -113,13 +119,21 @@ struct PDFSession
         {
             str.appendFormatted("%010lu 00000 n\n", obj.byteOff);
         }
-        str.appendFormatted("trailer <</Size %lu/Root 1 0 R>>", objects.count());
+        str.appendFormatted("trailer <</Size %lu/Root 1 0 R>>", objects.count() + 1);
         str.appendFormatted("\nstartxref\n%lu\n%%%%EOF", xrefOff);
     }
 
     String str, tmp;
     PDFObjectArray objects;
 };
+
+
+// 1. iterate over project tree.
+// 2. create a list of gradients used, create a list of fonts used.
+// 3. write pdf header and page including the gradient/font resources
+// 4. write content group object (by counting all the items that need to be written to the)
+// 5. write all item objects to the pdf.
+// 6. write pdf footer based on everything else.
 
 Error exportDocument(const Document * _doc, ByteArray & _outBytes)
 {
@@ -160,7 +174,10 @@ Error exportDocument(const Document * _doc, ByteArray & _outBytes)
     session.str.append("%PDF-1.3\n");
     session.addObjectString("<</Type /Catalog /Pages 2 0 R>>");
     session.addObjectString(String::formatted("<</Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 %i %i]>>", (Int32)_doc->width(), (Int32)_doc->height()).cString());
-    session.addObjectString("<</Type /Page /Parent 2 0 R /Resources <<>> >>");
+    session.addObjectString("<</Type /Page /Parent 2 0 R /Resources <<>> /Contents 4 0 R>>");
+    session.addObjectString("<</Kids [5 0 R]>>");
+    // session.addObjectString("stream\n175 720 m 175 500 l 300 800 400 600 v 100 650 50 75 re h S\nendstream");
+    session.addStreamObject("175 720 m 175 500 l 300 800 400 600 v 100 650 50 75 re h S");
     session.finalize();
 
     printf("PDF:\n%s\n", session.str.cString());

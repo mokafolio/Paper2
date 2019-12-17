@@ -10,6 +10,7 @@ namespace svg
 
 class SVGImportResult;
 
+//@TODO: see note in SVGExport regarding text
 class STICK_LOCAL SVGImport
 {
   public:

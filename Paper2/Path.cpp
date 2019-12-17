@@ -1370,11 +1370,13 @@ static CurveLocation closestCurveLocationImpl(const Path * _path,
                                               const Vec2f & _point,
                                               Float & _outDistance,
                                               Vec2f * _outPosition,
+                                              Float * _outParameter,
+                                              Bezier * _outBez,
                                               const Mat32f * _transform)
 {
     _outDistance = std::numeric_limits<Float>::infinity();
 
-    if (_path->segmentData().count() < 2)
+    if (_path->segmentData().count() < 2 && !_path->children().count())
         return CurveLocation();
 
     Float currentDist = 0;
@@ -1409,6 +1411,27 @@ static CurveLocation closestCurveLocationImpl(const Path * _path,
             closestBez = bez;
         }
     }
+
+    for (const Item * c : _path->children())
+    {
+        STICK_ASSERT(c->itemType() == ItemType::Path);
+        Float param, dist;
+        Bezier bez;
+        auto loc = closestCurveLocationImpl(
+            static_cast<const Path *>(c), _point, dist, nullptr, &param, &bez, nullptr);
+        if (dist < _outDistance)
+        {
+            ret = loc;
+            closestParameter = param;
+            closestBez = bez;
+        }
+    }
+
+    if (_outParameter)
+        *_outParameter = closestParameter;
+
+    if (_outBez)
+        *_outBez = closestBez;
 
     if (_outPosition)
         *_outPosition = closestBez.positionAt(closestParameter);
@@ -1447,8 +1470,13 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, Float & _outDista
 
     // return CurveLocation();
 
-    return closestCurveLocationImpl(
-        this, _point, _outDistance, nullptr, isTransformed() ? &absoluteTransform() : nullptr);
+    return closestCurveLocationImpl(this,
+                                    _point,
+                                    _outDistance,
+                                    nullptr,
+                                    nullptr,
+                                    nullptr,
+                                    isTransformed() ? &absoluteTransform() : nullptr);
 }
 
 CurveLocation Path::closestCurveLocation(const Vec2f & _point) const
@@ -1461,7 +1489,8 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point,
                                          const Mat32f & _transform,
                                          Float & _outDistance) const
 {
-    return closestCurveLocationImpl(this, _point, _outDistance, nullptr, &_transform);
+    return closestCurveLocationImpl(
+        this, _point, _outDistance, nullptr, nullptr, nullptr, &_transform);
 }
 
 CurveLocation Path::closestCurveLocation(const Vec2f & _point, const Mat32f & _transform) const
@@ -1472,7 +1501,7 @@ CurveLocation Path::closestCurveLocation(const Vec2f & _point, const Mat32f & _t
 
 CurveLocation Path::closestCurveLocationLocal(const Vec2f & _point, Float & _outDistance) const
 {
-    return closestCurveLocationImpl(this, _point, _outDistance, nullptr, nullptr);
+    return closestCurveLocationImpl(this, _point, _outDistance, nullptr, nullptr, nullptr, nullptr);
 }
 
 CurveLocation Path::closestCurveLocationLocal(const Vec2f & _point) const
@@ -1500,7 +1529,7 @@ Vec2f Path::closestPoint(const Vec2f & _point,
                          Float & _outDistance) const
 {
     Vec2f ret;
-    closestCurveLocationImpl(this, _point, _outDistance, &ret, &_transform);
+    closestCurveLocationImpl(this, _point, _outDistance, &ret, nullptr, nullptr, &_transform);
     return ret;
 }
 

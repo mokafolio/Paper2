@@ -1395,35 +1395,49 @@ static CurveLocation closestCurveLocationImpl(const Path * _path,
         segments = &_path->segmentData();
 
     Bezier bez, closestBez;
-    for (Size i = 0; i < (_path->isClosed() ? segments->count() : segments->count() - 1); ++i)
+    if (_path->segmentCount())
     {
-        bez = Bezier((*segments)[i].position,
-                     (*segments)[i].handleOut,
-                     (*segments)[(i + 1) % (*segments).count()].handleIn,
-                     (*segments)[(i + 1) % (*segments).count()].position);
-
-        currentParameter = bez.closestParameter(_point, currentDist, 0, 1, 0);
-        if (currentDist < _outDistance)
+        for (Size i = 0; i < (_path->isClosed() ? segments->count() : segments->count() - 1); ++i)
         {
-            _outDistance = currentDist;
-            closestParameter = currentParameter;
-            ret = _path->curve(i).curveLocationAtParameter(closestParameter);
-            closestBez = bez;
+            bez = Bezier((*segments)[i].position,
+                         (*segments)[i].handleOut,
+                         (*segments)[(i + 1) % (*segments).count()].handleIn,
+                         (*segments)[(i + 1) % (*segments).count()].position);
+
+            currentParameter = bez.closestParameter(_point, currentDist, 0, 1, 0);
+            if (currentDist < _outDistance)
+            {
+                _outDistance = currentDist;
+                closestParameter = currentParameter;
+                ret = _path->curve(i).curveLocationAtParameter(closestParameter);
+                closestBez = bez;
+            }
         }
     }
 
+    Mat32f tmpTrans;
     for (const Item * c : _path->children())
     {
         STICK_ASSERT(c->itemType() == ItemType::Path);
         Float param, dist;
         Bezier bez;
-        auto loc = closestCurveLocationImpl(
-            static_cast<const Path *>(c), _point, dist, nullptr, &param, &bez, nullptr);
-        if (dist < _outDistance)
+        if (_transform)
+        {
+            tmpTrans = *_transform * c->transform();
+        }
+        auto loc = closestCurveLocationImpl(static_cast<const Path *>(c),
+                                            _point,
+                                            dist,
+                                            nullptr,
+                                            &param,
+                                            &bez,
+                                            _transform ? &tmpTrans : nullptr);
+        if (loc && dist < _outDistance)
         {
             ret = loc;
             closestParameter = param;
             closestBez = bez;
+            _outDistance = dist;
         }
     }
 
